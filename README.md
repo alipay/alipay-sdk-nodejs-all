@@ -1,12 +1,8 @@
 # Alipay SDK
-
-
-=======
-
+======
 [![NPM version][npm-image]][npm-url]
 [![build status][travis-image]][travis-url]
 [![coverage][cov-image]][cov-url]
-[![David deps][david-image]][david-url]
 
 [npm-image]: https://img.shields.io/npm/v/alipay-sdk.svg?style=flat-square
 [npm-url]: https://www.npmjs.com/package/alipay-sdk
@@ -14,8 +10,6 @@
 [travis-url]: https://travis-ci.org/ali-sdk/alipay-sdk.svg?branch=master
 [cov-image]: http://codecov.io/github/ali-sdk/alipay-sdk/coverage.svg?branch=master
 [cov-url]: http://codecov.io/github/ali-sdk/alipay-sdk?branch=master
-[david-image]: https://img.shields.io/david/ali-sdk/alipay-sdk?style=flat-square
-[david-url]: https://david-dm.org/ali-sdk/alipay-sdk
 
 
 
