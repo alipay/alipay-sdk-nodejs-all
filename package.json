@@ -1,0 +1,40 @@
+{
+  "name": "alipay-sdk",
+  "version": "3.0.2",
+  "description": "蚂蚁金服开放平台 node sdk",
+  "main": "lib/alipay.js",
+  "scripts": {
+    "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "lint": "tslint -p ./tsconfig.json --fix",
+    "lint:no-fix": "tslint -p ./tsconfig.json",
+    "test": "npm run tsc && npm run lint && mocha",
+    "ci": "npm run tsc && npm run lint:no-fix && istanbul cover _mocha -- -t 60000"
+  },
+  "author": "tudou527<tudou527@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^9.6.0",
+    "@types/urllib": "^2.25.0",
+    "camelcase-keys": "^4.2.0",
+    "decamelize": "^2.0.0",
+    "is": "^3.2.1",
+    "is-json": "^2.0.1",
+    "moment": "^2.16.0",
+    "request": "^2.86.0",
+    "snakecase-keys": "^1.1.1",
+    "urllib": "^2.17.0"
+  },
+  "ci": {
+    "version": "8"
+  },
+  "devDependencies": {
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.2",
+    "mocha-lcov-reporter": "^1.2.0",
+    "should": "^11.1.1",
+    "sinon": "^1.17.7",
+    "tslint": "^5.8.0",
+    "tslint-config-airbnb": "^5.4.2",
+    "typescript": "^2.6.2"
+  }
+}
