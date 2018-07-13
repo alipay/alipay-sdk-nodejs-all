@@ -1,5 +1,5 @@
 # Alipay SDK
-======
+
 [![NPM version][npm-image]][npm-url]
 [![build status][travis-image]][travis-url]
 [![coverage][cov-image]][cov-url]
