@@ -174,7 +174,7 @@ formData.addFile('imageContent', '图片.jpg', path.join(__dirname, './test.jpg'
 
 
 try {
-  const result = alipaySdk.exec(
+  const result = await alipaySdk.exec(
     'alipay.offline.material.image.upload',
     // 文件上传类接口 params 需要设置为 {}
     {},
@@ -231,7 +231,7 @@ formData.addField('bizContent', {
 });
 
 try {
-  const result = alipaySdk.exec(
+  const result = await alipaySdk.exec(
     'alipay.trade.page.pay',
     {},
     { formData: formData },
@@ -262,7 +262,7 @@ formData.addField('bizContent', {
 });
 
 try {
-  const result = alipaySdk.exec(
+  const result = await alipaySdk.exec(
     'alipay.trade.page.pay',
     {},
     { formData: formData },
