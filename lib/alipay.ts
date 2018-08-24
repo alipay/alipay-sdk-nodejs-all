@@ -182,12 +182,16 @@ class AlipaySdk {
         const result = JSON.parse(body);
         const responseKey = `${method.replace(/\./g, '_')}_response`;
         const data = result[responseKey];
-        // 验签
-        const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
-        if (validateSuccess) {
-          resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-        } else {
-          reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+
+        // 开放平台返回错误时，`${responseKey}` 对应的值不存在
+        if (data) {
+          // 验签
+          const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
+          if (validateSuccess) {
+            resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+          } else {
+            reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+          }
         }
 
         reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
@@ -336,18 +340,27 @@ class AlipaySdk {
            *  {"code": "10000","msg": "Success","out_trade_no": "111111","qr_code": "https:\/\/"},
            *  "sign": "abcde="
            * }
+           * 或者
+           * {"error_response":
+           *  {"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"},
+           * }
            */
           const result = JSON.parse(ret.data);
           const responseKey = `${method.replace(/\./g, '_')}_response`;
           const data = result[responseKey];
-          // 按字符串验签
-          const validateSuccess = option.validateSign ? this.checkResponseSign(ret.data, responseKey) : true;
 
-          if (validateSuccess) {
-            resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-          } else {
-            reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
+          if (data) {
+            // 按字符串验签
+            const validateSuccess = option.validateSign ? this.checkResponseSign(ret.data, responseKey) : true;
+
+            if (validateSuccess) {
+              resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+            } else {
+              reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
+            }
           }
+
+          reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
         }
 
         reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });

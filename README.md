@@ -50,6 +50,15 @@ const alipaySdk = new AlipaySdk({
     privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
     alipayPublicKey: fs.readFileSync('./public-key.pem', 'ascii'),
 });
+
+// JS
+const AlipaySdk = require('alipay-sdk').default;
+
+const alipaySdk = new AlipaySdk({
+    appId: '2016123456789012',
+    privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
+    alipayPublicKey: fs.readFileSync('./public-key.pem', 'ascii'),
+});
 ```
 
 ## 2. 通过 `exec` 调用 API
@@ -63,6 +72,15 @@ try {
 } catch (err) {
   // ...
 }
+
+// JS
+alipaySdk.exec(method, params, options)
+  .then(result => {
+    // console.log(result);
+  })
+  .catch(err) {
+    // ...
+  }
 ```
 
 * exec 参数列表

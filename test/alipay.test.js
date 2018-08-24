@@ -212,6 +212,13 @@ describe('sdk', function() {
     });
 
     it('NO_RIGHT Api', function(done) {
+      sandbox.stub(urllib, 'request', function() {
+        return Promise.resolve({
+          status: 200,
+          data: '{"alipay_commerce_cityfacilitator_station_query_response":{"code":"40004","msg":"Business Failed","subCode":"NO_RIGHT","subMsg":"无权限使用接口"},"sign":"signStr"}',
+        })
+      });
+
       sdk
         .exec('alipay.commerce.cityfacilitator.station.query', {
           bizContent: { cityCode: '440300' },
@@ -300,6 +307,36 @@ describe('sdk', function() {
           done();
         });
     });
+
+    it('error response', function(done) {
+      sandbox.stub(urllib, 'request', function() {
+        return Promise.resolve({
+          status: 200,
+          data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
+        });
+      });
+      sandbox.stub(sdk, 'checkResponseSign', function() { return true; });
+
+      sdk.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        },
+        publicArgs: {},
+      }, { validateSign: true }).then(function(data){
+        done();
+      }).catch(e => {
+        e.should.eql({
+          serverResult: {
+            status: 200,
+            data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}'
+          },
+          errorMessage: '[AlipaySdk]HTTP 请求错误',
+        });
+        done();
+      })
+    });
   });
 
   describe('multipartExec', function() {
@@ -331,7 +368,7 @@ describe('sdk', function() {
       form.addField('imageName', '海底捞.jpg');
       form.addFile('imageContent', '海底捞.jpg', filePath);
 
-      this.timeout(10000);
+      this.timeout(20000);
 
       sdk
         .exec('alipay.offline.material.image.upload', {
@@ -372,8 +409,8 @@ describe('sdk', function() {
 
       sdk
         .exec('alipay.offline.material.image.upload', {
-        }, { log, formData: form, validateSign: true })
-        .then(ret => {
+        }, { formData: form, validateSign: true })
+        .then(() => {
           done();
         }).catch(err => {
           err.should.eql({
@@ -413,6 +450,114 @@ describe('sdk', function() {
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
           done();
         })
+    });
+
+    it('error response', function(done) {
+      const infoLog = [];
+      const errorLog = [];
+      const log = {
+        info(...args) { infoLog.push(args.join('')) },
+        error(...args) { errorLog.push(args.join('')) },
+      }
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
+
+      const form = new FormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '海底捞.jpg');
+      form.addFile('imageContent', '海底捞.jpg', filePath);
+
+      sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
+      sandbox.stub(request, 'post', function(option, callback) {
+        return callback(null, {} , '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}');
+      });
+
+      sdk
+        .exec('alipay.offline.material.image.upload', {
+        }, { log, formData: form, validateSign: true })
+        .then(() => {
+          done();
+        }).catch(err => {
+          err.should.eql({
+            serverResult: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
+            errorMessage: '[AlipaySdk]HTTP 请求错误',
+          });
+          done();
+        });
+    });
+
+    it('camelcase is false', function(done) {
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
+
+      sandbox.stub(request, 'post', function({}, callback) {
+        return callback(null, {} , '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"mock_image_id","img_url":"mock_image_url"}}');
+      });
+
+      const form = new FormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '海底捞.jpg');
+      form.addFile('imageContent', '海底捞.jpg', filePath);
+
+      this.timeout(20000);
+
+      const newSdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey: privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: false,
+        timeout: 10000,
+      })
+
+      newSdk
+        .exec('alipay.offline.material.image.upload', {
+        }, { formData: form })
+        .then(ret => {
+          ret.should.eql({
+            code: '10000',
+            msg: 'Success',
+            image_id: 'mock_image_id',
+            img_url: 'mock_image_url',
+          });
+          done();
+        }).catch(done)
+    });
+
+    it('validate sign is false', function(done) {
+      const infoLog = [];
+      const errorLog = [];
+      const log = {
+        info(...args) { infoLog.push(args.join('')) },
+        error(...args) { errorLog.push(args.join('')) },
+      }
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
+
+      const form = new FormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '海底捞.jpg');
+      form.addFile('imageContent', '海底捞.jpg', filePath);
+
+      sandbox.stub(request, 'post', function({}, callback) {
+        return callback(null, {} , '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"u16noGtTSH-r9UI0FGmIfAAAACMAAQED","image_url":"https://oalipay-dl-django.alicdn.com/rest/1.0/image?fileIds=u16noGtTSH-r9UI0FGmIfAAAACMAAQED&zoom=original"}}');
+      })
+
+      sdk
+        .exec('alipay.offline.material.image.upload', {
+        }, { log, formData: form })
+        .then(ret => {
+          console.log(ret);
+          ret.code.should.eql('10000');
+          ret.msg.should.eql('Success');
+          (!ret.imageId).should.eql(false);
+          (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
+
+          infoLog.length.should.eql(2);
+          (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
+          (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+          errorLog.should.eql([]);
+
+          done();
+        }).catch(done)
     });
   });
   
@@ -489,6 +634,33 @@ describe('sdk', function() {
           const url = decodeURIComponent(ret);
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
           errorLog.length.should.eql(0);
+
+          (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
+          (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
+          (url.indexOf(sdkVersion) > -1).should.eql(true);
+          done();
+        }).catch(done)
+    });
+
+    it('disable log', function(done) {
+      const bizContent = {
+        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
+        product_code: "FAST_INSTANT_TRADE_PAY",
+        subject: "abc",
+        body: "234",
+        // timeout_express: "90m",
+        total_amount: "0.01"
+      }
+      const formData = new FormData();
+      formData.setMethod('get');
+      formData.addField('returnUrl', 'https://www.taobao.com');
+      formData.addField('bizContent', JSON.stringify(bizContent));
+
+      sdk
+        .exec('alipay.trade.page.pay', {
+        }, { formData: formData })
+        .then(ret => {
+          const url = decodeURIComponent(ret);
 
           (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
           (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
@@ -687,7 +859,7 @@ describe('sdk', function() {
         error(...args) { errorLog.push(args.join('')) },
       }
 
-      this.timeout(10000);
+      this.timeout(20000);
 
       sdk
         .exec('alipay.offline.market.shop.category.query', {
