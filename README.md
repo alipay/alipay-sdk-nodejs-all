@@ -158,13 +158,13 @@ try {
 ### 文件上传类接口调用
 
 ```
-// 引入 AlipayFormData 并实例化
-import AlipayFormData from 'alipay-sdk/lib/form';
+// 引入 AliPayForm 并实例化
+import AliPayForm from 'alipay-sdk/lib/form';
 
-const formData = new AlipayFormData();
+const form = new AliPayForm();
 ```
 
-AlipayFormData 提供了下面 2 个方法，用于增加字段文件：
+AliPayForm 提供了下面 2 个方法，用于增加字段文件：
 
 * `addField(fieldName, fieldValue)` 增加字段，包含 2 个参数
   * `fieldName`: `String` 字段名
@@ -180,15 +180,15 @@ AlipayFormData 提供了下面 2 个方法，用于增加字段文件：
 
 ```
 // TypeScript
-import AlipayFormData from 'alipay-sdk/lib/form';
+import AliPayForm from 'alipay-sdk/lib/form';
 
-const formData = new AlipayFormData();
+const form = new AliPayForm();
 
 // 增加字段
-formData.addField('imageType', 'jpg');
-formData.addField('imageName', '图片.jpg');
+form.addField('imageType', 'jpg');
+form.addField('imageName', '图片.jpg');
 // 增加上传的文件
-formData.addFile('imageContent', '图片.jpg', path.join(__dirname, './test.jpg'));
+form.addFile('imageContent', '图片.jpg', path.join(__dirname, './test.jpg'));
 
 
 try {
@@ -197,8 +197,8 @@ try {
     // 文件上传类接口 params 需要设置为 {}
     {},
     {
-      // 通过 formData 设置请求参数
-      formData: formData,
+      // 通过 form 设置请求参数
+      formData: form,
       validateSign: true,
     },
   );
@@ -223,7 +223,7 @@ try {
 ### 页面类接口调用
 
 页面类接口默认返回的数据为 html 代码片段，比如 PC 支付接口 `alipay.trade.page.pay` 返回的内容为 Form 表单。
-同文件上传，此类接口也需要通过 `AlipayFormData.addField` 来增加参数。此外，AlipayFormData 还提供了 `setMethod` 方法，用于直接返回 url：
+同文件上传，此类接口也需要通过 `AliPayForm.addField` AliPayForm 还提供了 `setMethod` 方法，用于直接返回 url：
 
 * `setMethod(method)` 设置请求方法
   * `method`: `'post' | 'get'` 默认为 post
@@ -235,12 +235,12 @@ try {
 
 ```
 // TypeScript
-import AlipayFormData from 'alipay-sdk/lib/form';
+import AliPayForm from 'alipay-sdk/lib/form';
 
-const formData = new AlipayFormData();
+const form = new AliPayForm();
 
-formData.addField('notifyUrl', 'http://www.com/notify');
-formData.addField('bizContent', {
+form.addField('notifyUrl', 'http://www.com/notify');
+form.addField('bizContent', {
   outTradeNo: 'out_trade_no',
   productCode: 'FAST_INSTANT_TRADE_PAY',
   totalAmount: '0.01',
@@ -252,7 +252,7 @@ try {
   const result = await alipaySdk.exec(
     'alipay.trade.page.pay',
     {},
-    { formData: formData },
+    { formData: form },
   );
 
   // result 为 form 表单
@@ -264,14 +264,14 @@ try {
 
 ```
 // TypeScript
-import AlipayFormData from 'alipay-sdk/lib/form';
+import AliPayForm from 'alipay-sdk/lib/form';
 
-const formData = new AlipayFormData();
+const form = new AliPayForm();
 // 调用 setMethod 并传入 get，会返回可以跳转到支付页面的 url
-formData.setMethod('get');
+form.setMethod('get');
 
-formData.addField('notifyUrl', 'http://www.com/notify');
-formData.addField('bizContent', {
+form.addField('notifyUrl', 'http://www.com/notify');
+form.addField('bizContent', {
   outTradeNo: 'out_trade_no',
   productCode: 'FAST_INSTANT_TRADE_PAY',
   totalAmount: '0.01',
@@ -283,7 +283,7 @@ try {
   const result = await alipaySdk.exec(
     'alipay.trade.page.pay',
     {},
-    { formData: formData },
+    { formData: form },
   );
 
   // result 为可以跳转到支付链接的 url
@@ -295,13 +295,13 @@ try {
 # 支付宝开放平台配置
 
 ## 1. 注册支付宝开放平台账号
-  
+
   支付宝开放平台： https://open.alipay.com/
 
 ## 2. 生成密钥
 
 1. 下载 RSA密钥工具：https://docs.open.alipay.com/291/106097/
-2. 切换到生成秘钥 tab，秘钥格式选择“PKCS1（非JAVA适用）” 
+2. 切换到生成秘钥 tab，秘钥格式选择“PKCS1（非JAVA适用）”
 
     > 不需要手动修改秘钥格式，SDK 会自动处理
 
@@ -346,4 +346,3 @@ try {
     ```
     MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7EqgH28GDbCgaonIDWIhMSPYAGMLNjCzmk7jtxNSLFjI+bbTZe43N5Bbo8cmk/LpULIGrtiyhfre1WMWIG6voK/GNL+9pY3PxkOdr+VveWp3ZDuaWQToN7Tq/f+MUMkvEBhcCP+b7UheQXX80zAEWe7HGh5mpj9bmbtb57d34e1b72GX/dTVVeJDU5/Eg6L/UcKeOmd4xtdGP4xqAPbgNhe2JuTOtRR/xl0ZT9mUtEpBLabrTR1EO256Zk1lzgXuMepAlyCIN0Rm0DxqnosRZjRg41ahkXs3RzInRbWXIIVdrjJsjC7rnlt6zZHdqRSDKy/9sZbAv0e8ZjaHjIEnvQIDAQAB
     ```
-
