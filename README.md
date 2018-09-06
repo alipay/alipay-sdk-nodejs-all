@@ -89,8 +89,8 @@ alipaySdk.exec(method, params, options)
     * `method`: `String` 调用的 Api，比如 `alipay.system.oauth.token`
   * 可选
     * `params`: `Object` Api 的请求参数（包含部分“公共请求参数”和“请求参数”）
-        * `bizContent`: `Object` 可选项
-          * **注意：** 仅当 Api 文档的“公共请求参数”列表中存在 `biz_content`时，才需要通过 `bizContent` 设置请求参数，否则应该通过 `params` 传递请求参数
+        * `biz_content`: `Object` 可选项
+          * **注意：** 仅当 Api 文档的“公共请求参数”列表中存在 `biz_content`时，才需要通过 `biz_content` 设置请求参数，否则应该通过 `params` 传递请求参数
     * `options`: `Object` 可选项
       * `validateSign`: `Boolean` 是否对返回值验签（依赖实例化时配置的”支付宝公钥“），默认 `false`
       * `formData`: `Object` 文件上传类接口的请求参数，，默认 `null`
@@ -132,10 +132,10 @@ try {
   const result = await alipaySdk.exec('alipay.trade.close', {
     notifyUrl: 'http://notify_url',
     appAuthToken: '',
-    // sdk 会自动把 bizContent 参数转换为字符串，不需要自己调用 JSON.stringify
-    bizContent: {
-      tradeNo: '',
-      outTradeNo: '',
+    // sdk 会自动把 biz_content 参数转换为字符串，不需要自己调用 JSON.stringify
+    biz_content: {
+      trade_no: '',
+      out_trade_no: '',
       operatorId: '',
     },
   }, {
@@ -240,7 +240,7 @@ import AliPayForm from 'alipay-sdk/lib/form';
 const form = new AliPayForm();
 
 form.addField('notifyUrl', 'http://www.com/notify');
-form.addField('bizContent', {
+form.addField('biz_content', {
   outTradeNo: 'out_trade_no',
   productCode: 'FAST_INSTANT_TRADE_PAY',
   totalAmount: '0.01',
@@ -271,7 +271,7 @@ const form = new AliPayForm();
 form.setMethod('get');
 
 form.addField('notifyUrl', 'http://www.com/notify');
-form.addField('bizContent', {
+form.addField('biz_content', {
   outTradeNo: 'out_trade_no',
   productCode: 'FAST_INSTANT_TRADE_PAY',
   totalAmount: '0.01',
