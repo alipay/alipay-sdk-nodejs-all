@@ -5,8 +5,8 @@
 
 [npm-image]: https://img.shields.io/npm/v/alipay-sdk.svg?style=flat-square
 [npm-url]: https://www.npmjs.com/package/alipay-sdk
-[travis-image]: https://img.shields.io/travis/alipay/alipay-sdk/master.svg?style=flat-square
-[travis-url]: https://travis-ci.org/alipay/alipay-sdk.svg?branch=master
+[travis-image]: https://img.shields.io/travis/alipay/alipay-sdk-nodejs/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/alipay/alipay-sdk-nodejs.svg?branch=master
 [cov-image]: http://codecov.io/github/alipay/alipay-sdk/coverage.svg?branch=master
 [cov-url]: http://codecov.io/github/alipay/alipay-sdk?branch=master
 
