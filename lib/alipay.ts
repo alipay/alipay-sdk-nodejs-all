@@ -123,7 +123,7 @@ class AlipaySdk {
         // const val = encodeURIComponent(params[key]);
         requestUrl = `${requestUrl}${ requestUrl.includes('?') ? '&' : '?' }${key}=${val}`;
         // 删除 postData 中对应的数据
-        if ( key === 'biz_content') continue;
+        if (key === 'biz_content') continue;
         delete params[key];
       }
     }
