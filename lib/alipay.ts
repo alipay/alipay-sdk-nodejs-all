@@ -114,14 +114,16 @@ class AlipaySdk {
     const urlArgs = [
       'app_id', 'method', 'format', 'charset',
       'sign_type', 'sign', 'timestamp', 'version',
-      'notify_url', 'return_url', 'auth_token', 'app_auth_token',
+      'notify_url', 'return_url', 'auth_token', 'app_auth_token', 'biz_content',
     ];
 
     for (const key in params) {
       if (urlArgs.indexOf(key) > -1) {
-        const val = encodeURIComponent(params[key]);
+        const val = encodeURIComponent(is.object(params[key]) ? JSON.stringify(params[key]) : params[key]);
+        // const val = encodeURIComponent(params[key]);
         requestUrl = `${requestUrl}${ requestUrl.includes('?') ? '&' : '?' }${key}=${val}`;
         // 删除 postData 中对应的数据
+        if ( key === 'biz_content') continue;
         delete params[key];
       }
     }
