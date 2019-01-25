@@ -408,9 +408,8 @@ class AlipaySdk {
     }
 
     const signArgs = { ...postData };
-    // 除去sign、sign_type 皆是待验签的参数。
+    // 除去sign 皆是待验签的参数。
     delete signArgs.sign;
-    delete signArgs.sign_type;
 
     const decodeSign = Object.keys(signArgs).sort().filter(val => val).map((key) => {
       let value = signArgs[key];
