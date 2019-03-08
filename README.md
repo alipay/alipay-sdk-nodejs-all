@@ -335,7 +335,7 @@ try {
 
     ![img](https://gw.alipayobjects.com/zos/rmsportal/kdRFpjYmQdBNonEMXSBO.png)
 
-2. 新建 public-key.pem 保存私钥，文件格式如下：
+2. 新建 public-key.pem 保存公钥，文件格式如下：
 
     ```
     // 粘贴上一步复制的“支付宝公钥”到这里（不需要换行）
