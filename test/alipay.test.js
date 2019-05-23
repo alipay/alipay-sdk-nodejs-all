@@ -12,6 +12,8 @@ const FormData = require('../lib/form').default;
 const AlipaySdk = require('../lib/alipay').default;
 const privateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key.pem', 'ascii');
 const alipayPublicKey = fs.readFileSync(__dirname + '/fixtures/alipay-public-key.pem', 'ascii');
+const notifyAlipayPublicKeyV1 = fs.readFileSync(__dirname + '/fixtures/alipay-notify-sign-public-key-v1.pem', 'ascii');
+const notifyAlipayPublicKeyV2 = fs.readFileSync(__dirname + '/fixtures/alipay-notify-sign-public-key-v2.pem', 'ascii');
 
 const sandbox = sinon.sandbox.create();
 const pkgJson = require('../package.json');
@@ -545,7 +547,6 @@ describe('sdk', function() {
         .exec('alipay.offline.material.image.upload', {
         }, { log, formData: form })
         .then(ret => {
-          console.log(ret);
           ret.code.should.eql('10000');
           ret.msg.should.eql('Success');
           (!ret.imageId).should.eql(false);
@@ -783,7 +784,7 @@ describe('sdk', function() {
         gateway: GATE_WAY,
         appId: APP_ID,
         privateKey: privateKey,
-        alipayPublicKey,
+        alipayPublicKey: notifyAlipayPublicKeyV2,
         camelcase: true,
       });
     });
@@ -803,35 +804,202 @@ describe('sdk', function() {
       sdk.checkNotifySign({}).should.eql(false);
     });
 
-    it('normal', function() {
-      const postData = {
-        discount: '0.00',
-        payment_type: 1,
-        subject: { a: 'b' },
-        trade_no: '2013082244524842',
-        buyer_email: 'dlw***@gmail.com',
-        gmt_create: '2013-08-22 14:45:23',
-        notify_type: 'trade_status_sync',
-        quantity: '1',
-        out_trade_no: '082215222612710',
-        seller_id: '2088501624816263',
-        notify_time: '2013-08-22 14:45:24',
-        body: '测试测试',
-        trade_status: 'TRADE_SUCCESS',
-        is_total_fee_adjust: 'N',
-        total_fee: '1.00',
-        gmt_payment: '2013-08-22 14:45:24',
-        seller_email: 'xxx@alipay.com',
-        price: '1.00',
-        buyer_id: '2088602315385429',
-        notify_id: '64ce1b6ab92d00ede0ee56ade98fdf2f4c',
-        use_coupon: 'N',
-        sign_type: 'RSA',
-        sign: '1glihU9DPWee+UJ82u3+mw3Bdnr9u01at0M/xJnPsGuHh+JA5bk3zbWaoWhU6GmLab3dIM4JNdktTcEUI9/FBGhgfLO39BKX/eBCFQ3bXAmIZn4l26fiwoO613BptT44GTEtnPiQ6+tnLsGlVSrFZaLB9FVhrGfipH2SWJcnwYs=',
-      }
-      
-      sdk.checkNotifySign(postData).should.eql(false);
+    describe('verify sign should delete sign_type', function() {
+      beforeEach(function() {
+        sdk = new AlipaySdk({
+          gateway: GATE_WAY,
+          appId: APP_ID,
+          privateKey: privateKey,
+          alipayPublicKey: notifyAlipayPublicKeyV1,
+          camelcase: true,
+        });
+      });
+
+      it('with sign_type arguments verify success', function() {
+        const postData = {
+          app_id: '2018121762595097',
+          auth_app_id: '2018121762595097',
+          buyer_id: '2088512613526436',
+          buyer_logon_id: '152****6706',
+          buyer_pay_amount: '0.01',
+          charset: 'utf-8',
+          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
+          gmt_create: '2019-05-23 14:13:56',
+          gmt_payment: '2019-05-23 14:17:13',
+          invoice_amount: '0.01',
+          notify_id: '2019052300222141714026431019971405',
+          notify_time: '2019-05-23 14:17:14',
+          notify_type: 'trade_status_sync',
+          out_trade_no: 'tpxy23962362669658',
+          point_amount: '0.00',
+          receipt_amount: '0.01',
+          seller_email: 'myapp@alitest.com',
+          seller_id: '2088331578818800',
+          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
+          sign_type: 'RSA2',
+          subject: 'tpxy2222896485',
+          total_amount: '0.01',
+          trade_no: '2019052322001426431037869358',
+          trade_status: 'TRADE_SUCCESS',
+          version: '1.0'
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(true);
+      });
+
+      it('without sign_type arguments verify success', function() {
+        const postData = {
+          app_id: '2018121762595097',
+          auth_app_id: '2018121762595097',
+          buyer_id: '2088512613526436',
+          buyer_logon_id: '152****6706',
+          buyer_pay_amount: '0.01',
+          charset: 'utf-8',
+          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
+          gmt_create: '2019-05-23 14:13:56',
+          gmt_payment: '2019-05-23 14:17:13',
+          invoice_amount: '0.01',
+          notify_id: '2019052300222141714026431019971405',
+          notify_time: '2019-05-23 14:17:14',
+          notify_type: 'trade_status_sync',
+          out_trade_no: 'tpxy23962362669658',
+          point_amount: '0.00',
+          receipt_amount: '0.01',
+          seller_email: 'myapp@alitest.com',
+          seller_id: '2088331578818800',
+          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
+          sign_type: 'RSA2',
+          subject: 'tpxy2222896485',
+          total_amount: '0.01',
+          trade_no: '2019052322001426431037869358',
+          trade_status: 'TRADE_SUCCESS',
+          version: '1.0'
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(true);
+      });
+
+      it('verify fail', function() {
+        const postData = {
+          app_id: '2018121762595097',
+          auth_app_id: '2018121762595097',
+          buyer_id: '2088512613526436',
+          buyer_logon_id: '152****6706',
+          buyer_pay_amount: '0.01',
+          charset: 'utf-8',
+          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
+          gmt_create: '2019-05-23 14:13:56',
+          gmt_payment: '2019-05-23 14:17:13',
+          invoice_amount: '0.01',
+          notify_id: '2019052300222141714026431019971405',
+          notify_time: '2019-05-23 14:17:14',
+          notify_type: 'trade_status_sync',
+          out_trade_no: 'tpxy23962362669658',
+          point_amount: '0.00',
+          receipt_amount: '0.01',
+          seller_email: 'myapp@alitest.com',
+          seller_id: '2088331578818800',
+          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
+          sign_type: 'RSA2',
+          subject: 'tpxy2222896485',
+          total_amount: '0.01',
+          trade_no: '111111112019052322001426431037869358',
+          trade_status: 'TRADE_SUCCESS',
+          version: '1.0'
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(false);
+      });
     });
+
+    describe('verify sign should not delete sign_type', function () {
+      it('with sign_type arguments verify success', function() {
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          sign_type: 'RSA2',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(true);
+      });
+  
+      it('without sign_type arguments verify success', function() {
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(true);
+      });
+
+      it('verify fail', function(){
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634111',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          sign_type: 'RSA2',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+  
+        sdk.checkNotifySign(postData).should.eql(false);
+      });
+    });
+    
   });
 
   describe('execute, pkcs8', function() {

@@ -1,6 +1,6 @@
 {
   "name": "alipay-sdk",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "蚂蚁金服开放平台 node sdk",
   "main": "lib/alipay.js",
   "scripts": {
@@ -16,7 +16,6 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^9.6.0",
-    "@types/urllib": "^2.25.0",
     "camelcase-keys": "^4.2.0",
     "decamelize": "^2.0.0",
     "is": "^3.2.1",
@@ -33,6 +32,7 @@
     "istanbul": "^0.4.5",
     "mocha": "^3.1.2",
     "mocha-lcov-reporter": "^1.2.0",
+    "query-string": "^6.5.0",
     "should": "^11.1.1",
     "sinon": "^1.17.7",
     "tslint": "^5.8.0",

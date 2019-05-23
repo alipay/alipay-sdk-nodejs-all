@@ -245,6 +245,22 @@ class AlipaySdk {
     });
   }
 
+  // 消息验签
+  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2') {
+    const signContent =  Object.keys(signArgs).sort().filter(val => val).map((key) => {
+      let value = signArgs[key];
+
+      if (Array.prototype.toString.call(value) !== '[object String]') {
+        value = JSON.stringify(value);
+      }
+      return `${key}=${decodeURIComponent(value)}`;
+    }).join('&');
+
+    const verifier = crypto.createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
+
+    return verifier.update(signContent, 'utf8').verify(this.config.alipayPublicKey, signStr, 'base64');
+  }
+
   /**
    *
    * @param originStr 开放平台返回的原始字符串
@@ -401,29 +417,39 @@ class AlipaySdk {
    */
   checkNotifySign(postData: any): boolean {
     const signStr = postData.sign;
-    const signType = postData.sign_type || 'RSA2';
 
+    // 未设置“支付宝公钥”或签名字符串不存，验签不通过
     if (!this.config.alipayPublicKey || !signStr) {
       return false;
     }
 
+    // 先从签名字符串中取 sign_type，再取配置项、都不存在时默认为 RSA2（RSA 已不再推荐使用）
+    const signType = postData.sign_type || this.config.signType || 'RSA2';
     const signArgs = { ...postData };
-    // 除去sign 皆是待验签的参数。
+    // 除去 sign
     delete signArgs.sign;
 
-    const decodeSign = Object.keys(signArgs).sort().filter(val => val).map((key) => {
-      let value = signArgs[key];
+    /**
+     * 某些用户可能自己删除了 sign_type 后再验签
+     * 为了保持兼容性临时把 sign_type 加回来
+     * 因为下面的逻辑会验签 2 次所以不会存在验签不同过的情况
+     */
+    signArgs.sign_type = signType;
 
-      if (Array.prototype.toString.call(value) !== '[object String]') {
-        value = JSON.stringify(value);
-      }
-      return `${key}=${decodeURIComponent(value)}`;
-    }).join('&');
+    // 保留 sign_type 验证一次签名
+    const verifyResult = this.notifyRSACheck(signArgs, signStr, signType);
 
-    const verifier = crypto.createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
-    verifier.update(decodeSign, 'utf8');
+    if (!verifyResult) {
+      /**
+       * 删除 sign_type 验一次
+       * 因为“历史原因”需要用户自己判断是否需要保留 sign_type 验证签名
+       * 这里是把其他 sdk 中的 rsaCheckV1、rsaCheckV2 做了合并
+       */
+      delete signArgs.sign_type;
+      return this.notifyRSACheck(signArgs, signStr, signType);
+    }
 
-    return verifier.verify(this.config.alipayPublicKey, signStr, 'base64');
+    return true;
   }
 }
 
