@@ -1,8 +1,9 @@
-sudo: false
-language: node_js
+language:
+  node_js
 node_js:
   - '9'
   - '8'
-script: npm run ci
+script:
+  - npm run ci
 after_script:
-  - npm i codecov && codecov
+  - npm i codecov && codecov -f coverage/*.json

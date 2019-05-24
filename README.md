@@ -4,13 +4,15 @@
 
 [![NPM version][npm-image]][npm-url]
 [![build status][travis-image]][travis-url]
+[![Test coverage][codecov-image]][codecov-url]
 
 [npm-image]: https://img.shields.io/npm/v/alipay-sdk.svg?style=flat-square
-[npm-url]: https://www.npmjs.com/package/alipay-sdk
-[travis-image]: https://img.shields.io/travis/alipay/alipay-sdk/master.svg?style=flat-square
-[travis-url]: https://travis-ci.org/alipay/alipay-sdk.svg?branch=master
-[cov-image]: http://codecov.io/github/alipay/alipay-sdk/coverage.svg?branch=master
-[cov-url]: http://codecov.io/github/alipay/alipay-sdk?branch=master
+[npm-url]: https://npmjs.org/package/alipay-sdk
+[travis-image]: https://img.shields.io/travis/alipay/alipay-sdk-nodejs.svg?style=flat-square
+[travis-url]: https://travis-ci.org/alipay/alipay-sdk-nodejs
+[codecov-image]: https://img.shields.io/codecov/c/github/alipay/alipay-sdk-nodejs.svg?style=flat-square
+[codecov-url]: https://codecov.io/gh/alipay/alipay-sdk-nodejs
+
 
 
 ## 安装
