@@ -20,6 +20,7 @@
     "decamelize": "^2.0.0",
     "is": "^3.2.1",
     "is-json": "^2.0.1",
+    "isuri": "^2.0.3",
     "moment": "^2.16.0",
     "request": "^2.86.0",
     "snakecase-keys": "^1.1.1",

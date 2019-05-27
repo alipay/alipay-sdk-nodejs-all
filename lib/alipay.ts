@@ -8,6 +8,7 @@ import * as is from 'is';
 import * as crypto from 'crypto';
 import * as urllib from 'urllib';
 import * as request from 'request';
+import * as isuri from 'isuri';
 import * as decamelize from 'decamelize';
 import * as camelcaseKeys from 'camelcase-keys';
 import * as snakeCaseKeys from 'snakecase-keys';
@@ -152,7 +153,7 @@ class AlipaySdk {
       // 文件名需要转换驼峰为下划线
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
-      formData[fileKey] = fs.createReadStream(file.path);
+      formData[fileKey] = !isuri.isValid(file.path) ? fs.createReadStream(file.path) : request(file.path);
     });
 
     // 计算签名
