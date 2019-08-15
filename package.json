@@ -7,7 +7,7 @@
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
     "lint": "tslint -p ./tsconfig.json --fix",
     "lint:no-fix": "tslint -p ./tsconfig.json",
-    "test": "npm run tsc && npm run lint && mocha",
+    "test": "mocha",
     "ci": "npm run tsc && npm run lint:no-fix && nyc mocha -t 6000"
   },
   "author": "tudou527<tudou527@gmail.com>",

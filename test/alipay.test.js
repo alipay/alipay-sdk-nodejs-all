@@ -840,6 +840,7 @@ describe('sdk', function() {
 
     describe('verify sign should delete sign_type', function() {
       beforeEach(function() {
+        let notifyAlipayPublicKeyV1 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqObrdC7hrgAVM98tK0nv3hSQRGGKT4lBsQjHiGjeYZjOPIPHR5knm2jnnz/YGIXIofVHkA/tAlBAd5DrY7YpvI4tP5EONLtZKC2ghBMx7McI2wRD0xiqzxOQr1FuhZGJ8/AUokBzJrzY+aGX2xcOrxFYRlFilvVLTXg4LWjR1tdPkO6+i7wQZAIVMClPkwVRZEbaERRHlKqTzv2gGv5rDU8gRoe1LeaN+6BlbTqHWkQcNCUNrA8C6l17XAXGKDsm/9TFWwO8EPHHHCaQdjtV5/FdcWIt+L8SR1ss7EXTjYDFtxcKVv9rEoY1lX8T4mX+GbXfZHraG5NCF1+XioL5JwIDAQAB';
         sdk = new AlipaySdk({
           gateway: GATE_WAY,
           appId: APP_ID,
@@ -849,66 +850,66 @@ describe('sdk', function() {
         });
       });
 
-      it('with sign_type arguments verify success', function() {
+      it.only('with sign_type arguments verify success', function() {
         const postData = {
-          app_id: '2018121762595097',
-          auth_app_id: '2018121762595097',
-          buyer_id: '2088512613526436',
-          buyer_logon_id: '152****6706',
-          buyer_pay_amount: '0.01',
+          gmt_create: '2019-08-15 15:37:55',
           charset: 'utf-8',
-          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
-          gmt_create: '2019-05-23 14:13:56',
-          gmt_payment: '2019-05-23 14:17:13',
-          invoice_amount: '0.01',
-          notify_id: '2019052300222141714026431019971405',
-          notify_time: '2019-05-23 14:17:14',
+          seller_email: 'z97-yuquerevenue@service.aliyun.com',
+          subject: '语雀空间 500人规模',
+          sign:
+           'QUxj7MQ0NQT++AyDbykzTw6iWflrgfY7EIssTaNfJaDkOHqZAFv3hbr97h+z/LCkmnqkBq+V81uHtb3q+i19W1B7FlMNfJB8XPSFD3xdHXEzvj9ccFTE9gxCEG+3oub4TeNe+rrOCt+3cfOFRh5jZzAiZbEZQem3ZMdhIHz/I6TVGNWuPOL4Wr56/Vjq57BLZUPKYpDo7DVfNEYeu0dZ76irMhE4a5FJ26c6qQu9gnG6NmKhtn+tSI6859RKF9bzptbM49klrliVnjBI4m6y7f329Ur9lecC/UlbIo3vKDFmcsLlADKu64FT5jjyRVaVQcP64khZdJwRdzrJ5QxxxQ==',
+          buyer_id: '2088102534368455',
+          invoice_amount: '0.10',
+          notify_id: '2019081500222153759068450559621257',
+          fund_bill_list: [{amount:"0.10",fundChannel:"ALIPAYACCOUNT"}],
           notify_type: 'trade_status_sync',
-          out_trade_no: 'tpxy23962362669658',
-          point_amount: '0.00',
-          receipt_amount: '0.01',
-          seller_email: 'myapp@alitest.com',
-          seller_id: '2088331578818800',
-          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
-          sign_type: 'RSA2',
-          subject: 'tpxy2222896485',
-          total_amount: '0.01',
-          trade_no: '2019052322001426431037869358',
           trade_status: 'TRADE_SUCCESS',
-          version: '1.0'
-        };
+          receipt_amount: '0.10',
+          buyer_pay_amount: '0.10',
+          app_id: '2019073166072302',
+          sign_type: 'RSA2',
+          seller_id: '2088531891668739',
+          gmt_payment: '2019-08-15 15:37:58',
+          notify_time: '2019-08-15 15:37:59',
+          version: '1.0',
+          out_trade_no: '20190815153750722-564-55',
+          total_amount: '0.10',
+          trade_no: '2019081522001468450509133591',
+          auth_app_id: '2019073166072302',
+          buyer_logon_id: 'xud***@126.com',
+          point_amount: '0.00' }
   
         sdk.checkNotifySign(postData).should.eql(true);
       });
 
       it('without sign_type arguments verify success', function() {
         const postData = {
-          app_id: '2018121762595097',
-          auth_app_id: '2018121762595097',
-          buyer_id: '2088512613526436',
-          buyer_logon_id: '152****6706',
-          buyer_pay_amount: '0.01',
+          gmt_create: '2019-08-15 15:56:22',
           charset: 'utf-8',
-          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
-          gmt_create: '2019-05-23 14:13:56',
-          gmt_payment: '2019-05-23 14:17:13',
-          invoice_amount: '0.01',
-          notify_id: '2019052300222141714026431019971405',
-          notify_time: '2019-05-23 14:17:14',
+          seller_email: 'z97-yuquerevenue@service.aliyun.com',
+          subject: '语雀空间 500人规模',
+          sign:
+           'QfTb8tqE1BMhS5qAnXtvsF3/jBkEvu9q9en0pdbBUDDjvKycZhQb7h8GDs4FKfi049PynaNuatxSgLb/nLWZpXyyh0LEWdK2S6Ri7nPwrVgOs08zugLO20vOQz44y3ti2Ncm8/wZts1Fr2gZ7pShnVX3d1B50hbsXnObT1r/U8ONNQjWXd0HIul4TG+Q3fm3svmSvFEy0WnzuhcyHPX5Gm4ELNctL6Qd5YniGJFNcc7kopHYtI/XD9YCKCH6Ct02rzUs9i11C9CsadtZn+WhxF26Dqt9sGEFajkJ8cxUTLi8+VCpLHsgPE8P0y095uQcDdK0YjCh4x7wVSov+lrmOQ==',
+          buyer_id: '2088102534368455',
+          invoice_amount: '0.10',
+          notify_id: '2019081500222155624068450559358070',
+          fund_bill_list: [ { amount: '0.10', fundChannel: 'ALIPAYACCOUNT' } ],
           notify_type: 'trade_status_sync',
-          out_trade_no: 'tpxy23962362669658',
-          point_amount: '0.00',
-          receipt_amount: '0.01',
-          seller_email: 'myapp@alitest.com',
-          seller_id: '2088331578818800',
-          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
-          sign_type: 'RSA2',
-          subject: 'tpxy2222896485',
-          total_amount: '0.01',
-          trade_no: '2019052322001426431037869358',
           trade_status: 'TRADE_SUCCESS',
-          version: '1.0'
-        };
+          receipt_amount: '0.10',
+          buyer_pay_amount: '0.10',
+          app_id: '2019073166072302',
+          sign_type: 'RSA2',
+          seller_id: '2088531891668739',
+          gmt_payment: '2019-08-15 15:56:24',
+          notify_time: '2019-08-15 15:56:25',
+          version: '1.0',
+          out_trade_no: '20190815155618536-564-57',
+          total_amount: '0.10',
+          trade_no: '2019081522001468450512505578',
+          auth_app_id: '2019073166072302',
+          buyer_logon_id: 'xud***@126.com',
+          point_amount: '0.00' };
   
         sdk.checkNotifySign(postData).should.eql(true);
       });
