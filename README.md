@@ -43,5 +43,4 @@ const result = await alipaySdk.exec('alipay.system.oauth.token', {
 - [不包含业务参数](https://www.yuque.com/chenqiu/alipay-node-sdk/without_biz_content)
 - [上传文件](https://www.yuque.com/chenqiu/alipay-node-sdk/file_upload)
 - [页面类接口调用](https://www.yuque.com/chenqiu/alipay-node-sdk/page_api)
-- [AES 加密](https://www.yuque.com/chenqiu/alipay-node-sdk/aes)
 - [通知验签](https://www.yuque.com/chenqiu/alipay-node-sdk/msg_verify)

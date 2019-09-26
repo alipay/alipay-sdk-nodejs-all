@@ -861,7 +861,7 @@ describe('sdk', function() {
           buyer_id: '2088102534368455',
           invoice_amount: '0.10',
           notify_id: '2019081500222153759068450559621257',
-          fund_bill_list: [{amount:"0.10",fundChannel:"ALIPAYACCOUNT"}],
+          fund_bill_list: '[{amount:"0.10",fundChannel:"ALIPAYACCOUNT"}]',
           notify_type: 'trade_status_sync',
           trade_status: 'TRADE_SUCCESS',
           receipt_amount: '0.10',
@@ -878,7 +878,7 @@ describe('sdk', function() {
           auth_app_id: '2019073166072302',
           buyer_logon_id: 'xud***@126.com',
           point_amount: '0.00' }
-  
+
         sdk.checkNotifySign(postData).should.eql(true);
       });
 
