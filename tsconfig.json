@@ -4,9 +4,10 @@
     "module": "commonjs",
     "sourceMap": true,
     "experimentalDecorators": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "declaration": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "declaration": true,
+    "noImplicitAny": false
   },
   "include": ["lib/**/*", "typings/**/*"],
   "exclude": ["node_modules"]

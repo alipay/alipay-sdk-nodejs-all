@@ -1,0 +1,4 @@
+recursive: true
+require: ts-node/register
+timeout: 5000
+diff: true
