@@ -1,0 +1,8 @@
+node_modules
+lib/*.js
+lib/*.js.map
+coverage/
+.vscode/
+lib/*.d.ts
+.nyc_output
+test

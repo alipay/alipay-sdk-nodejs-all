@@ -1,0 +1,9 @@
+language:
+  node_js
+node_js:
+  - '9'
+  - '8'
+script:
+  - npm run ci
+after_script:
+  - npm i codecov && codecov -f coverage/*.json
