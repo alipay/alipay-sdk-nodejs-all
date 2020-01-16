@@ -21,6 +21,8 @@ const pkg = require('../package.json');
 export interface AlipaySdkConfig {
   /** 应用ID */
   appId: string;
+  appCertSn: string;
+  alipayRootCertSn: string;
   /**
    * 应用私钥字符串
    * RSA签名验签工具：https://docs.open.alipay.com/291/106097）
@@ -113,9 +115,9 @@ class AlipaySdk {
     let requestUrl = url;
     // 需要放在 url 中的参数列表
     const urlArgs = [
-      'app_id', 'method', 'format', 'charset',
-      'sign_type', 'sign', 'timestamp', 'version',
-      'notify_url', 'return_url', 'auth_token', 'app_auth_token',
+        'app_id', 'method', 'format', 'app_cert_sn','charset','alipay_root_cert_sn',
+        'sign_type', 'sign', 'timestamp', 'version',
+        'notify_url', 'return_url', 'auth_token', 'app_auth_token',
     ];
 
     for (const key in params) {

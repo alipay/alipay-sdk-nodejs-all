@@ -29,6 +29,8 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   const signParams = Object.assign({
     method,
     appId: config.appId,
+    appCertSn: config.appCertSn,
+    alipayRootCertSn: config.alipayRootCertSn,
     charset: config.charset,
     version: config.version,
     signType: config.signType,
