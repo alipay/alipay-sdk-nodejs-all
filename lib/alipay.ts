@@ -115,9 +115,9 @@ class AlipaySdk {
     let requestUrl = url;
     // 需要放在 url 中的参数列表
     const urlArgs = [
-        'app_id', 'method', 'format', 'app_cert_sn','charset','alipay_root_cert_sn',
-        'sign_type', 'sign', 'timestamp', 'version',
-        'notify_url', 'return_url', 'auth_token', 'app_auth_token',
+      'app_id', 'method', 'format', 'app_cert_sn', 'charset', 'alipay_root_cert_sn',
+      'sign_type', 'sign', 'timestamp', 'version',
+      'notify_url', 'return_url', 'auth_token', 'app_auth_token',
     ];
 
     for (const key in params) {
