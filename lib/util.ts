@@ -26,7 +26,7 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   const bizContent = params.bizContent || null;
   delete params.bizContent;
 
-  const signParams = Object.assign({
+  let signParams = Object.assign({
     method,
     appId: config.appId,
     charset: config.charset,
@@ -34,7 +34,12 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     signType: config.signType,
     timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
   }, params);
-
+  if (config.appCertSn && config.alipayRootCertSn) {
+    signParams = Object.assign({
+        appCertSn: config.appCertSn,
+        alipayRootCertSn: config.alipayRootCertSn,
+    }, signParams);
+}
   if (bizContent) {
     signParams.bizContent = JSON.stringify(snakeCaseKeys(bizContent));
   }

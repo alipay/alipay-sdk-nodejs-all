@@ -23,11 +23,20 @@
 ```
 // TypeScript
 import AlipaySdk from 'alipay-sdk';
-
+// 普通公钥模式
 const alipaySdk = new AlipaySdk({
   // 参考下方 SDK 配置
   appId: '2016123456789012',
   privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
+});
+// 证书模式
+const alipaySdk = new AlipaySdk({
+  // 参考下方 SDK 配置
+  appId: '2016123456789012',
+  privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
+  alipayRootCertPath: path.join(__dirname,'../fixtures/alipayRootCert.crt'),
+  appCertPath: path.join(__dirname,'../fixtures/appCertPublicKey.crt'),
+  alipayPublicCertPath: path.join(__dirname,'../fixtures/alipayCertPublicKey_RSA2.crt'),
 });
 
 const result = await alipaySdk.exec('alipay.system.oauth.token', {
