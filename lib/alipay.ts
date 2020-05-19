@@ -95,11 +95,8 @@ class AlipaySdk {
 
     const privateKeyType = config.keyType === 'PKCS8' ? 'PRIVATE KEY' : 'RSA PRIVATE KEY';
     config.privateKey = this.formatKey(config.privateKey, privateKeyType);
-    // 普通公钥模式和证书模式二选其一
-    if (config.alipayPublicKey) {
-      // 普通公钥模式，传入了支付宝公钥
-      config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
-    } else {
+    // 普通公钥模式和证书模式二选其一，传入了证书路径或内容认为是证书模式
+    if (config.appCertPath || config.appCertContent) {
       // 证书模式，优先处理传入了证书内容的情况，其次处理传入证书文件路径的情况
       // 应用公钥证书序列号提取
       config.appCertSn = is.empty(config.appCertContent) ? getSNFromPath(config.appCertPath, false)
@@ -113,6 +110,9 @@ class AlipaySdk {
       config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ? loadPublicKeyFromPath(config.alipayPublicCertPath)
         : loadPublicKey(config.alipayPublicCertContent);
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
+    } else if(config.alipayPublicKey) {
+        // 普通公钥模式，传入了支付宝公钥
+        config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     }
     this.config = Object.assign({
       urllib,
