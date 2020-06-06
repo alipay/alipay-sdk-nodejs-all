@@ -36,6 +36,8 @@ export interface AlipaySdkConfig {
   timeout?: number;
   /** 是否把网关返回的下划线 key 转换为驼峰写法 */
   camelcase?: boolean;
+  /** 是否把发送到网关的驼峰写法转换为下划线 key */
+  deCamelcase?: boolean;
   /** 编码（只支持 utf-8） */
   charset?: 'utf-8';
   /** api版本 */
