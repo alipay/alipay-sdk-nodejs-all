@@ -2,6 +2,8 @@
 
 蚂蚁金服开放平台 SDK
 
+还没搞定，大佬们放过，只是先fork过来康康。
+
 [![NPM version][npm-image]][npm-url]
 [![build status][travis-image]][travis-url]
 [![Test coverage][codecov-image]][codecov-url]
