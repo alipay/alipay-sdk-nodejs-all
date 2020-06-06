@@ -28,8 +28,12 @@
   },
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
-    "include": [ "lib" ],
-    "extension": [ ".ts" ],
+    "include": [
+      "lib"
+    ],
+    "extension": [
+      ".ts"
+    ],
     "check-coverage": true,
     "reporter": [
       "text-summary",

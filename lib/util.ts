@@ -36,11 +36,11 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   }, params);
 
   if (bizContent) {
-    signParams.bizContent = config.deCamelcase? JSON.stringify(bizContent): JSON.stringify(snakeCaseKeys(bizContent));
+    signParams.bizContent = config.deCamelcase ? JSON.stringify(bizContent) : JSON.stringify(snakeCaseKeys(bizContent));
   }
 
   // params key 根据 deCamelcase 判断驼峰转下划线
-  const decamelizeParams = config.deCamelcase? bizContent: snakeCaseKeys(signParams);
+  const decamelizeParams = config.deCamelcase ? bizContent : snakeCaseKeys(signParams);
 
   // 排序
   const signStr = Object.keys(decamelizeParams).sort().map((key) => {
