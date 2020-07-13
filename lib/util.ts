@@ -58,7 +58,28 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   return Object.assign(decamelizeParams, { sign });
 }
 
+/**
+ * 解密获取到的 AES 加密信息，例如用于解密 `获取会员手机号` 信息
+ * @param content 密文字符串
+ * @param decryptKey 解密密钥
+ */
+function aesDecryptContent(content: string, decryptKey: string): string {
+  const iv = Buffer.from(Array(16).fill(0));
+  let encryptedText = Buffer.from(content, 'base64');
+  let decipher = crypto.createDecipheriv(
+    'aes-128-cbc',
+    Buffer.from(decryptKey, 'base64'),
+    iv
+  );
+  let decrypted = decipher.update(encryptedText);
+
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+  return decrypted.toString();
+}
+
 export {
+  aesDecryptContent,
   sign,
   ALIPAY_ALGORITHM_MAPPING,
 };
