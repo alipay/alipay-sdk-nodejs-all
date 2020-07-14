@@ -65,11 +65,11 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
  */
 function aesDecryptContent(content: string, decryptKey: string): string {
   const iv = Buffer.from(Array(16).fill(0));
-  let encryptedText = Buffer.from(content, 'base64');
-  let decipher = crypto.createDecipheriv(
+  const encryptedText = Buffer.from(content, 'base64');
+  const decipher = crypto.createDecipheriv(
     'aes-128-cbc',
     Buffer.from(decryptKey, 'base64'),
-    iv
+    iv,
   );
   let decrypted = decipher.update(encryptedText);
 
