@@ -16,20 +16,27 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^9.6.0",
+    "bent": "^7.3.9",
     "camelcase-keys": "^4.2.0",
     "decamelize": "^2.0.0",
+    "delay": "^4.4.0",
+    "form-data": "^3.0.0",
     "is": "^3.2.1",
     "is-json": "^2.0.1",
     "isuri": "^2.0.3",
     "moment": "^2.16.0",
-    "request": "^2.86.0",
     "snakecase-keys": "^1.1.1",
+    "to-snake-case": "^1.0.0",
     "urllib": "^2.17.0"
   },
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
-    "include": [ "lib" ],
-    "extension": [ ".ts" ],
+    "include": [
+      "lib"
+    ],
+    "extension": [
+      ".ts"
+    ],
     "check-coverage": true,
     "reporter": [
       "text-summary",
@@ -47,9 +54,9 @@
     "nyc": "^14.1.1",
     "query-string": "^6.5.0",
     "should": "^11.1.1",
-    "sinon": "^1.17.7",
+    "sinon": "^9.0.3",
     "tslint": "^5.8.0",
     "tslint-config-airbnb": "^5.4.2",
-    "typescript": "^2.6.2"
+    "typescript": "^3.9.7"
   }
 }
