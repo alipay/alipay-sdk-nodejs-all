@@ -6,31 +6,20 @@
 import * as fs from 'fs';
 import * as is from 'is';
 import * as crypto from 'crypto';
-import * as urllib from 'urllib';
 import * as bent from 'bent';
-import * as delay from 'delay';
 import * as isuri from 'isuri';
 import * as decamelize from 'decamelize';
 import * as snakeCase from 'to-snake-case';
 import * as camelcaseKeys from 'camelcase-keys';
+import formurlencoded from 'form-urlencoded';
 
 import * as FormData from 'form-data';
 import { Stream } from 'stream';
 
 import AliPayForm from './form';
-import { sign, ALIPAY_ALGORITHM_MAPPING } from './util';
+import { expire, sign, ALIPAY_ALGORITHM_MAPPING, TimeoutError } from './util';
 
 const pkg = require('../package.json');
-
-// remain compatible with request error https://github.com/request/request/blob/3c0cddc7c8eb60b470e9519da85896ed7ee0081e/request.js#L816
-export class TimeoutError extends Error {
-  code = 'ESOCKETTIMEDOUT';
-  connect = false;
-
-  constructor() {
-    super('ESOCKETTIMEDOUT');
-  }
-}
 
 export interface AlipaySdkConfig {
   /** 应用ID */
@@ -54,7 +43,6 @@ export interface AlipaySdkConfig {
   charset?: 'utf-8';
   /** api版本 */
   version?: '1.0';
-  urllib?: any;
   /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */
   keyType?: 'PKCS1' | 'PKCS8';
 }
@@ -83,7 +71,7 @@ export interface IRequestOption {
 class AlipaySdk {
   private sdkVersion: string;
   private getStream: (url: string) => Promise<Stream>;
-  private postString: (url: string, formData: FormData, headers: Record<string, string>) => Promise<string>;
+  private postString: (url: string, formDataOrBody: FormData | string, headers: Record<string, string>) => Promise<string>;
   public config: AlipaySdkConfig;
 
   constructor(config: AlipaySdkConfig) {
@@ -97,7 +85,6 @@ class AlipaySdk {
     }
 
     this.config = Object.assign({
-      urllib,
       gateway: 'https://openapi.alipay.com/gateway.do',
       timeout: 5000,
       camelcase: true,
@@ -109,7 +96,7 @@ class AlipaySdk {
     this.sdkVersion = `alipay-sdk-nodejs-${pkg.version}`;
 
     this.getStream = bent();
-    this.postString = bent('POST', 'string', 200, 201);
+    this.postString = bent('POST', 'string', 200, { 'user-agent': this.sdkVersion });
   }
 
   // 格式化 key
@@ -191,10 +178,12 @@ class AlipaySdk {
     infoLog && infoLog('[AlipaySdk]start exec url: %s, method: %s, params: %s',
       url, method, JSON.stringify(signParams));
 
-    return Promise.race([
-        delay(config.timeout).then(() => Promise.reject(new TimeoutError())),
-        this.postString(url, formData, { 'user-agent': this.sdkVersion, 'content-type': 'multipart/form-data' }),
-    ]).catch((err: Error) => {
+    return expire(
+      config.timeout,
+      this.postString(url, formData, {
+        'content-type': 'multipart/form-data'
+      })
+    ).catch((err: Error) => {
       err.message = '[AlipaySdk]exec error';
       
       errorLog && errorLog(err);
@@ -363,49 +352,53 @@ class AlipaySdk {
       url, method, JSON.stringify(execParams));
 
     return new Promise((resolve, reject) => {
-      config.urllib.request(url, {
-        method: 'POST',
-        data: execParams,
-        // 按 text 返回（为了验签）
-        dataType: 'text',
-        timeout: config.timeout,
-        headers: { 'user-agent': this.sdkVersion },
-      })
-      .then((ret: { status: number, data: string }) => {
-        infoLog && infoLog('[AlipaySdk]exec response: %s', ret);
+      expire(
+        config.timeout,
+        this.postString(url, formurlencoded(execParams), {
+            'content-type': 'application/x-www-form-urlencoded'
+        })
+      )
+      .then((body) => {
+        infoLog && infoLog('[AlipaySdk]exec response: %s', { status: 200, data: body });
 
-        if (ret.status === 200) {
-          /**
-           * 示例响应格式
-           * {"alipay_trade_precreate_response":
-           *  {"code": "10000","msg": "Success","out_trade_no": "111111","qr_code": "https:\/\/"},
-           *  "sign": "abcde="
-           * }
-           * 或者
-           * {"error_response":
-           *  {"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"},
-           * }
-           */
-          const result = JSON.parse(ret.data);
-          const responseKey = `${method.replace(/\./g, '_')}_response`;
-          const data = result[responseKey];
+        /**
+         * 示例响应格式
+         * {"alipay_trade_precreate_response":
+         *  {"code": "10000","msg": "Success","out_trade_no": "111111","qr_code": "https:\/\/"},
+         *  "sign": "abcde="
+         * }
+         * 或者
+         * {"error_response":
+         *  {"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"},
+         * }
+         */
+        const result = JSON.parse(body);
+        const responseKey = `${method.replace(/\./g, '_')}_response`;
+        const data = result[responseKey];
 
-          if (data) {
-            // 按字符串验签
-            const validateSuccess = option.validateSign ? this.checkResponseSign(ret.data, responseKey) : true;
+        if (data) {
+          // 按字符串验签
+          const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
 
-            if (validateSuccess) {
-              resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-            } else {
-              reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
-            }
+          if (validateSuccess) {
+            resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+          } else {
+            reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]验签失败' });
           }
-
-          reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
         }
 
-        reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
-      })
+        reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+      }, err => err instanceof TimeoutError
+        ? Promise.reject(err)
+        : err.text().then((body: string) => {
+          infoLog && infoLog('[AlipaySdk]exec response: %s', { status: err.status, data: body });
+
+            reject({
+                serverResult: { status: err.status, data: body },
+                errorMessage: '[AlipaySdk]HTTP 请求错误'
+            });
+        })
+      )
       .catch((err) => {
         err.message = '[AlipaySdk]exec error';
         errorLog && errorLog(err);
