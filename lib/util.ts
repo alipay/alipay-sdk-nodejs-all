@@ -59,7 +59,8 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   return Object.assign(decamelizeParams, { sign });
 }
 
-// remain compatible with request error https://github.com/request/request/blob/3c0cddc7c8eb60b470e9519da85896ed7ee0081e/request.js#L816
+// remain compatible with request error
+// https://github.com/request/request/blob/3c0cddc7c8eb60b470e9519da85896ed7ee0081e/request.js#L816
 export class TimeoutError extends Error {
   code = 'ESOCKETTIMEDOUT';
   connect = false;
@@ -72,7 +73,7 @@ export class TimeoutError extends Error {
 function expire(timeout: number, request: Promise<string>) {
   return Promise.race([
     delay(timeout).then(() => Promise.reject(new TimeoutError())),
-    request
+    request,
   ]);
 }
 

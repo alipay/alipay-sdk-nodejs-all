@@ -71,7 +71,12 @@ export interface IRequestOption {
 class AlipaySdk {
   private sdkVersion: string;
   private getStream: (url: string) => Promise<Stream>;
-  private postString: (url: string, formDataOrBody: FormData | string, headers: Record<string, string>) => Promise<string>;
+  private postString: (
+      url: string,
+      formDataOrBody: FormData | string,
+      headers: Record<string, string>,
+  ) => Promise<string>;
+
   public config: AlipaySdkConfig;
 
   constructor(config: AlipaySdkConfig) {
@@ -140,7 +145,7 @@ class AlipaySdk {
   private async multipartExec(method: string, option: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
     const config = this.config;
     let signParams = {} as { [key: string]: string | Object };
-    let formData = new FormData();
+    const formData = new FormData();
     const infoLog =  (option.log && is.fn(option.log.info)) ? option.log.info : null;
     const errorLog =  (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
@@ -150,13 +155,13 @@ class AlipaySdk {
 
       const name = snakeCase(field.name);
       const values = field.value instanceof Array ? field.value : [field.value];
-      values.forEach(value => {
+      values.forEach((value) => {
         if (value && value.hasOwnProperty('value') && value.hasOwnProperty('options')) {
           formData.append(name, value.value, value.options);
         } else {
           formData.append(name, value);
         }
-      })
+      });
     });
 
     // 签名方法中使用的 key 是驼峰
@@ -167,7 +172,7 @@ class AlipaySdk {
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
       return (!isuri.isValid(file.path) ? Promise.resolve(fs.createReadStream(file.path)) : this.getStream(file.path))
-        .then(file => { formData.append(fileKey, file); });
+        .then((file) => { formData.append(fileKey, file); });
     }));
 
     // 计算签名
@@ -181,11 +186,11 @@ class AlipaySdk {
     return expire(
       config.timeout,
       this.postString(url, formData, {
-        'content-type': 'multipart/form-data'
-      })
+        'content-type': 'multipart/form-data',
+      }),
     ).catch((err: Error) => {
       err.message = '[AlipaySdk]exec error';
-      
+
       errorLog && errorLog(err);
 
       return Promise.reject(err);
@@ -202,9 +207,9 @@ class AlipaySdk {
         const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
         if (validateSuccess) {
           return Promise.resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-        } else {
-          Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
         }
+        Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+
       }
 
       Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
@@ -355,8 +360,8 @@ class AlipaySdk {
       expire(
         config.timeout,
         this.postString(url, formurlencoded(execParams), {
-            'content-type': 'application/x-www-form-urlencoded'
-        })
+          'content-type': 'application/x-www-form-urlencoded',
+        }),
       )
       .then((body) => {
         infoLog && infoLog('[AlipaySdk]exec response: %s', { status: 200, data: body });
@@ -393,11 +398,11 @@ class AlipaySdk {
         : err.text().then((body: string) => {
           infoLog && infoLog('[AlipaySdk]exec response: %s', { status: err.status, data: body });
 
-            reject({
-                serverResult: { status: err.status, data: body },
-                errorMessage: '[AlipaySdk]HTTP 请求错误'
-            });
-        })
+          reject({
+            serverResult: { status: err.status, data: body },
+            errorMessage: '[AlipaySdk]HTTP 请求错误',
+          });
+        }),
       )
       .catch((err) => {
         err.message = '[AlipaySdk]exec error';
