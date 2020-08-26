@@ -1,10 +1,11 @@
 {
   "name": "alipay-sdk",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "蚂蚁金服开放平台 node sdk",
   "main": "lib/alipay.js",
   "scripts": {
-    "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "tsc": "tsc -p ./tsconfig.json",
+    "tsc:watch": "tsc -w",
     "lint": "tslint -p ./tsconfig.json --fix",
     "lint:no-fix": "tslint -p ./tsconfig.json",
     "test": "mocha",
@@ -15,23 +16,29 @@
   "bugs": "https://github.com/ali-sdk/alipay-sdk/issues",
   "license": "ISC",
   "dependencies": {
+    "@fidm/x509": "^1.2.1",
     "@types/node": "^9.6.0",
+    "bignumber.js": "^9.0.0",
     "camelcase-keys": "^4.2.0",
+    "crypto-js": "^4.0.0",
     "decamelize": "^2.0.0",
     "is": "^3.2.1",
     "is-json": "^2.0.1",
     "isuri": "^2.0.3",
+    "lodash": "^4.17.20",
     "moment": "^2.16.0",
     "request": "^2.86.0",
     "snakecase-keys": "^1.1.1",
-    "urllib": "^2.17.0",
-    "@fidm/x509": "^1.2.1",
-    "bignumber.js": "^9.0.0"
+    "urllib": "^2.17.0"
   },
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
-    "include": [ "lib" ],
-    "extension": [ ".ts" ],
+    "include": [
+      "lib"
+    ],
+    "extension": [
+      ".ts"
+    ],
     "check-coverage": true,
     "reporter": [
       "text-summary",

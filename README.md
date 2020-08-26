@@ -28,7 +28,10 @@ const alipaySdk = new AlipaySdk({
   // 参考下方 SDK 配置
   appId: '2016123456789012',
   privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
+  //可设置AES密钥，调用AES加解密相关接口时需要（可选）
+  encryptKey: '请填写您的AES密钥，例如：aa4BtZ4tspm2wnXLb1ThQA'
 });
+
 // 证书模式
 const alipaySdk = new AlipaySdk({
   // 参考下方 SDK 配置
@@ -39,10 +42,20 @@ const alipaySdk = new AlipaySdk({
   alipayPublicCertPath: path.join(__dirname,'../fixtures/alipayCertPublicKey_RSA2.crt'),
 });
 
+// 无需加密的接口
 const result = await alipaySdk.exec('alipay.system.oauth.token', {
 	grantType: 'authorization_code',
 	code: 'code',
 	refreshToken: 'token'
+});
+
+// 需要AES加解密的接口
+await alipaySdk.exec('alipay.open.auth.app.aes.set', {
+  bizContent: {
+    merchantAppId: '2021001170662064'
+  },
+  // 自动AES加解密
+  needEncrypt: true
 });
 ```
 
