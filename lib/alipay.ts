@@ -14,7 +14,7 @@ import * as camelcaseKeys from 'camelcase-keys';
 import * as snakeCaseKeys from 'snakecase-keys';
 
 import AliPayForm from './form';
-import { sign, ALIPAY_ALGORITHM_MAPPING } from './util';
+import { sign, ALIPAY_ALGORITHM_MAPPING, aseDecrypt } from './util';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil';
 
 const pkg = require('../package.json');
@@ -45,23 +45,25 @@ export interface AlipaySdkConfig {
   /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */
   keyType?: 'PKCS1' | 'PKCS8';
   /** 应用公钥证书文件路径 */
-  appCertPath?: string,
+  appCertPath?: string;
   /** 应用公钥证书文件内容 */
-  appCertContent?: string | Buffer,
+  appCertContent?: string | Buffer;
   /** 应用公钥证书sn */
-  appCertSn?: string,
+  appCertSn?: string;
   /** 支付宝根证书文件路径 */
-  alipayRootCertPath?: string,
+  alipayRootCertPath?: string;
   /** 支付宝根证书文件内容 */
-  alipayRootCertContent?: string | Buffer,
+  alipayRootCertContent?: string | Buffer;
   /** 支付宝根证书sn */
-  alipayRootCertSn?: string,
+  alipayRootCertSn?: string;
   /** 支付宝公钥证书文件路径 */
-  alipayPublicCertPath?: string,
+  alipayPublicCertPath?: string;
   /** 支付宝公钥证书文件内容 */
-  alipayPublicCertContent?: string | Buffer,
+  alipayPublicCertContent?: string | Buffer;
   /** 支付宝公钥证书sn */
-  alipayCertSn?: string,
+  alipayCertSn?: string;
+  /** AES密钥，调用AES加解密相关接口时需要 */
+  encryptKey?: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -74,6 +76,8 @@ export interface AlipaySdkCommonResult {
 export interface IRequestParams {
   [key: string]: any;
   bizContent?: any;
+  // 自动AES加解密
+  needEncrypt?:boolean;
 }
 
 export interface IRequestOption {
@@ -110,9 +114,9 @@ class AlipaySdk {
       config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ? loadPublicKeyFromPath(config.alipayPublicCertPath)
         : loadPublicKey(config.alipayPublicCertContent);
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
-    } else if(config.alipayPublicKey) {
+    } else if (config.alipayPublicKey) {
         // 普通公钥模式，传入了支付宝公钥
-        config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
+      config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     }
     this.config = Object.assign({
       urllib,
@@ -150,7 +154,7 @@ class AlipaySdk {
       'app_id', 'method', 'format', 'charset',
       'sign_type', 'sign', 'timestamp', 'version',
       'notify_url', 'return_url', 'auth_token', 'app_auth_token',
-      'appCertSn', 'alipayRootCertSn'
+      'appCertSn', 'alipayRootCertSn',
     ];
 
     for (const key in params) {
@@ -272,9 +276,9 @@ class AlipaySdk {
       resolve(`
         <form action="${url}" method="post" name="${formName}" id="${formName}">
           ${Object.keys(execParams).map((key) => {
-        const value = String(execParams[key]).replace(/\"/g, '&quot;');
-        return `<input type="hidden" name="${key}" value="${value}" />`;
-      }).join('')}
+            const value = String(execParams[key]).replace(/\"/g, '&quot;');
+            return `<input type="hidden" name="${key}" value="${value}" />`;
+          }).join('')}
         </form>
         <script>document.forms["${formName}"].submit();</script>
       `);
@@ -401,9 +405,13 @@ class AlipaySdk {
              */
             const result = JSON.parse(ret.data);
             const responseKey = `${method.replace(/\./g, '_')}_response`;
-            const data = result[responseKey];
+            let data = result[responseKey];
 
             if (data) {
+              if (params.needEncrypt) {
+                data = aseDecrypt(data, config.encryptKey);
+              }
+
               // 按字符串验签
               const validateSuccess = option.validateSign ? this.checkResponseSign(ret.data, responseKey) : true;
 
