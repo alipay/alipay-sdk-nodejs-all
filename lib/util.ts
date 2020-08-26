@@ -38,7 +38,7 @@ function aesEncrypt(data, aesKey) {
 }
 
 // 解密
-function aseDecrypt(data, aesKey) {
+function aesDecrypt(data, aesKey) {
   const {
     iv,
     key,
@@ -117,5 +117,5 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
 export {
   sign,
   ALIPAY_ALGORITHM_MAPPING,
-  aseDecrypt,
+  aesDecrypt,
 };

@@ -14,7 +14,7 @@ import * as camelcaseKeys from 'camelcase-keys';
 import * as snakeCaseKeys from 'snakecase-keys';
 
 import AliPayForm from './form';
-import { sign, ALIPAY_ALGORITHM_MAPPING, aseDecrypt } from './util';
+import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt } from './util';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil';
 
 const pkg = require('../package.json');
@@ -409,7 +409,7 @@ class AlipaySdk {
 
             if (data) {
               if (params.needEncrypt) {
-                data = aseDecrypt(data, config.encryptKey);
+                data = aesDecrypt(data, config.encryptKey);
               }
 
               // 按字符串验签
