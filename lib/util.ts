@@ -7,6 +7,8 @@ import * as crypto from 'crypto';
 import * as moment from 'moment';
 import * as iconv from 'iconv-lite';
 import * as snakeCaseKeys from 'snakecase-keys';
+import * as CryptoJS from 'crypto-js';
+import { omit, padEnd } from 'lodash';
 
 import { AlipaySdkConfig } from './alipay';
 
@@ -14,6 +16,40 @@ const ALIPAY_ALGORITHM_MAPPING = {
   RSA: 'RSA-SHA1',
   RSA2: 'RSA-SHA256',
 };
+
+function parseKey(aesKey) {
+  return {
+    iv: CryptoJS.enc.Hex.parse(padEnd('', 32, '0')),
+    key: CryptoJS.enc.Base64.parse(aesKey),
+  };
+}
+
+// 先加密后加签
+function aesEncrypt(data, aesKey) {
+  const {
+    iv,
+    key,
+  } = parseKey(aesKey);
+  const cipherText = CryptoJS.AES.encrypt(JSON.stringify(data), key, {
+    iv,
+  }).toString();
+
+  return cipherText;
+}
+
+// 解密
+function aesDecrypt(data, aesKey) {
+  const {
+    iv,
+    key,
+  } = parseKey(aesKey);
+  const bytes = CryptoJS.AES.decrypt(data, key, {
+    iv,
+  });
+  const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+
+  return decryptedData;
+}
 
 /**
  * 签名
@@ -23,20 +59,40 @@ const ALIPAY_ALGORITHM_MAPPING = {
  * @param {object} config sdk 配置
  */
 function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
-  const bizContent = params.bizContent || null;
-  delete params.bizContent;
 
-  const signParams = Object.assign({
+  let signParams = Object.assign({
     method,
     appId: config.appId,
     charset: config.charset,
     version: config.version,
     signType: config.signType,
     timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-  }, params);
+  }, omit(params, ['bizContent', 'needEncrypt']));
+
+  if (config.appCertSn && config.alipayRootCertSn) {
+    signParams = Object.assign({
+      appCertSn: config.appCertSn,
+      alipayRootCertSn: config.alipayRootCertSn,
+    }, signParams);
+  }
+
+  const bizContent = params.bizContent;
 
   if (bizContent) {
-    signParams.bizContent = JSON.stringify(snakeCaseKeys(bizContent));
+    // AES加密
+    if (params.needEncrypt) {
+      if (!config.encryptKey) {
+        throw new Error('请设置encryptKey参数');
+      }
+
+      signParams.encryptType = 'AES';
+      signParams.bizContent = aesEncrypt(
+        snakeCaseKeys(bizContent),
+        config.encryptKey,
+      );
+    } else {
+      signParams.bizContent = JSON.stringify(snakeCaseKeys(bizContent));
+    }
   }
 
   // params key 驼峰转下划线
@@ -61,4 +117,5 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
 export {
   sign,
   ALIPAY_ALGORITHM_MAPPING,
+  aesDecrypt,
 };

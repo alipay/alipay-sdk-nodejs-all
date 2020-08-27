@@ -51,7 +51,7 @@ describe('sdk', function() {
         (e.toString().indexOf('config.privateKey is required') > -1).should.eql(true);
       }
     });
-    
+
     it('formatKey', function() {
       const noWrapperPrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-no-wrapper.pem', 'ascii');
       const noWrapperPublicKey = fs.readFileSync(__dirname + '/fixtures/alipay-public-key-no-wrapper.pem', 'ascii');
@@ -65,7 +65,7 @@ describe('sdk', function() {
       alipaySdk.config.privateKey.should.eql(`-----BEGIN RSA PRIVATE KEY-----\n${noWrapperPrivateKey}\n-----END RSA PRIVATE KEY-----`);
       alipaySdk.config.alipayPublicKey.should.eql(`-----BEGIN PUBLIC KEY-----\n${noWrapperPublicKey}\n-----END PUBLIC KEY-----`);
     });
-    
+
     it('formatKey with pkcs8', function() {
       const pkcs8PrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-pkcs8.pem', 'ascii');
       const alipaySdk = new AlipaySdk({
@@ -92,6 +92,7 @@ describe('sdk', function() {
         alipayPublicKey,
         camelcase: true,
         timeout: 10000,
+        encryptKey: 'aYA0GP8JEW+D7/UFaskCWA=='
       })
     });
 
@@ -269,6 +270,40 @@ describe('sdk', function() {
           done();
         }).catch(done)
     });
+
+    it('execute needEncrypt', function (done) {
+      sandbox.stub(urllib, "request", function () {
+        return Promise.resolve({
+          status: 200,
+          data: JSON.stringify({
+            alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
+            sign: "abcde=",
+          }),
+        });
+      });
+
+      var bizContent = {
+        merchantAppId: '2021001170662064',
+      }
+
+      sdk
+        .exec('alipay.open.auth.app.aes.set', {
+          bizContent,
+          needEncrypt: true
+        })
+        .then(ret => {
+          ret.should.eql({
+            code: '10000',
+            msg: 'Success',
+            aesKey: 'cW8mcZgoMGUVp5g7uv7bHw=='
+          })
+
+          done()
+        }).catch((error) => {
+          error.should.eql(false)
+          done()
+        })
+    })
 
     it('error log enable', function(done) {
       const infoLog = [];
@@ -595,7 +630,7 @@ describe('sdk', function() {
         }).catch(done)
     });
   });
-  
+
   describe('pageExec', function() {
     let sdk;
 
@@ -729,9 +764,9 @@ describe('sdk', function() {
 
     it('include \\r\\n\\s', function() {
       const originStr = `{"alipay_offline_material_image_upload_response"
-        :  
+        :
         {"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
-        
+
           "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
 
       const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
@@ -741,9 +776,9 @@ describe('sdk', function() {
 
     it('include sign key in data', function() {
       const originStr = `{"alipay_offline_material_image_upload_response"
-        :  
+        :
         {"code":"10000","sign":"xxx","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
-        
+
           "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
 
       const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
@@ -850,7 +885,7 @@ describe('sdk', function() {
         });
       });
 
-      it.only('with sign_type arguments verify success', function() {
+      it('with sign_type arguments verify success', function() {
         const postData = {
           gmt_create: '2019-08-15 15:37:55',
           charset: 'utf-8',
@@ -910,7 +945,7 @@ describe('sdk', function() {
           auth_app_id: '2019073166072302',
           buyer_logon_id: 'xud***@126.com',
           point_amount: '0.00' };
-  
+
         sdk.checkNotifySign(postData).should.eql(true);
       });
 
@@ -942,7 +977,7 @@ describe('sdk', function() {
           trade_status: 'TRADE_SUCCESS',
           version: '1.0'
         };
-  
+
         sdk.checkNotifySign(postData).should.eql(false);
       });
     });
@@ -973,10 +1008,10 @@ describe('sdk', function() {
           total_price: '0.00',
           version: '1.0',
         };
-  
+
         sdk.checkNotifySign(postData).should.eql(true);
       });
-  
+
       it('without sign_type arguments verify success', function() {
         const postData = {
           app_id: '2017122801303261',
@@ -1001,7 +1036,7 @@ describe('sdk', function() {
           total_price: '0.00',
           version: '1.0',
         };
-  
+
         sdk.checkNotifySign(postData).should.eql(true);
       });
 
@@ -1030,11 +1065,11 @@ describe('sdk', function() {
           total_price: '0.00',
           version: '1.0',
         };
-  
+
         sdk.checkNotifySign(postData).should.eql(false);
       });
     });
-    
+
   });
 
   describe('execute, pkcs8', function() {
