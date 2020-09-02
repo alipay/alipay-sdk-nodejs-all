@@ -64,6 +64,8 @@ export interface AlipaySdkConfig {
   alipayCertSn?: string;
   /** AES密钥，调用AES加解密相关接口时需要 */
   encryptKey?: string;
+  /** 服务器地址 */
+  serverUrl?: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -155,6 +157,7 @@ class AlipaySdk {
       'sign_type', 'sign', 'timestamp', 'version',
       'notify_url', 'return_url', 'auth_token', 'app_auth_token',
       'appCertSn', 'alipayRootCertSn',
+      'server_url',
     ];
 
     for (const key in params) {

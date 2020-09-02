@@ -67,6 +67,7 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     version: config.version,
     signType: config.signType,
     timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
+    serverUrl: config.serverUrl,
   }, omit(params, ['bizContent', 'needEncrypt']));
 
   if (config.appCertSn && config.alipayRootCertSn) {

@@ -7,6 +7,7 @@ const sinon = require('sinon');
 const urllib = require('urllib');
 const moment = require('moment');
 const request = require('request');
+const _ = require('lodash')
 
 const FormData = require('../lib/form').default;
 const AlipaySdk = require('../lib/alipay').default;
@@ -1123,4 +1124,39 @@ describe('sdk', function() {
         }).catch(done)
     });
   });
+
+  it('配置了config.serverUrl', (done) => {
+    const serverUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net'
+    const sdk = new AlipaySdk({
+      appId: APP_ID,
+      privateKey: privateKey,
+      signType: 'RSA2',
+      alipayPublicKey,
+      camelcase: true,
+      serverUrl
+    })
+
+    let requestParams =  null
+
+    sandbox.stub(urllib, 'request', function(params) {
+      requestParams = params
+
+      return new Promise(function(reject) {
+        reject(new Error(''))
+      });
+    });
+
+    sdk.exec('alipay.security.risk.content.analyze', {
+      bizContent: {
+        account_type: 'MOBILE_NO',
+        account: '13812345678',
+        version: '2.0',
+      }
+    }).catch(() => {
+      const flag = requestParams.indexOf(decodeURIComponent(serverUrl)) !== '-1'
+
+      flag.should.eql(true)
+      done()
+    })
+  })
 });
