@@ -76,8 +76,8 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     }, signParams);
   }
 
-  if (config.serverUrl) {
-    signParams.serverUrl = config.serverUrl;
+  if (config.wsServiceUrl) {
+    signParams.wsServiceUrl = config.wsServiceUrl;
   }
 
   const bizContent = params.bizContent;

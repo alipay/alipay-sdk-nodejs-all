@@ -1125,15 +1125,15 @@ describe('sdk', function() {
     });
   });
 
-  it('配置了config.serverUrl', (done) => {
-    const serverUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net'
+  it('配置了config.wsServiceUrl', (done) => {
+    const wsServiceUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net'
     const sdk = new AlipaySdk({
       appId: APP_ID,
       privateKey: privateKey,
       signType: 'RSA2',
       alipayPublicKey,
       camelcase: true,
-      serverUrl
+      wsServiceUrl
     })
 
     let requestParams =  null
@@ -1153,7 +1153,7 @@ describe('sdk', function() {
         version: '2.0',
       }
     }).catch(() => {
-      const flag = requestParams.indexOf(decodeURIComponent(serverUrl)) !== '-1'
+      const flag = requestParams.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1
 
       flag.should.eql(true)
       done()
