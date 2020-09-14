@@ -154,7 +154,7 @@ class AlipaySdk {
       'app_id', 'method', 'format', 'charset',
       'sign_type', 'sign', 'timestamp', 'version',
       'notify_url', 'return_url', 'auth_token', 'app_auth_token',
-      'appCertSn', 'alipayRootCertSn',
+      'app_cert_sn', 'alipay_root_cert_sn',
     ];
 
     for (const key in params) {
