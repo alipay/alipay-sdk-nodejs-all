@@ -299,8 +299,6 @@ class AlipaySdk {
       return `${key}=${decodeURIComponent(value)}`;
     }).join('&');
 
-    console.log('>>>>>> signContent: ', signContent);
-
     const verifier = crypto.createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
 
     return verifier.update(signContent, 'utf8').verify(this.config.alipayPublicKey, signStr, 'base64');
