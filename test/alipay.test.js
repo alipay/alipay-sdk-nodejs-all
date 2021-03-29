@@ -981,6 +981,30 @@ describe('sdk', function() {
 
         sdk.checkNotifySign(postData).should.eql(false);
       });
+
+      it('verify with decode', () => {
+        try {
+          sdk.checkNotifySign({
+            bizContent: '{"key":"value % has special charactar"}',
+            sign: 'test',
+          });
+        } catch(e) {
+          e.message.includes('URI malformed').should.eql(true);
+        }
+      });
+
+      it('verify without decode', () => {
+        let hasError = false;
+        try {
+          sdk.checkNotifySign({
+            bizContent: '{"key":"value % has special charactar"}',
+            sign: 'test',
+          }, true);
+        } catch(e) {
+          hasError = true;
+        }
+        hasError.should.eql(false);
+      });
     });
 
     describe('verify sign should not delete sign_type', function () {

@@ -289,12 +289,17 @@ class AlipaySdk {
   }
 
   // 消息验签
-  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2') {
+  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2', raw?: boolean) {
     const signContent = Object.keys(signArgs).sort().filter(val => val).map((key) => {
       let value = signArgs[key];
 
       if (Array.prototype.toString.call(value) !== '[object String]') {
         value = JSON.stringify(value);
+      }
+      // 如果 value 中包含了诸如 % 字符，decodeURIComponent 会报错
+      // 而且 notify 消息大部分都是 post 请求，无需进行 decodeURIComponent 操作
+      if (raw) {
+        return `${key}=${value}`;
       }
       return `${key}=${decodeURIComponent(value)}`;
     }).join('&');
@@ -461,8 +466,9 @@ class AlipaySdk {
   /**
    * 通知验签
    * @param postData {JSON} 服务端的消息内容
+   * @param raw {Boolean} 是否使用 raw 内容而非 decode 内容验签
    */
-  checkNotifySign(postData: any): boolean {
+  checkNotifySign(postData: any, raw?: boolean): boolean {
     const signStr = postData.sign;
 
     // 未设置“支付宝公钥”或签名字符串不存，验签不通过
@@ -484,7 +490,7 @@ class AlipaySdk {
     signArgs.sign_type = signType;
 
     // 保留 sign_type 验证一次签名
-    const verifyResult = this.notifyRSACheck(signArgs, signStr, signType);
+    const verifyResult = this.notifyRSACheck(signArgs, signStr, signType, raw);
 
     if (!verifyResult) {
       /**
@@ -493,7 +499,7 @@ class AlipaySdk {
        * 这里是把其他 sdk 中的 rsaCheckV1、rsaCheckV2 做了合并
        */
       delete signArgs.sign_type;
-      return this.notifyRSACheck(signArgs, signStr, signType);
+      return this.notifyRSACheck(signArgs, signStr, signType, raw);
     }
 
     return true;
