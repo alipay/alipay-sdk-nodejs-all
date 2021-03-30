@@ -980,6 +980,30 @@ describe('sdk', function() {
 
         sdk.checkNotifySign(postData).should.eql(false);
       });
+
+      it('verify with decode', () => {
+        try {
+          sdk.checkNotifySign({
+            bizContent: '{"key":"value % has special charactar"}',
+            sign: 'test',
+          });
+        } catch(e) {
+          e.message.includes('URI malformed').should.eql(true);
+        }
+      });
+
+      it('verify without decode', () => {
+        let hasError = false;
+        try {
+          sdk.checkNotifySign({
+            bizContent: '{"key":"value % has special charactar"}',
+            sign: 'test',
+          }, true);
+        } catch(e) {
+          hasError = true;
+        }
+        hasError.should.eql(false);
+      });
     });
 
     describe('verify sign should not delete sign_type', function () {
@@ -1123,4 +1147,39 @@ describe('sdk', function() {
         }).catch(done)
     });
   });
+
+  it('配置了config.wsServiceUrl', (done) => {
+    const wsServiceUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net'
+    const sdk = new AlipaySdk({
+      appId: APP_ID,
+      privateKey: privateKey,
+      signType: 'RSA2',
+      alipayPublicKey,
+      camelcase: true,
+      wsServiceUrl
+    })
+
+    let requestParams =  null
+
+    sandbox.stub(urllib, 'request', function(params) {
+      requestParams = params
+
+      return new Promise(function(reject) {
+        reject(new Error(''))
+      });
+    });
+
+    sdk.exec('alipay.security.risk.content.analyze', {
+      bizContent: {
+        account_type: 'MOBILE_NO',
+        account: '13812345678',
+        version: '2.0',
+      }
+    }).catch(() => {
+      const flag = requestParams.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1
+
+      flag.should.eql(true)
+      done()
+    })
+  })
 });

@@ -16,8 +16,8 @@ function loadPublicKeyFromPath(filePath: string): string {
 /** 从公钥证书内容或buffer读取支付宝公钥 */
 function loadPublicKey(content: string|Buffer): string {
   if (typeof content == 'string') {
-      content = Buffer.from(content);
-    }
+    content = Buffer.from(content);
+  }
   const certificate = x509_1.Certificate.fromPEM(content);
   return certificate.publicKeyRaw.toString('base64');
 }
@@ -29,11 +29,11 @@ function getSNFromPath(filePath: string, isRoot: boolean= false): string {
 /** 从上传的证书内容或Buffer读取序列号 */
 function getSN(fileData: string|Buffer, isRoot: boolean= false): string {
   if (typeof fileData == 'string') {
-      fileData = Buffer.from(fileData);
-    }
+    fileData = Buffer.from(fileData);
+  }
   if (isRoot) {
-      return getRootCertSN(fileData);
-    }
+    return getRootCertSN(fileData);
+  }
   const certificate = x509_1.Certificate.fromPEM(fileData);
   return getCertSN(certificate);
 }
@@ -59,16 +59,16 @@ function getRootCertSN(rootContent: Buffer): string {
   const certificates = x509_1.Certificate.fromPEMs(rootContent);
   let rootCertSN = '';
   certificates.forEach((item) => {
-      if (item.signatureOID.startsWith('1.2.840.113549.1.1')) {
-          const SN = getCertSN(item);
-          if (rootCertSN.length === 0) {
-              rootCertSN += SN;
-            }
-          else {
-              rootCertSN += `_${SN}`;
-            }
-        }
-    });
+    if (item.signatureOID.startsWith('1.2.840.113549.1.1')) {
+        const SN = getCertSN(item);
+        if (rootCertSN.length === 0) {
+            rootCertSN += SN;
+          }
+        else {
+            rootCertSN += `_${SN}`;
+          }
+      }
+  });
   return rootCertSN;
 }
 
