@@ -9,7 +9,8 @@
     "lint": "tslint -p ./tsconfig.json --fix",
     "lint:no-fix": "tslint -p ./tsconfig.json",
     "test": "mocha",
-    "ci": "npm run tsc && npm run lint:no-fix && nyc mocha -t 6000"
+    "ci": "npm run tsc && npm run lint:no-fix && nyc mocha -t 6000",
+    "prepublishOnly": "npm run tsc"
   },
   "author": "dersoncheng",
   "homepage": "https://github.com/ali-sdk/alipay-sdk",
