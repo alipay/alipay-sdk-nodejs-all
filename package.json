@@ -1,6 +1,6 @@
 {
   "name": "alipay-sdk",
-  "version": "3.1.2",
+  "version": "3.1.5",
   "description": "蚂蚁金服开放平台 node sdk",
   "main": "lib/alipay.js",
   "scripts": {
@@ -49,7 +49,7 @@
     "sourceMap": true
   },
   "ci": {
-    "version": "8"
+    "version": "8, 10, 12, 14"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^0.1.3",
