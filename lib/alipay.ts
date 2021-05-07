@@ -113,8 +113,8 @@ class AlipaySdk {
       // 支付宝根证书序列号提取
       config.alipayRootCertSn = is.empty(config.alipayRootCertContent) ? getSNFromPath(config.alipayRootCertPath, true)
         : getSN(config.alipayRootCertContent, true);
-      config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ? loadPublicKeyFromPath(config.alipayPublicCertPath)
-        : loadPublicKey(config.alipayPublicCertContent);
+      config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ?
+      loadPublicKeyFromPath(config.alipayPublicCertPath) : loadPublicKey(config.alipayPublicCertContent);
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     } else if (config.alipayPublicKey) {
         // 普通公钥模式，传入了支付宝公钥

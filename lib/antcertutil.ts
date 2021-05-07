@@ -6,19 +6,17 @@
 import * as fs from 'fs';
 import bignumber_js_1 from 'bignumber.js';
 import * as crypto from 'crypto';
-const x509_1 = require('@fidm/x509');
+const X509_1 = require('@fidm/x509');
 /** 从公钥证书文件里读取支付宝公钥 */
 function loadPublicKeyFromPath(filePath: string): string {
   const fileData = fs.readFileSync(filePath);
-  const certificate = x509_1.Certificate.fromPEM(fileData);
+  const certificate = X509_1.Certificate.fromPEM(fileData);
   return certificate.publicKeyRaw.toString('base64');
 }
 /** 从公钥证书内容或buffer读取支付宝公钥 */
 function loadPublicKey(content: string|Buffer): string {
-  if (typeof content == 'string') {
-    content = Buffer.from(content);
-  }
-  const certificate = x509_1.Certificate.fromPEM(content);
+  const pemContent = typeof content === 'string' ? Buffer.from(content) : content;
+  const certificate = X509_1.Certificate.fromPEM(pemContent);
   return certificate.publicKeyRaw.toString('base64');
 }
 /** 从证书文件里读取序列号 */
@@ -28,13 +26,11 @@ function getSNFromPath(filePath: string, isRoot: boolean= false): string {
 }
 /** 从上传的证书内容或Buffer读取序列号 */
 function getSN(fileData: string|Buffer, isRoot: boolean= false): string {
-  if (typeof fileData == 'string') {
-    fileData = Buffer.from(fileData);
-  }
+  const pemData = typeof fileData === 'string' ? Buffer.from(fileData) : fileData;
   if (isRoot) {
-    return getRootCertSN(fileData);
+    return getRootCertSN(pemData);
   }
-  const certificate = x509_1.Certificate.fromPEM(fileData);
+  const certificate = X509_1.Certificate.fromPEM(pemData);
   return getCertSN(certificate);
 }
 /** 读取序列号 */
@@ -56,18 +52,17 @@ function getCertSN(certificate: any): string {
 }
 /** 读取根证书序列号 */
 function getRootCertSN(rootContent: Buffer): string {
-  const certificates = x509_1.Certificate.fromPEMs(rootContent);
+  const certificates = X509_1.Certificate.fromPEMs(rootContent);
   let rootCertSN = '';
   certificates.forEach((item) => {
     if (item.signatureOID.startsWith('1.2.840.113549.1.1')) {
-        const SN = getCertSN(item);
-        if (rootCertSN.length === 0) {
-            rootCertSN += SN;
-          }
-        else {
-            rootCertSN += `_${SN}`;
-          }
+      const SN = getCertSN(item);
+      if (rootCertSN.length === 0) {
+        rootCertSN += SN;
+      } else {
+        rootCertSN += `_${SN}`;
       }
+    }
   });
   return rootCertSN;
 }
