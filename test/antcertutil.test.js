@@ -9,9 +9,9 @@ const appCertPath = path.join(__dirname,'/fixtures/appCertPublicKey_202100116168
 const alipayPublicCertPath = path.join(__dirname,'/fixtures/alipayCertPublicKey_RSA2.crt');
 const rootCertPath = path.join(__dirname,'/fixtures/alipayRootCert.crt');
 
-const appCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/appCertPublicKey_2021001161683774.crt';
+// const appCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/appCertPublicKey_2021001161683774.crt';
 const alipayPublicCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/alipayCertPublicKey_RSA2.crt';
-const alipayRootCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/alipayRootCert.crt';
+// const alipayRootCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/alipayRootCert.crt';
 
 const publicKeyVal = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhoVesfcGvUv1XvUndmX0rmSZ/2posJBCooySbSVFpV79RtHMzrVz2aKkC3WvOXeT5iNeQK4mK8gp3vNkWrHTkQGx5BcmkeO1WS384CQde7dAS0gmxeFs5bs+cCQqV2A2c2R9/5rJMtFtp1Ot/rIiMBUn6Ei0UoztM7AneavqQEzSwYlCKNhPFFtHCiz7u4O5R9CIyvUmYr+zpem2HXBN9ygPAZ0aXBQipGbc45+G07ZCNsmY4hV/Igya1aBf+Ye8p10Ew8uBBri0sIknhSC2LqKKy2IH1fO6q1d1jhN240QRHvbpRNv60kAfZsEulBASBrCMBi49NiJyr5nre7SNywIDAQAB';
 const appCertSnVal = '866efef280dec9137a87d047ac446315';
@@ -84,19 +84,21 @@ describe('antcertutil', function() {
             });
         }
 
-        const appCertContent = await getRequest(appCertUrl);
-        const appCertSn = getSN(appCertContent, false);
-        (appCertSn !== '').should.eql(true);
-        (appCertSn == appCertSnVal).should.eql(true);
+        // AccessDenied
+        // const appCertContent = await getRequest(appCertUrl);
+        // const appCertSn = getSN(appCertContent, false);
+        // (appCertSn !== '').should.eql(true);
+        // (appCertSn == appCertSnVal).should.eql(true);
 
         const alipayPublicCertContent = await getRequest(alipayPublicCertUrl);
         const alipayPublicCertSn = getSN(alipayPublicCertContent, false);
         (alipayPublicCertSn !== '').should.eql(true);
         (alipayPublicCertSn == alipayPublicCertSnVal).should.eql(true);
 
-        const rootCertContent = await getRequest(alipayRootCertUrl);
-        const rootCertSn = getSN(rootCertContent, true);
-        (rootCertSn !== '').should.eql(true);
-        (rootCertSn == rootCertSnVal).should.eql(true);
+        // AccessDenied
+        // const rootCertContent = await getRequest(alipayRootCertUrl);
+        // const rootCertSn = getSN(rootCertContent, true);
+        // (rootCertSn !== '').should.eql(true);
+        // (rootCertSn == rootCertSnVal).should.eql(true);
     });
 });
