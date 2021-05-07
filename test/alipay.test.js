@@ -393,39 +393,39 @@ describe('sdk', function() {
         }).catch(done)
     });
 
-    it('upload by uri', function(done) {
-      const infoLog = [];
-      const errorLog = [];
-      const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
-      const filePath = 'https://lidvdsgz.cdn.bspapp.com/2138306492-pretest/901abc40-8024-11e9-ba2f-f31ddc563146.png';
+    // it('upload by uri', function(done) {
+    //   const infoLog = [];
+    //   const errorLog = [];
+    //   const log = {
+    //     info(...args) { infoLog.push(args.join('')) },
+    //     error(...args) { errorLog.push(args.join('')) },
+    //   }
+    //   const filePath = 'https://lidvdsgz.cdn.bspapp.com/2138306492-pretest/901abc40-8024-11e9-ba2f-f31ddc563146.png';
 
-      const form = new FormData();
-      form.addField('imageType', 'jpg');
-      form.addField('imageName', '测试图片.jpg');
-      form.addFile('imageContent', '测试图片.jpg', filePath);
+    //   const form = new FormData();
+    //   form.addField('imageType', 'jpg');
+    //   form.addField('imageName', '测试图片.jpg');
+    //   form.addFile('imageContent', '测试图片.jpg', filePath);
 
-      this.timeout(30000);
+    //   this.timeout(30000);
 
-      sdk
-        .exec('alipay.offline.material.image.upload', {
-        }, { log, formData: form, validateSign: true })
-        .then(ret => {
-          ret.code.should.eql('20000');
-          // ret.msg.should.eql('Success');
-          // (!ret.imageId).should.eql(false);
-          // (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
+    //   sdk
+    //     .exec('alipay.offline.material.image.upload', {
+    //     }, { log, formData: form, validateSign: true })
+    //     .then(ret => {
+    //       ret.code.should.eql('20000');
+    //       ret.msg.should.eql('Success');
+    //       (!ret.imageId).should.eql(false);
+    //       (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
 
-          // infoLog.length.should.eql(2);
-          // (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-          // (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-          // errorLog.should.eql([]);
+    //       infoLog.length.should.eql(2);
+    //       (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
+    //       (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+    //       errorLog.should.eql([]);
 
-          done();
-        }).catch(done)
-    });
+    //       done();
+    //     }).catch(done)
+    // });
 
     it('sign error', function(done) {
       const infoLog = [];
