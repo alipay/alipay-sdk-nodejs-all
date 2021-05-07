@@ -407,7 +407,7 @@ describe('sdk', function() {
       form.addField('imageName', '测试图片.jpg');
       form.addFile('imageContent', '测试图片.jpg', filePath);
 
-      this.timeout(20000);
+      this.timeout(30000);
 
       sdk
         .exec('alipay.offline.material.image.upload', {
