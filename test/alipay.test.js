@@ -163,6 +163,30 @@ describe('sdk', function() {
       })
     });
 
+    it('response error', function (done) {
+      const response = {
+        status: 200,
+        data: undefined,
+      };
+      sandbox.stub(urllib, 'request', function() {
+        return Promise.resolve(response);
+      });
+
+      sdk.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        }
+      }).catch(function(err){
+        err.should.eql({
+            serverResult: response,
+            errorMessage: '[AlipaySdk]Response 格式错误'
+        });
+        done();
+      })
+    });
+
     it('config.camelcase is true', function(done) {
       sandbox.stub(urllib, 'request', function() {
         return Promise.resolve({
