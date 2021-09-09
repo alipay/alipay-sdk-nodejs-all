@@ -66,3 +66,8 @@ await alipaySdk.exec('alipay.open.auth.app.aes.set', {
 - [上传文件](https://www.yuque.com/chenqiu/alipay-node-sdk/file_upload)
 - [页面类接口调用](https://www.yuque.com/chenqiu/alipay-node-sdk/page_api)
 - [通知验签](https://www.yuque.com/chenqiu/alipay-node-sdk/msg_verify)
+
+## 问题
+不管您在使用SDK的过程中遇到任何问题，欢迎前往 [支付宝开放社区](https://forum.alipay.com/mini-app/channel/1100001)  发帖与支付宝工作人员和其他开发者一起交流。
+
+注：为了提高开发者问题的响应时效，github本身的issue功能已关闭，支付宝开放社区中发帖的问题，通常会在2小时内响应。
