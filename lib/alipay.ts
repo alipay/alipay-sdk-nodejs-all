@@ -213,7 +213,7 @@ class AlipaySdk {
         json: false,
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
-      }, (err, { }, body) => {
+      }, (err, _response, body) => {
         if (err) {
           err.message = '[AlipaySdk]exec error';
           errorLog && errorLog(err);
@@ -222,9 +222,16 @@ class AlipaySdk {
 
         infoLog && infoLog('[AlipaySdk]exec response: %s', body);
 
-        const result = JSON.parse(body);
-        const responseKey = `${method.replace(/\./g, '_')}_response`;
-        const data = result[responseKey];
+        let data, responseKey;
+
+        try {
+          const result = JSON.parse(body);
+          responseKey = `${method.replace(/\./g, '_')}_response`;
+          data = result[responseKey];
+        } catch (e) {
+          return reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
+        }
+        
 
         // 开放平台返回错误时，`${responseKey}` 对应的值不存在
         if (data) {

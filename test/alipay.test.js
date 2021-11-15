@@ -548,6 +548,39 @@ describe('sdk', function() {
         });
     });
 
+    it('response parse error', function (done) {
+      const infoLog = [];
+      const errorLog = [];
+      const log = {
+        info(...args) { infoLog.push(args.join('')) },
+        error(...args) { errorLog.push(args.join('')) },
+      }
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
+
+      const form = new FormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '海底捞.jpg');
+      form.addFile('imageContent', '海底捞.jpg', filePath);
+
+      sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
+      sandbox.stub(request, 'post', function(option, callback) {
+        return callback(null, undefined , undefined);
+      });
+
+      sdk
+        .exec('alipay.offline.material.image.upload', {
+        }, { log, formData: form, validateSign: true })
+        .then(() => {
+          done();
+        }).catch(err => {
+          err.should.eql({
+            serverResult: undefined,
+            errorMessage: '[AlipaySdk]Response 格式错误',
+          });
+          done();
+        });
+    });
+
     it('camelcase is false', function(done) {
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
