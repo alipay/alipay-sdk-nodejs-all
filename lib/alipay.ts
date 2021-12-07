@@ -347,7 +347,16 @@ class AlipaySdk {
 
     return validateStr;
   }
-
+  exec<T = any>(
+    method: string,
+    params?: IRequestParams,
+    option?: Omit<IRequestOption, 'formData'>,
+  ): Promise<Partial<AlipaySdkCommonResult> & T>;
+  exec(
+    method: string,
+    params?: IRequestParams,
+    option?: IRequestOption,
+  ): Promise<AlipaySdkCommonResult | string>;
   /**
    * 执行请求
    * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
