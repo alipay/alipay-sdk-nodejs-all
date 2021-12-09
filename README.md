@@ -20,11 +20,11 @@
 
 
 ## 使用
-```
+```javascript
 // TypeScript
 import AlipaySdk from 'alipay-sdk';
 // 普通公钥模式
-const alipaySdk = new AlipaySdk({
+let alipaySdk = new AlipaySdk({
   // 参考下方 SDK 配置
   appId: '2016123456789012',
   privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
@@ -33,7 +33,7 @@ const alipaySdk = new AlipaySdk({
 });
 
 // 证书模式
-const alipaySdk = new AlipaySdk({
+alipaySdk = new AlipaySdk({
   // 参考下方 SDK 配置
   appId: '2016123456789012',
   privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
