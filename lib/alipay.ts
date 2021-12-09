@@ -73,6 +73,7 @@ export interface AlipaySdkCommonResult {
   msg: string;
   sub_code?: string;
   sub_msg?: string;
+  [key: string]: any;
 }
 
 export interface IRequestParams {
@@ -354,11 +355,11 @@ class AlipaySdk {
 
     return validateStr;
   }
-  exec<T = any>(
+  exec<T = {}>(
     method: string,
     params?: IRequestParams,
     option?: Omit<IRequestOption, 'formData'>,
-  ): Promise<Partial<AlipaySdkCommonResult> & T>;
+  ): Promise<AlipaySdkCommonResult & T>;
   exec(
     method: string,
     params?: IRequestParams,
