@@ -1173,5 +1173,5 @@ describe('sdk', function() {
       flag.should.eql(true)
       done()
     })
-  })
+  });
 });
