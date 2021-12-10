@@ -424,15 +424,15 @@ class AlipaySdk {
              *  {"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"},
              * }
              */
-             let data, responseKey;
-             try {
-                const result = JSON.parse(ret.data);
-                responseKey = `${method.replace(/\./g, '_')}_response`;
-                data = result[responseKey];
-             }
-             catch (e) {
-               return reject({ serverResult: ret, errorMessage: '[AlipaySdk]Response 格式错误' });
-             }
+            let data;
+            let responseKey;
+            try {
+              const result = JSON.parse(ret.data);
+              responseKey = `${method.replace(/\./g, '_')}_response`;
+              data = result[responseKey];
+            } catch (e) {
+              return reject({ serverResult: ret, errorMessage: '[AlipaySdk]Response 格式错误' });
+            }
 
             if (data) {
               if (params.needEncrypt) {
@@ -444,9 +444,8 @@ class AlipaySdk {
 
               if (validateSuccess) {
                 return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-              } else {
-                return reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
               }
+              return reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
             }
 
             return reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
