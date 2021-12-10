@@ -38,8 +38,8 @@ alipaySdk = new AlipaySdk({
   appId: '2016123456789012',
   privateKey: fs.readFileSync('./private-key.pem', 'ascii'),
   alipayRootCertPath: path.join(__dirname,'../fixtures/alipayRootCert.crt'),
-  appCertPath: path.join(__dirname,'../fixtures/appCertPublicKey.crt'),
   alipayPublicCertPath: path.join(__dirname,'../fixtures/alipayCertPublicKey_RSA2.crt'),
+  appCertPath: path.join(__dirname,'../fixtures/appCertPublicKey.crt'),
 });
 
 // 无需加密的接口
