@@ -214,6 +214,7 @@ class AlipaySdk {
         json: false,
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
+      /* tslint:disable-next-line */
       }, (err, _response, body) => {
         if (err) {
           err.message = '[AlipaySdk]exec error';
@@ -222,9 +223,10 @@ class AlipaySdk {
         }
 
         infoLog && infoLog('[AlipaySdk]exec response: %s', body);
-        
+
         try {
-          let data, responseKey;
+          let data;
+          let responseKey;
           const result = JSON.parse(body);
           responseKey = `${method.replace(/\./g, '_')}_response`;
           data = result[responseKey];
@@ -235,9 +237,8 @@ class AlipaySdk {
             const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
             if (validateSuccess) {
               return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-            } else {
-              return reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
             }
+            return reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
           }
         } catch (e) {
           return reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
