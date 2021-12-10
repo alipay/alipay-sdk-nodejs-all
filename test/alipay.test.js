@@ -14,6 +14,9 @@ const privateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key.pem', 
 const alipayPublicKey = fs.readFileSync(__dirname + '/fixtures/alipay-public-key.pem', 'ascii');
 const notifyAlipayPublicKeyV1 = fs.readFileSync(__dirname + '/fixtures/alipay-notify-sign-public-key-v1.pem', 'ascii');
 const notifyAlipayPublicKeyV2 = fs.readFileSync(__dirname + '/fixtures/alipay-notify-sign-public-key-v2.pem', 'ascii');
+const alipayRootCertPath = path.join(__dirname, './fixtures/alipayRootCert.crt');
+const alipayPublicCertPath = path.join(__dirname, './fixtures/alipayCertPublicKey_RSA2.crt');
+const appCertPath = path.join(__dirname, './fixtures/appCertPublicKey_2021001161683774.crt');
 
 const sandbox = sinon.sandbox.create();
 const pkgJson = require('../package.json');
@@ -82,18 +85,19 @@ describe('sdk', function() {
 
   describe('execute', function() {
     let sdk;
+    const sdkBaseConfig = {
+      gateway: GATE_WAY,
+      appId: APP_ID,
+      privateKey: privateKey,
+      signType: 'RSA2',
+      alipayPublicKey,
+      camelcase: true,
+      timeout: 10000,
+      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA=='
+    };
 
     beforeEach(function() {
-      sdk = new AlipaySdk({
-        gateway: GATE_WAY,
-        appId: APP_ID,
-        privateKey: privateKey,
-        signType: 'RSA2',
-        alipayPublicKey,
-        camelcase: true,
-        timeout: 10000,
-        encryptKey: 'aYA0GP8JEW+D7/UFaskCWA=='
-      })
+      sdk = new AlipaySdk(sdkBaseConfig)
     });
 
     it('request error.', function (done) {
@@ -365,6 +369,31 @@ describe('sdk', function() {
         });
         done();
       })
+    });
+
+    it('证书校验模式 formatUrl和加签', function(done) {
+      sandbox.stub(urllib, 'request', function(url) {
+        const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2';
+        (url.indexOf(urlKeyPart) > 0).should.be.true();
+        return Promise.resolve({
+          status: 200,
+          data: '{"alipay_open_mock_response":{"msg":"Success","result":"","code":"10000"},"alipay_cert_sn":"4538e7d736df316c15435d5f9d3a8a1f","sign":"IGMZhrPRYzaOGkmibUXF34o262YUaotyi6VzJ6EOsp+MOAg7ywRJI7UN11Xs1i5jI48Borv/i4tH6yiqXJshDRJh6cGyj6wcoZHgiYfwstqtn/6TEVbWxeyLimGG3CX0C76yKAmn/ZMlI+RtOYSz0KCTaGDvlZf6Esp1KnUKfLbzQhZ1sX5o1Tva6L7c8TXOFgK42kkjGvRfGzXKEg4B1CyG2hQZqL6mICgcOIkwAwojmD7UWSwC2a3G6XG9Q5oqi+05ZWldBk+psha2j7FTvYQikAYb7zmvDSE3bNBBh8ekDwrUVGESM4pgUXqMWUlVroiCAC85Zei3A6krREg7Zw=="}',
+        });
+      });
+      sandbox.stub(sdk, 'checkResponseSign', function() { return true; });
+
+      const sdkWithCert = new AlipaySdk(Object.assign({}, sdkBaseConfig, {
+        alipayRootCertPath,
+        alipayPublicCertPath,
+        appCertPath,
+      }));
+      sdkWithCert.exec('alipay.open.mock', {
+        bizContent: {
+          foo: 'bar',
+        },
+      }, { validateSign: false }).then(function(data){
+        done();
+      });
     });
   });
 
@@ -1173,5 +1202,5 @@ describe('sdk', function() {
       flag.should.eql(true)
       done()
     })
-  })
+  });
 });

@@ -4,11 +4,12 @@
   "description": "蚂蚁金服开放平台 node sdk",
   "main": "lib/alipay.js",
   "scripts": {
+    "build": "npm run tsc",
     "tsc": "tsc -p ./tsconfig.json",
     "tsc:watch": "tsc -w",
     "lint": "tslint -p ./tsconfig.json --fix",
     "lint:no-fix": "tslint -p ./tsconfig.json",
-    "test": "mocha",
+    "test": "npm run build && mocha",
     "ci": "npm run tsc && npm run lint:no-fix && nyc mocha -t 6000",
     "prepublishOnly": "npm run tsc"
   },
