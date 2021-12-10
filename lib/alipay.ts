@@ -214,31 +214,36 @@ class AlipaySdk {
         json: false,
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
-      }, (err, { }, body) => {
+      }, (err, _response, body) => {
         if (err) {
           err.message = '[AlipaySdk]exec error';
           errorLog && errorLog(err);
-          reject(err);
+          return reject(err);
         }
 
         infoLog && infoLog('[AlipaySdk]exec response: %s', body);
+        
+        try {
+          let data, responseKey;
+          const result = JSON.parse(body);
+          responseKey = `${method.replace(/\./g, '_')}_response`;
+          data = result[responseKey];
 
-        const result = JSON.parse(body);
-        const responseKey = `${method.replace(/\./g, '_')}_response`;
-        const data = result[responseKey];
-
-        // 开放平台返回错误时，`${responseKey}` 对应的值不存在
-        if (data) {
-          // 验签
-          const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
-          if (validateSuccess) {
-            resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-          } else {
-            reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+          // 开放平台返回错误时，`${responseKey}` 对应的值不存在
+          if (data) {
+            // 验签
+            const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
+            if (validateSuccess) {
+              return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+            } else {
+              return reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+            }
           }
+        } catch (e) {
+          return reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
         }
 
-        reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+        return reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
       });
     });
   }

@@ -423,8 +423,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       this.timeout(20000);
 
@@ -491,8 +491,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
       sandbox.stub(request, 'post', function(option, callback) {
@@ -524,8 +524,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(request, 'post', function(option, callback) {
         return callback({ error: 'custom error.' }, {} , '{"a":"b"}');
@@ -555,8 +555,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
       sandbox.stub(request, 'post', function(option, callback) {
@@ -577,6 +577,39 @@ describe('sdk', function() {
         });
     });
 
+    it('response parse error', function (done) {
+      const infoLog = [];
+      const errorLog = [];
+      const log = {
+        info(...args) { infoLog.push(args.join('')) },
+        error(...args) { errorLog.push(args.join('')) },
+      }
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
+
+      const form = new FormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
+
+      sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
+      sandbox.stub(request, 'post', function(option, callback) {
+        return callback(null, undefined , undefined);
+      });
+
+      sdk
+        .exec('alipay.offline.material.image.upload', {
+        }, { log, formData: form, validateSign: true })
+        .then(() => {
+          done();
+        }).catch(err => {
+          err.should.eql({
+            serverResult: undefined,
+            errorMessage: '[AlipaySdk]Response 格式错误',
+          });
+          done();
+        });
+    });
+
     it('camelcase is false', function(done) {
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
@@ -586,8 +619,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       this.timeout(20000);
 
@@ -626,8 +659,8 @@ describe('sdk', function() {
 
       const form = new FormData();
       form.addField('imageType', 'jpg');
-      form.addField('imageName', '海底捞.jpg');
-      form.addFile('imageContent', '海底捞.jpg', filePath);
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(request, 'post', function({}, callback) {
         return callback(null, {} , '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"u16noGtTSH-r9UI0FGmIfAAAACMAAQED","image_url":"https://oalipay-dl-django.alicdn.com/rest/1.0/image?fileIds=u16noGtTSH-r9UI0FGmIfAAAACMAAQED&zoom=original"}}');
@@ -1148,21 +1181,18 @@ describe('sdk', function() {
           bizContent: {},
         }, { log })
         .then(ret => {
-          // 早期测试接口调不通过
-          ret.code.should.eql('20000');
-          ret.msg.should.eql('Service Currently Unavailable');
-          // (ret.shopCategoryConfigInfos.length > 0).should.eql(true);
+          (ret.shopCategoryConfigInfos.length > 0).should.eql(true);
 
-          // ret.shopCategoryConfigInfos[0].should.have.property('id');
-          // ret.shopCategoryConfigInfos[0].should.have.property('level');
-          // ret.shopCategoryConfigInfos[0].should.have.property('link');
-          // ret.shopCategoryConfigInfos[0].should.have.property('isLeaf');
-          // ret.shopCategoryConfigInfos[0].should.have.property('nm');
+          ret.shopCategoryConfigInfos[0].should.have.property('id');
+          ret.shopCategoryConfigInfos[0].should.have.property('level');
+          ret.shopCategoryConfigInfos[0].should.have.property('link');
+          ret.shopCategoryConfigInfos[0].should.have.property('isLeaf');
+          ret.shopCategoryConfigInfos[0].should.have.property('nm');
 
-          // infoLog.length.should.eql(2);
-          // (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-          // (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-          // errorLog.should.eql([]);
+          infoLog.length.should.eql(2);
+          (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
+          (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+          errorLog.should.eql([]);
 
           done();
         }).catch(done)
