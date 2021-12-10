@@ -53,6 +53,7 @@ function aesDecrypt(data, aesKey) {
 
 /**
  * 签名
+ * @description https://opendocs.alipay.com/common/02kf5q
  * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
  * @param {object} bizContent 业务请求参数
  * @param {object} publicArgs 公共请求参数
@@ -68,7 +69,6 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     signType: config.signType,
     timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
   }, omit(params, ['bizContent', 'needEncrypt']));
-
   if (config.appCertSn && config.alipayRootCertSn) {
     signParams = Object.assign({
       appCertSn: config.appCertSn,
