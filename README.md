@@ -4,6 +4,7 @@
 
 [![NPM version][npm-image]][npm-url]
 [![Node.js CI](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml/badge.svg)](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml)
+
 [npm-image]: https://img.shields.io/npm/v/alipay-sdk.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/alipay-sdk
 
