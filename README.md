@@ -1,23 +1,14 @@
 # Alipay SDK
 
-蚂蚁金服开放平台 SDK
+支付宝开放平台 Alipay SDK for Node.js
 
 [![NPM version][npm-image]][npm-url]
-[![build status][travis-image]][travis-url]
-[![Test coverage][codecov-image]][codecov-url]
-
+[![Node.js CI](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml/badge.svg)](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml)
 [npm-image]: https://img.shields.io/npm/v/alipay-sdk.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/alipay-sdk
-[travis-image]: https://img.shields.io/travis/alipay/alipay-sdk-nodejs.svg?style=flat-square
-[travis-url]: https://travis-ci.org/alipay/alipay-sdk-nodejs
-[codecov-image]: https://img.shields.io/codecov/c/github/alipay/alipay-sdk-nodejs.svg?style=flat-square
-[codecov-url]: https://codecov.io/gh/alipay/alipay-sdk-nodejs
-
-
 
 ## 安装
-> npm install alipay-sdk
-
+> npm install alipay-sdk --save
 
 ## 使用
 ```javascript
@@ -68,6 +59,6 @@ await alipaySdk.exec('alipay.open.auth.app.aes.set', {
 - [通知验签](https://www.yuque.com/chenqiu/alipay-node-sdk/msg_verify)
 
 ## 问题
-不管您在使用SDK的过程中遇到任何问题，欢迎前往 [支付宝开放社区](https://forum.alipay.com/mini-app/channel/1100001)  发帖与支付宝工作人员和其他开发者一起交流。
+不管您在使用SDK的过程中遇到任何问题，欢迎前往 [支付宝开放社区](https://forum.alipay.com/mini-app/channel/1100001) 发帖与支付宝工作人员和其他开发者一起交流。
 
 注：为了提高开发者问题的响应时效，github本身的issue功能已关闭，支付宝开放社区中发帖的问题，通常会在2小时内响应。
