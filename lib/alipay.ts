@@ -220,7 +220,6 @@ class AlipaySdk {
         .then((file) => { formData.append(fileKey, file); });
     }));
 
-
     // 计算签名
     const signData = sign(method, signParams, config);
     // 格式化 url
@@ -258,7 +257,7 @@ class AlipaySdk {
           return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
         }
       } catch (e) {
-        return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' })
+        return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
       }
 
       return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
@@ -458,9 +457,9 @@ class AlipaySdk {
 
           if (validateSuccess) {
             return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-          } else {
-            return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]验签失败' });
           }
+
+          return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]验签失败' });
         }
 
         return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]HTTP 请求错误' });
