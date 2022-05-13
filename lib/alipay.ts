@@ -215,9 +215,11 @@ class AlipaySdk {
       // 文件名需要转换驼峰为下划线
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
+
       return (!isuri.isValid(file.path) ? Promise.resolve(fs.createReadStream(file.path)) : this.getStream(file.path))
         .then((file) => { formData.append(fileKey, file); });
     }));
+
 
     // 计算签名
     const signData = sign(method, signParams, config);
@@ -239,6 +241,7 @@ class AlipaySdk {
 
       return Promise.reject(err);
     }).then((body: string) => {
+
       infoLog && infoLog('[AlipaySdk]exec response: %s', body);
 
       try {

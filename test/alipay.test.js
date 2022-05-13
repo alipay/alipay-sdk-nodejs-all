@@ -34,7 +34,7 @@ describe('sdk', function() {
         const sdk = new AlipaySdk({
           alipayPublicKey,
           gateway: GATE_WAY,
-          privateKey: privateKey,
+          privateKey,
         });
       } catch (e) {
         (e.toString().indexOf('config.appId is required') > -1).should.eql(true);
@@ -58,8 +58,8 @@ describe('sdk', function() {
       const noWrapperPublicKey = fs.readFileSync(__dirname + '/fixtures/alipay-public-key-no-wrapper.pem', 'ascii');
       const alipaySdk = new AlipaySdk({
         appId: '111',
-        privateKey: privateKey,
-        alipayPublicKey: alipayPublicKey,
+        privateKey,
+        alipayPublicKey,
         gateway: GATE_WAY,
       });
 
@@ -163,9 +163,7 @@ describe('sdk', function() {
         status: 200,
         data: undefined,
       };
-      sandbox.stub(urllib, 'request', function() {
-        return Promise.resolve(response);
-      });
+      sandbox.stub(sdk, 'postString').resolves(undefined);
 
       sdk.exec('alipay.security.risk.content.analyze', {
         bizContent: {
@@ -247,15 +245,10 @@ describe('sdk', function() {
     });
 
     it('execute needEncrypt', function (done) {
-      sandbox.stub(urllib, "request", function () {
-        return Promise.resolve({
-          status: 200,
-          data: JSON.stringify({
-            alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
-            sign: "abcde=",
-          }),
-        });
-      });
+      sandbox.stub(sdk, 'postString').resolves(JSON.stringify({
+        alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
+        sign: "abcde=",
+      }));
 
       var bizContent = {
         merchantAppId: '2021001170662064',
@@ -343,21 +336,18 @@ describe('sdk', function() {
     });
 
     it('证书校验模式 formatUrl和加签', function(done) {
-      sandbox.stub(urllib, 'request', function(url) {
-        const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2';
-        (url.indexOf(urlKeyPart) > 0).should.be.true();
-        return Promise.resolve({
-          status: 200,
-          data: '{"alipay_open_mock_response":{"msg":"Success","result":"","code":"10000"},"alipay_cert_sn":"4538e7d736df316c15435d5f9d3a8a1f","sign":"IGMZhrPRYzaOGkmibUXF34o262YUaotyi6VzJ6EOsp+MOAg7ywRJI7UN11Xs1i5jI48Borv/i4tH6yiqXJshDRJh6cGyj6wcoZHgiYfwstqtn/6TEVbWxeyLimGG3CX0C76yKAmn/ZMlI+RtOYSz0KCTaGDvlZf6Esp1KnUKfLbzQhZ1sX5o1Tva6L7c8TXOFgK42kkjGvRfGzXKEg4B1CyG2hQZqL6mICgcOIkwAwojmD7UWSwC2a3G6XG9Q5oqi+05ZWldBk+psha2j7FTvYQikAYb7zmvDSE3bNBBh8ekDwrUVGESM4pgUXqMWUlVroiCAC85Zei3A6krREg7Zw=="}',
-        });
-      });
-      sandbox.stub(sdk, 'checkResponseSign', function() { return true; });
+      sandbox.stub(sdk, 'checkResponseSign').returns(true);
 
       const sdkWithCert = new AlipaySdk(Object.assign({}, sdkBaseConfig, {
         alipayRootCertPath,
         alipayPublicCertPath,
         appCertPath,
       }));
+      sandbox.stub(sdkWithCert, 'postString').callsFake(function(url) {
+        const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2';
+        (url.indexOf(urlKeyPart) > 0).should.be.true();
+        return '{"alipay_open_mock_response":{"msg":"Success","result":"","code":"10000"},"alipay_cert_sn":"4538e7d736df316c15435d5f9d3a8a1f","sign":"IGMZhrPRYzaOGkmibUXF34o262YUaotyi6VzJ6EOsp+MOAg7ywRJI7UN11Xs1i5jI48Borv/i4tH6yiqXJshDRJh6cGyj6wcoZHgiYfwstqtn/6TEVbWxeyLimGG3CX0C76yKAmn/ZMlI+RtOYSz0KCTaGDvlZf6Esp1KnUKfLbzQhZ1sX5o1Tva6L7c8TXOFgK42kkjGvRfGzXKEg4B1CyG2hQZqL6mICgcOIkwAwojmD7UWSwC2a3G6XG9Q5oqi+05ZWldBk+psha2j7FTvYQikAYb7zmvDSE3bNBBh8ekDwrUVGESM4pgUXqMWUlVroiCAC85Zei3A6krREg7Zw=="}';
+      })
       sdkWithCert.exec('alipay.open.mock', {
         bizContent: {
           foo: 'bar',
@@ -383,7 +373,7 @@ describe('sdk', function() {
       })
     });
 
-    it('normal', function(done) {
+    it.only('normal', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
@@ -558,10 +548,8 @@ describe('sdk', function() {
       form.addField('imageName', '图片.jpg');
       form.addFile('imageContent', '图片.jpg', filePath);
 
-      sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
-      sandbox.stub(request, 'post', function(option, callback) {
-        return callback(null, undefined , undefined);
-      });
+      sandbox.stub(sdk, 'checkResponseSign').callsFake(function() { return false; });
+      sandbox.stub(sdk, 'postString').resolves(undefined);
 
       sdk
         .exec('alipay.offline.material.image.upload', {
@@ -1175,15 +1163,13 @@ describe('sdk', function() {
       wsServiceUrl
     })
 
-    let requestParams =  null
+    let requestUrl =  null
 
-    sandbox.stub(urllib, 'request', function(params) {
-      requestParams = params
+    sandbox.stub(sdk, 'postString').callsFake(function(url) {
+      requestUrl = url;
 
-      return new Promise(function(reject) {
-        reject(new Error(''))
-      });
-    });
+      return Promise.reject(new Error(''));
+    })
 
     sdk.exec('alipay.security.risk.content.analyze', {
       bizContent: {
@@ -1192,7 +1178,7 @@ describe('sdk', function() {
         version: '2.0',
       }
     }).catch(() => {
-      const flag = requestParams.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1
+      const flag = requestUrl.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1
 
       flag.should.eql(true)
       done()
