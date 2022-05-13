@@ -229,9 +229,7 @@ class AlipaySdk {
       url, method, JSON.stringify(signParams));
 
     return timeout(
-      this.postString(url, formData, {
-        'content-type': 'multipart/form-data',
-      }),
+      this.postString(url, formData, formData.getHeaders()),
       config.timeout,
     ).catch((err: Error) => {
       err.message = '[AlipaySdk]exec error';
