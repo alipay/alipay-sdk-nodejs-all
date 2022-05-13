@@ -18,7 +18,8 @@ import * as FormData from 'form-data';
 import { Stream } from 'stream';
 
 import AliPayForm from './form';
-import { sign, ALIPAY_ALGORITHM_MAPPING } from './util';
+import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt } from './util';
+import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil';
 
 const pkg = require('../package.json');
 
@@ -46,6 +47,28 @@ export interface AlipaySdkConfig {
   version?: '1.0';
   /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */
   keyType?: 'PKCS1' | 'PKCS8';
+  /** 应用公钥证书文件路径 */
+  appCertPath?: string;
+  /** 应用公钥证书文件内容 */
+  appCertContent?: string | Buffer;
+  /** 应用公钥证书sn */
+  appCertSn?: string;
+  /** 支付宝根证书文件路径 */
+  alipayRootCertPath?: string;
+  /** 支付宝根证书文件内容 */
+  alipayRootCertContent?: string | Buffer;
+  /** 支付宝根证书sn */
+  alipayRootCertSn?: string;
+  /** 支付宝公钥证书文件路径 */
+  alipayPublicCertPath?: string;
+  /** 支付宝公钥证书文件内容 */
+  alipayPublicCertContent?: string | Buffer;
+  /** 支付宝公钥证书sn */
+  alipayCertSn?: string;
+  /** AES密钥，调用AES加解密相关接口时需要 */
+  encryptKey?: string;
+  /** 服务器地址 */
+  wsServiceUrl?: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -53,11 +76,14 @@ export interface AlipaySdkCommonResult {
   msg: string;
   sub_code?: string;
   sub_msg?: string;
+  [key: string]: any;
 }
 
 export interface IRequestParams {
   [key: string]: any;
   bizContent?: any;
+  // 自动AES加解密
+  needEncrypt?:boolean;
 }
 
 export interface IRequestOption {
@@ -85,11 +111,26 @@ class AlipaySdk {
     if (!config.privateKey) { throw Error('config.privateKey is required'); }
 
     const privateKeyType = config.keyType === 'PKCS8' ? 'PRIVATE KEY' : 'RSA PRIVATE KEY';
-    config.privateKey = this.formatKey(config.privateKey,  privateKeyType);
-    if (config.alipayPublicKey) {
+    config.privateKey = this.formatKey(config.privateKey, privateKeyType);
+    // 普通公钥模式和证书模式二选其一，传入了证书路径或内容认为是证书模式
+    if (config.appCertPath || config.appCertContent) {
+      // 证书模式，优先处理传入了证书内容的情况，其次处理传入证书文件路径的情况
+      // 应用公钥证书序列号提取
+      config.appCertSn = is.empty(config.appCertContent) ? getSNFromPath(config.appCertPath, false)
+        : getSN(config.appCertContent, false);
+      // 支付宝公钥证书序列号提取
+      config.alipayCertSn = is.empty(config.alipayPublicCertContent) ? getSNFromPath(config.alipayPublicCertPath, false)
+        : getSN(config.alipayPublicCertContent, false);
+      // 支付宝根证书序列号提取
+      config.alipayRootCertSn = is.empty(config.alipayRootCertContent) ? getSNFromPath(config.alipayRootCertPath, true)
+        : getSN(config.alipayRootCertContent, true);
+      config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ?
+      loadPublicKeyFromPath(config.alipayPublicCertPath) : loadPublicKey(config.alipayPublicCertContent);
+      config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
+    } else if (config.alipayPublicKey) {
+        // 普通公钥模式，传入了支付宝公钥
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     }
-
     this.config = Object.assign({
       gateway: 'https://openapi.alipay.com/gateway.do',
       timeout: 5000,
@@ -128,12 +169,14 @@ class AlipaySdk {
       'app_id', 'method', 'format', 'charset',
       'sign_type', 'sign', 'timestamp', 'version',
       'notify_url', 'return_url', 'auth_token', 'app_auth_token',
+      'app_cert_sn', 'alipay_root_cert_sn',
+      'ws_service_url',
     ];
 
     for (const key in params) {
       if (urlArgs.indexOf(key) > -1) {
         const val = encodeURIComponent(params[key]);
-        requestUrl = `${requestUrl}${ requestUrl.includes('?') ? '&' : '?' }${key}=${val}`;
+        requestUrl = `${requestUrl}${requestUrl.includes('?') ? '&' : '?'}${key}=${val}`;
         // 删除 postData 中对应的数据
         delete params[key];
       }
@@ -147,8 +190,8 @@ class AlipaySdk {
     const config = this.config;
     let signParams = {} as { [key: string]: string | Object };
     const formData = new FormData();
-    const infoLog =  (option.log && is.fn(option.log.info)) ? option.log.info : null;
-    const errorLog =  (option.log && is.fn(option.log.error)) ? option.log.error : null;
+    const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
+    const errorLog = (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
     option.formData.getFields().forEach((field) => {
       // 字段加入签名参数（文件不需要签名）
@@ -198,22 +241,24 @@ class AlipaySdk {
     }).then((body: string) => {
       infoLog && infoLog('[AlipaySdk]exec response: %s', body);
 
-      const result = JSON.parse(body);
-      const responseKey = `${method.replace(/\./g, '_')}_response`;
-      const data = result[responseKey];
-
-      // 开放平台返回错误时，`${responseKey}` 对应的值不存在
-      if (data) {
-        // 验签
-        const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
-        if (validateSuccess) {
-          return Promise.resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+      try {
+        const result = JSON.parse(body);
+        const responseKey = `${method.replace(/\./g, '_')}_response`;
+        const data = result[responseKey];
+        // 开放平台返回错误时，`${responseKey}` 对应的值不存在
+        if (data) {
+          // 验签
+          const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
+          if (validateSuccess) {
+            return Promise.resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+          }
+          return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
         }
-        Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
-
+      } catch (e) {
+        return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' })
       }
 
-      Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+      return Promise.reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
     });
   }
 
@@ -221,7 +266,7 @@ class AlipaySdk {
   private pageExec(method: string, option: IRequestOption = {}): Promise<string> {
     let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | Object };
     const config = this.config;
-    const infoLog =  (option.log && is.fn(option.log.info)) ? option.log.info : null;
+    const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
 
     option.formData.getFields().forEach((field) => {
       signParams[field.name] = field.value;
@@ -264,17 +309,20 @@ class AlipaySdk {
   }
 
   // 消息验签
-  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2') {
-    const signContent =  Object.keys(signArgs).sort().filter(val => val).map((key) => {
+  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2', raw?: boolean) {
+    const signContent = Object.keys(signArgs).sort().filter(val => val).map((key) => {
       let value = signArgs[key];
 
       if (Array.prototype.toString.call(value) !== '[object String]') {
         value = JSON.stringify(value);
       }
+      // 如果 value 中包含了诸如 % 字符，decodeURIComponent 会报错
+      // 而且 notify 消息大部分都是 post 请求，无需进行 decodeURIComponent 操作
+      if (raw) {
+        return `${key}=${value}`;
+      }
       return `${key}=${decodeURIComponent(value)}`;
     }).join('&');
-
-    console.log('>>>>>> signContent: ', signContent);
 
     const verifier = crypto.createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
 
@@ -319,7 +367,16 @@ class AlipaySdk {
 
     return validateStr;
   }
-
+  exec<T = {}>(
+    method: string,
+    params?: IRequestParams,
+    option?: Omit<IRequestOption, 'formData'>,
+  ): Promise<AlipaySdkCommonResult & T>;
+  exec(
+    method: string,
+    params?: IRequestParams,
+    option?: IRequestOption,
+  ): Promise<AlipaySdkCommonResult | string>;
   /**
    * 执行请求
    * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
@@ -351,8 +408,8 @@ class AlipaySdk {
     // 计算签名
     const signData = sign(method, params, config);
     const { url, execParams } = this.formatUrl(config.gateway, signData);
-    const infoLog =  (option.log && is.fn(option.log.info)) ? option.log.info : null;
-    const errorLog =  (option.log && is.fn(option.log.error)) ? option.log.error : null;
+    const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
+    const errorLog = (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
     infoLog && infoLog('[AlipaySdk]start exec, url: %s, method: %s, params: %s',
       url, method, JSON.stringify(execParams));
@@ -378,22 +435,31 @@ class AlipaySdk {
          *  {"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"},
          * }
          */
-        const result = JSON.parse(body);
-        const responseKey = `${method.replace(/\./g, '_')}_response`;
-        const data = result[responseKey];
+        let data;
+        try {
+          const result = JSON.parse(body);
+          const responseKey = `${method.replace(/\./g, '_')}_response`;
+          data = result[responseKey];
+        } catch (e) {
+          return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]Response 格式错误' });
+        }
 
         if (data) {
+          if (params.needEncrypt) {
+            data = aesDecrypt(data, config.encryptKey);
+          }
+
           // 按字符串验签
           const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
 
           if (validateSuccess) {
-            resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+            return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
           } else {
-            reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]验签失败' });
+            return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]验签失败' });
           }
         }
 
-        reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+        return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]HTTP 请求错误' });
       }, err => err instanceof timeout.TimeoutError
         ? Promise.reject(err)
         : err.text().then((body: string) => {
@@ -438,8 +504,9 @@ class AlipaySdk {
   /**
    * 通知验签
    * @param postData {JSON} 服务端的消息内容
+   * @param raw {Boolean} 是否使用 raw 内容而非 decode 内容验签
    */
-  checkNotifySign(postData: any): boolean {
+  checkNotifySign(postData: any, raw?: boolean): boolean {
     const signStr = postData.sign;
 
     // 未设置“支付宝公钥”或签名字符串不存，验签不通过
@@ -461,7 +528,7 @@ class AlipaySdk {
     signArgs.sign_type = signType;
 
     // 保留 sign_type 验证一次签名
-    const verifyResult = this.notifyRSACheck(signArgs, signStr, signType);
+    const verifyResult = this.notifyRSACheck(signArgs, signStr, signType, raw);
 
     if (!verifyResult) {
       /**
@@ -470,7 +537,7 @@ class AlipaySdk {
        * 这里是把其他 sdk 中的 rsaCheckV1、rsaCheckV2 做了合并
        */
       delete signArgs.sign_type;
-      return this.notifyRSACheck(signArgs, signStr, signType);
+      return this.notifyRSACheck(signArgs, signStr, signType, raw);
     }
 
     return true;
