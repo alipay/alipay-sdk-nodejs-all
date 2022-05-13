@@ -436,9 +436,10 @@ class AlipaySdk {
          * }
          */
         let data;
+        let responseKey;
         try {
           const result = JSON.parse(body);
-          const responseKey = `${method.replace(/\./g, '_')}_response`;
+          responseKey = `${method.replace(/\./g, '_')}_response`;
           data = result[responseKey];
         } catch (e) {
           return reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]Response 格式错误' });
