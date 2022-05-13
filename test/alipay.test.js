@@ -373,7 +373,7 @@ describe('sdk', function() {
       })
     });
 
-    it.only('normal', function(done) {
+    it('normal', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
