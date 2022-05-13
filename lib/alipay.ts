@@ -11,13 +11,14 @@ import * as isuri from 'isuri';
 import * as decamelize from 'decamelize';
 import * as snakeCase from 'to-snake-case';
 import * as camelcaseKeys from 'camelcase-keys';
-import formurlencoded from 'form-urlencoded';
+import * as timeout from 'p-timeout';
+import * as formurlencoded from 'form-urlencoded';
 
 import * as FormData from 'form-data';
 import { Stream } from 'stream';
 
 import AliPayForm from './form';
-import { expire, sign, ALIPAY_ALGORITHM_MAPPING, TimeoutError } from './util';
+import { sign, ALIPAY_ALGORITHM_MAPPING } from './util';
 
 const pkg = require('../package.json');
 
@@ -183,11 +184,11 @@ class AlipaySdk {
     infoLog && infoLog('[AlipaySdk]start exec url: %s, method: %s, params: %s',
       url, method, JSON.stringify(signParams));
 
-    return expire(
-      config.timeout,
+    return timeout(
       this.postString(url, formData, {
         'content-type': 'multipart/form-data',
       }),
+      config.timeout,
     ).catch((err: Error) => {
       err.message = '[AlipaySdk]exec error';
 
@@ -357,11 +358,11 @@ class AlipaySdk {
       url, method, JSON.stringify(execParams));
 
     return new Promise((resolve, reject) => {
-      expire(
-        config.timeout,
+      timeout(
         this.postString(url, formurlencoded(execParams), {
           'content-type': 'application/x-www-form-urlencoded',
         }),
+        config.timeout,
       )
       .then((body) => {
         infoLog && infoLog('[AlipaySdk]exec response: %s', { status: 200, data: body });
@@ -393,7 +394,7 @@ class AlipaySdk {
         }
 
         reject({ serverResult: { status: 200, data: body }, errorMessage: '[AlipaySdk]HTTP 请求错误' });
-      }, err => err instanceof TimeoutError
+      }, err => err instanceof timeout.TimeoutError
         ? Promise.reject(err)
         : err.text().then((body: string) => {
           infoLog && infoLog('[AlipaySdk]exec response: %s', { status: err.status, data: body });

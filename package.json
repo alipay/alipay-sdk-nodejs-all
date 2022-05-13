@@ -19,7 +19,6 @@
     "bent": "^7.3.9",
     "camelcase-keys": "^4.2.0",
     "decamelize": "^2.0.0",
-    "delay": "^4.4.0",
     "form-data": "^3.0.0",
     "form-urlencoded": "^4.2.1",
     "iconv-lite": "^0.6.2",
@@ -27,6 +26,7 @@
     "is-json": "^2.0.1",
     "isuri": "^2.0.3",
     "moment": "^2.16.0",
+    "p-timeout": "^4.1.0",
     "snakecase-keys": "^1.1.1",
     "to-snake-case": "^1.0.0"
   },
