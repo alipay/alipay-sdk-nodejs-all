@@ -249,8 +249,26 @@ class AlipaySdk {
     });
   }
 
-  // page 类接口
-  private pageExec(method: string, option: IRequestOption = {}): Promise<string> {
+  public sdkExec(method: string, params: IRequestParams) {
+    const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
+
+    const sdkStr = new URLSearchParams(data).toString();
+    
+    return sdkStr;
+  }
+
+  public pageExec(method: string, params: IRequestParams & { method?: 'GET' | 'POST' }) {
+    const formData = new AliPayForm();
+    Object.entries(params).forEach(([k, v]) => {
+      if (k === 'method') formData.setMethod(v?.toLowerCase());
+      else formData.addField(k, v);
+    })
+    return this._pageExec(method, { formData });
+  }
+
+
+  // page 类接口，兼容原来的 formData 格式
+  private _pageExec(method: string, option: IRequestOption = {}): Promise<string> {
     let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | Object };
     const config = this.config;
     const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
@@ -262,7 +280,7 @@ class AlipaySdk {
     // 签名方法中使用的 key 是驼峰
     signParams = camelcaseKeys(signParams, { deep: true });
 
-    // 计算签名
+    // 计算签名，并返回标准化的请求字段（含 bizContent stringify）
     const signData = sign(method, signParams, config);
     // 格式化 url
     const { url, execParams } = this.formatUrl(config.gateway, signData);
@@ -388,7 +406,7 @@ class AlipaySdk {
        * fromData 中不包含文件时，认为是 page 类接口（返回 form 表单）
        * 比如 PC 端支付接口 alipay.trade.page.pay
        */
-      return this.pageExec(method, option);
+      return this._pageExec(method, option);
     }
 
     const config = this.config;
