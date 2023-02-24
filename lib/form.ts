@@ -37,7 +37,7 @@ class AliPayForm {
     this.method = method;
   }
 
-  /*
+  /**
    * 增加字段
    * @param fieldName 字段名
    * @param fieldValue 字段值
@@ -51,7 +51,7 @@ class AliPayForm {
     }
   }
 
-  /*
+  /**
    * 增加文件
    * @param fieldName 文件字段名
    * @param fileName 文件名

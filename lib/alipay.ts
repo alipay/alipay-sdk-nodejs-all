@@ -19,15 +19,15 @@ import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './an
 
 const pkg = require('../package.json');
 
+/**
+ * @interface AlipaySdkConfig SDK 配置
+ */
 export interface AlipaySdkConfig {
   /** 应用ID */
   appId: string;
-  /**
-   * 应用私钥字符串
-   * RSA签名验签工具：https://docs.open.alipay.com/291/106097）
-   * 密钥格式一栏请选择 “PKCS1(非JAVA适用)”
-   */
+  /** 应用私钥字符串。RSA签名验签工具：https://docs.open.alipay.com/291/106097）*/
   privateKey: string;
+  /** 签名种类 */
   signType?: 'RSA2' | 'RSA';
   /** 支付宝公钥（需要对返回值做验签时候必填） */
   alipayPublicKey?: string;
@@ -41,6 +41,7 @@ export interface AlipaySdkConfig {
   charset?: 'utf-8';
   /** api版本 */
   version?: '1.0';
+  /** 指定 urllib 库 */
   urllib?: any;
   /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */
   keyType?: 'PKCS1' | 'PKCS8';
@@ -69,18 +70,24 @@ export interface AlipaySdkConfig {
 }
 
 export interface AlipaySdkCommonResult {
+  /** 响应码。10000 表示成功，其余详见 https://opendocs.alipay.com/common/02km9f */
   code: string;
+  /** 响应讯息。Success 表示成功。 */
   msg: string;
+  /** 错误代号 */
   sub_code?: string;
+  /** 错误辅助信息 */
   sub_msg?: string;
+  /** 请求返回内容，详见各业务接口 */
   [key: string]: any;
 }
 
 export interface IRequestParams {
   [key: string]: any;
-  bizContent?: any;
-  // 自动AES加解密
-  needEncrypt?:boolean;
+  /** 业务请求参数 */
+  bizContent?: Record<string, any>;
+  /** 自动AES加解密 */
+  needEncrypt?: boolean;
 }
 
 export interface IRequestOption {
@@ -91,11 +98,17 @@ export interface IRequestOption {
   };
   formData?: AliPayForm;
 }
-
+/**
+ * Alipay SDK for Node.JS
+ */
 class AlipaySdk {
   private sdkVersion: string;
   public config: AlipaySdkConfig;
 
+  /**
+   * @constructor
+   * @param {AlipaySdkConfig} config 初始化 SDK 配置
+   */
   constructor(config: AlipaySdkConfig) {
     if (!config.appId) { throw Error('config.appId is required'); }
     if (!config.privateKey) { throw Error('config.privateKey is required'); }
@@ -249,6 +262,13 @@ class AlipaySdk {
     });
   }
 
+  /**
+   * 生成请求字符串，用于客户端进行调用
+   * @param {string} method 方法名
+   * @param {IRequestParams} params 请求参数
+   * @param {object} params.bizContent 业务请求参数
+   * @returns {string} 请求字符串
+   */
   public sdkExec(method: string, params: IRequestParams) {
     const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
 
@@ -257,6 +277,14 @@ class AlipaySdk {
     return sdkStr;
   }
 
+  /**
+   * 生成网站接口请求链接或表单
+   * @param {string} method 方法名
+   * @param {IRequestParams} params 请求参数
+   * @param {object} params.bizContent 业务请求参数
+   * @param {string} params.method 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 html
+   * @returns {string} 请求链接或表单 HTML
+   */
   public pageExec(method: string, params: IRequestParams & { method?: 'GET' | 'POST' }) {
     const formData = new AliPayForm();
     Object.entries(params).forEach(([k, v]) => {
@@ -268,7 +296,7 @@ class AlipaySdk {
 
 
   // page 类接口，兼容原来的 formData 格式
-  private _pageExec(method: string, option: IRequestOption = {}): Promise<string> {
+  private _pageExec(method: string, option: IRequestOption = {}): string {
     let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | Object };
     const config = this.config;
     const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
@@ -289,28 +317,23 @@ class AlipaySdk {
       url, method, JSON.stringify(signParams));
 
     if (option.formData.getMethod() === 'get') {
-      return new Promise((resolve) => {
-        const query = Object.keys(execParams).map((key) => {
-          return `${key}=${encodeURIComponent(execParams[key])}`;
-        });
-
-        resolve(`${url}&${query.join('&')}`);
+      const query = Object.keys(execParams).map((key) => {
+        return `${key}=${encodeURIComponent(execParams[key])}`;
       });
+
+      return `${url}&${query.join('&')}`;
     }
 
-    return new Promise((resolve) => {
-      // 生成表单
-      const formName = `alipaySDKSubmit${Date.now()}`;
-      resolve(`
-        <form action="${url}" method="post" name="${formName}" id="${formName}">
-          ${Object.keys(execParams).map((key) => {
-            const value = String(execParams[key]).replace(/\"/g, '&quot;');
-            return `<input type="hidden" name="${key}" value="${value}" />`;
-          }).join('')}
-        </form>
-        <script>document.forms["${formName}"].submit();</script>
-      `);
-    });
+    const formName = `alipaySDKSubmit${Date.now()}`;
+    return (`
+      <form action="${url}" method="post" name="${formName}" id="${formName}">
+        ${Object.keys(execParams).map((key) => {
+          const value = String(execParams[key]).replace(/\"/g, '&quot;');
+          return `<input type="hidden" name="${key}" value="${value}" />`;
+        }).join('')}
+      </form>
+      <script>document.forms["${formName}"].submit();</script>
+    `);
   }
 
   // 消息验签
@@ -335,7 +358,7 @@ class AlipaySdk {
   }
 
   /**
-   *
+   * @ignore
    * @param originStr 开放平台返回的原始字符串
    * @param responseKey xx_response 方法名 key
    */
@@ -372,27 +395,28 @@ class AlipaySdk {
 
     return validateStr;
   }
-  exec<T = {}>(
+
+  public exec<T = {}>(
     method: string,
     params?: IRequestParams,
     option?: Omit<IRequestOption, 'formData'>,
   ): Promise<AlipaySdkCommonResult & T>;
-  exec(
+  public exec(
     method: string,
     params?: IRequestParams,
     option?: IRequestOption,
   ): Promise<AlipaySdkCommonResult | string>;
   /**
-   * 执行请求
+   * 执行请求，调用支付宝服务端
    * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
-   * @param {object} params 请求参数
+   * @param {IRequestParams} params 请求参数
    * @param {object} params.bizContent 业务请求参数
-   * @param {Boolean} option 选项
+   * @param {IRequestOption} option 选项
    * @param {Boolean} option.validateSign 是否验签
    * @param {object} args.log 可选日志记录对象
-   * @return {Promise} 请求执行结果
+   * @return {Promise<AlipaySdkCommonResult | string>} 请求执行结果
    */
-  exec(
+  public async exec(
     method: string,
     params: IRequestParams = {},
     option: IRequestOption = {},
@@ -504,10 +528,11 @@ class AlipaySdk {
 
   /**
    * 通知验签
-   * @param postData {JSON} 服务端的消息内容
-   * @param raw {Boolean} 是否使用 raw 内容而非 decode 内容验签
+   * @param {JSON} postData 服务端的消息内容
+   * @param {Boolean} raw 是否使用 raw 内容而非 decode 内容验签
+   * @returns { Boolean } 验签是否成功
    */
-  checkNotifySign(postData: any, raw?: boolean): boolean {
+  public checkNotifySign(postData: any, raw?: boolean): boolean {
     const signStr = postData.sign;
 
     // 未设置“支付宝公钥”或签名字符串不存，验签不通过
