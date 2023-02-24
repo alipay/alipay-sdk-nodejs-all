@@ -271,9 +271,7 @@ class AlipaySdk {
    */
   public sdkExec(method: string, params: IRequestParams) {
     const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
-
     const sdkStr = new URLSearchParams(data).toString();
-    
     return sdkStr;
   }
 
@@ -290,7 +288,7 @@ class AlipaySdk {
     Object.entries(params).forEach(([k, v]) => {
       if (k === 'method') formData.setMethod(v?.toLowerCase());
       else formData.addField(k, v);
-    })
+    });
     return this._pageExec(method, { formData });
   }
 

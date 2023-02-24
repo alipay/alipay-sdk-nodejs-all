@@ -711,7 +711,6 @@ describe('sdk', function() {
         },
         returnUrl: 'https://www.taobao.com'
       });
-      console.log(result);
       (result.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
       (result.indexOf(`<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;`) > -1).should.eql(true);
       (result.indexOf(sdkVersion) > -1).should.eql(true);
@@ -730,7 +729,6 @@ describe('sdk', function() {
         },
         returnUrl: 'https://www.taobao.com'
       });
-      console.log(result);
       const url = decodeURIComponent(result);
       (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
       (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
@@ -855,9 +853,6 @@ describe('sdk', function() {
       const url2 = decodeURIComponent(result2);
 
       const index2 = url2.indexOf(stringified);
-
-      console.log(url1, url2);
-
 
       // 两者的效果应该一样，都被 stringified，由于签名不同，判断位置相等即可。
       index1.should.eql(index2);
