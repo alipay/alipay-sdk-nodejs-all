@@ -687,6 +687,57 @@ describe('sdk', function() {
 
   describe('pageExec', function() {
     let sdk;
+    beforeEach(function() {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey: privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+      })
+    });
+
+    it('post', async function () {
+      const result = await sdk.pageExec('alipay.trade.page.pay', {
+        method: 'POST',
+        bizContent: {
+          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
+          product_code: "FAST_INSTANT_TRADE_PAY",
+          subject: "abc",
+          body: "234",
+          // timeout_express: "90m",
+          total_amount: "0.01"
+        },
+        returnUrl: 'https://www.taobao.com'
+      });
+      (result.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
+      (result.indexOf(`<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;`) > -1).should.eql(true);
+      (result.indexOf(sdkVersion) > -1).should.eql(true);
+    });
+
+    it('get', async function() {
+      const result = await sdk.pageExec('alipay.trade.page.pay', {
+        method: 'GET',
+        bizContent: {
+          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
+          product_code: "FAST_INSTANT_TRADE_PAY",
+          subject: "abc",
+          body: "234",
+          // timeout_express: "90m",
+          total_amount: "0.01"
+        },
+        returnUrl: 'https://www.taobao.com'
+      });
+      const url = decodeURIComponent(result);
+      (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
+      (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
+      (url.indexOf(sdkVersion) > -1).should.eql(true);
+    })
+  });
+
+  describe('pageExec - legacy form data', function() {
+    let sdk;
 
     beforeEach(function() {
       sdk = new AlipaySdk({
@@ -766,6 +817,50 @@ describe('sdk', function() {
         }).catch(done)
     });
 
+    it('get - bizContent stringify is optional', async function() {
+      const bizContent = {
+        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
+        product_code: "FAST_INSTANT_TRADE_PAY",
+        subject: "abc",
+        body: "234",
+        total_amount: "0.01"
+      }
+
+      const stringified = JSON.stringify(bizContent);
+
+      // 第一次执行，stringified
+      const formData = new FormData();
+      formData.setMethod('get');
+      formData.addField('returnUrl', 'https://www.taobao.com');
+      formData.addField('bizContent', stringified);
+
+      
+      const result1 = await sdk.exec('alipay.trade.page.pay', {
+      }, { formData: formData });
+      const url1 = decodeURIComponent(result1);
+      const index1 = url1.indexOf(stringified);
+
+      // 第二次执行，传源对象
+      const form2 = new FormData();
+      form2.setMethod('get');
+      form2.addField('returnUrl', 'https://www.taobao.com');
+      form2.addField('bizContent', bizContent);
+
+      const result2 = await sdk.exec('alipay.trade.page.pay', {
+      }, { formData: form2 });
+
+
+      const url2 = decodeURIComponent(result2);
+
+      const index2 = url2.indexOf(stringified);
+
+      // 两者的效果应该一样，都被 stringified，由于签名不同，判断位置相等即可。
+      index1.should.eql(index2);
+      url1.should.eql(url2);
+      (index1 > -1).should.eql(true);
+
+    });
+
     it('disable log', function(done) {
       const bizContent = {
         out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
@@ -791,6 +886,38 @@ describe('sdk', function() {
           (url.indexOf(sdkVersion) > -1).should.eql(true);
           done();
         }).catch(done)
+    });
+  });
+
+  describe('sdkExec', function() {
+    let sdk;
+    beforeEach(function() {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey: privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+      })
+    });
+
+    it('normal', async function() {
+      const result = await sdk.sdkExec('alipay.trade.app.pay', {
+        bizContent: {
+          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
+          product_code: "FAST_INSTANT_TRADE_PAY",
+          subject: "abc",
+          body: "234",
+          // timeout_express: "90m",
+          total_amount: "0.01"
+        },
+        returnUrl: 'https://www.taobao.com'
+      })
+
+      const urlDecodedStr = decodeURIComponent(result);
+      urlDecodedStr.indexOf('method=alipay.trade.app.pay').should.be.above(-1);
+      urlDecodedStr.indexOf('biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}').should.be.above(-1);
     });
   });
 

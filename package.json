@@ -7,10 +7,10 @@
     "build": "npm run tsc",
     "tsc": "tsc -p ./tsconfig.json",
     "tsc:watch": "tsc -w",
-    "lint": "tslint -p ./tsconfig.json --fix",
-    "lint:no-fix": "tslint -p ./tsconfig.json",
+    "dev": "tsc -w",
+    "lint": "eslint .",
     "test": "npm run build && mocha",
-    "ci": "npm run tsc && npm run lint:no-fix && nyc mocha -t 6000",
+    "ci": "npm run tsc && nyc mocha -t 6000",
     "prepublishOnly": "npm run tsc && npm run test"
   },
   "author": "dersoncheng",
@@ -27,6 +27,7 @@
     "camelcase-keys": "^4.2.0",
     "crypto-js": "^4.0.0",
     "decamelize": "^2.0.0",
+    "iconv-lite": "^0.4.24",
     "is": "^3.2.1",
     "is-json": "^2.0.1",
     "isuri": "^2.0.3",
@@ -52,8 +53,8 @@
     ],
     "sourceMap": true
   },
-  "ci": {
-    "version": "8, 10, 12, 14"
+  "engines": {
+    "node": ">=8.0.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^0.1.3",
@@ -62,8 +63,8 @@
     "query-string": "^6.5.0",
     "should": "^11.1.1",
     "sinon": "^1.17.7",
-    "tslint": "^5.8.0",
-    "tslint-config-airbnb": "^5.4.2",
-    "typescript": "3.5.1"
+    "eslint": "^8.35.0",
+    "eslint-config-egg": "^12.1.0",
+    "typescript": "^4.9.0"
   }
 }

@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [8, 10, 12, 14, 16]
+        node-version: [8, 10, 12, 14, 16, 18]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -36,7 +36,28 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install Dependencies
-      run: npm i -g npminstall && npminstall
+      run: npm i
 
-    - name: Continuous Integration
+    - name: Code Coverage
       run: npm run ci
+  lint: 
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18]
+
+    steps:
+      - name: Checkout Git Source
+        uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install Dependencies
+        run: npm i
+      - name: Lint Workspace
+        run: npm run lint
+

@@ -68,7 +68,7 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     version: config.version,
     signType: config.signType,
     timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-  }, omit(params, ['bizContent', 'needEncrypt']));
+  }, omit(params, [ 'bizContent', 'needEncrypt' ]));
   if (config.appCertSn && config.alipayRootCertSn) {
     signParams = Object.assign({
       appCertSn: config.appCertSn,
@@ -103,17 +103,18 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
   const decamelizeParams = snakeCaseKeys(signParams);
 
   // 排序
-  const signStr = Object.keys(decamelizeParams).sort().map((key) => {
+  const signStr = Object.keys(decamelizeParams).sort().map(key => {
     let data = decamelizeParams[key];
     if (Array.prototype.toString.call(data) !== '[object String]') {
       data = JSON.stringify(data);
     }
     return `${key}=${iconv.encode(data, config.charset)}`;
-  }).join('&');
+  })
+    .join('&');
 
   // 计算签名
   const sign = crypto.createSign(ALIPAY_ALGORITHM_MAPPING[config.signType])
-                    .update(signStr, 'utf8').sign(config.privateKey, 'base64');
+    .update(signStr, 'utf8').sign(config.privateKey, 'base64');
 
   return Object.assign(decamelizeParams, { sign });
 }
