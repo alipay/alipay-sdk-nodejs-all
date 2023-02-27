@@ -118,7 +118,8 @@ const result = await alipaySdk.exec(
 ```
 <a name="axe5B"></a>
 ### pageExec 示例接口
-pageExec 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，如手机网站支付，电脑网站支付等接口。
+pageExec 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，如电脑网站支付（[alipay.trade.page.pay
+](https://opendocs.alipay.com/open/028r8t?scene=22)）等接口。
 ```typescript
 const bizContent = {
   out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
@@ -146,7 +147,7 @@ const result = sdk.pageExec('alipay.trade.page.pay', {
 ```
 <a name="Rw8WE"></a>
 ### sdkExec 示例接口
-sdkExec 方法主要是服务端生成请求字符串使用的，不会直接支付扣款，需传值到客户端进行调用收银台输入密码完成支付，如 App 支付接口（alipay.trade.app.pay）。
+sdkExec 方法主要是服务端生成请求字符串使用的，不会直接支付扣款，需传值到客户端进行调用收银台输入密码完成支付，如 App 支付接口 [alipay.trade.app.pay](https://opendocs.alipay.com/apis/api_1/alipay.trade.app.pay)。
 ```typescript
 // App 支付接口，生成请求字符串，
 const result = sdk.sdkExec('alipay.trade.app.pay', {
@@ -160,7 +161,8 @@ const result = sdk.sdkExec('alipay.trade.app.pay', {
   returnUrl: 'https://www.taobao.com'
 })
 
-// 返回支付宝客户端之后小程序通过 my.tradePay 进行调用。详见：https://opendocs.alipay.com/mini/api/openapi-pay
+// 返回支付宝客户端之后，在【小程序中】通过 my.tradePay 进行调用。
+// 详见：https://opendocs.alipay.com/mini/api/openapi-pay
 my.tradePay({
   // 服务端生成的字符串，即上面的 result
   orderStr: 'method=alipay.trade.app.pay&app_id=2021002182632749&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=2023-02-24%2016%3A20%3A28&app_auth_token=202302BBbcfad868001a4df3bbfa99e8a6913F10&sign=M%2B2sTNATtUk3i8cOhHGtqjVDHIHSpPReZgjfLfIgbQD4AvI%2Fh%2B%2FS2lkqfJVnI%2Bu0IQ2z7auE1AYQ0wd7yPC4%2B2m5WnN21Q6uQhCCHOsg30mXdnkdB3rgXIiFOSuURRwnaiBmKNKdhaXel51fxYZOTOApV47K6ZUsOlPxc%2FVJWUnC7Hrl64%2BAKqtbv%2BcaefzapYsJwGDzMAGccHGfxevSoZ2Ev7S0FsrDe4LBx4m%2BCWSIFASWFyWYxJq%2BJg7LH1HJqBdBk1jjh5JJ3bNlEqJk8MEFU7sNRae2ErdEPOwCchWkQOaVGOGpFlEHuTSvxnAKnjRkFerE14v%2BVm6weC1Tbw%3D%3D&alipay_sdk=alipay-sdk-nodejs-3.2.0&biz_content=%7B%22out_trade_no%22%3A%22ziheng-test-eeee%22%2C%22product_code%22%3A%22QUICK_MSECURITY_PAY%22%2C%22subject%22%3A%22%E8%AE%A2%E5%8D%95%E6%A0%87%E9%A2%98%22%2C%22total_amount%22%3A%220.01%22%2C%22body%22%3A%22%E8%AE%A2%E5%8D%95%E6%8F%8F%E8%BF%B0%22%7D',
