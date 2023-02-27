@@ -8,10 +8,9 @@
     "tsc": "tsc -p ./tsconfig.json",
     "tsc:watch": "tsc -w",
     "dev": "tsc -w",
-    "lint": "eslint --fix .",
-    "lint:no-fix": "eslint .",
+    "lint": "eslint .",
     "test": "npm run build && mocha",
-    "ci": " npm run lint:no-fix && npm run tsc && nyc mocha -t 6000",
+    "ci": "&& npm run tsc && nyc mocha -t 6000",
     "prepublishOnly": "npm run tsc && npm run test"
   },
   "author": "dersoncheng",
@@ -54,8 +53,8 @@
     ],
     "sourceMap": true
   },
-  "ci": {
-    "version": "8, 10, 12, 14"
+  "engines": {
+    "node": ">=8.0.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^0.1.3",
