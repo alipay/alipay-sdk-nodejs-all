@@ -6,7 +6,7 @@
     "experimentalDecorators": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "declaration": true
+    "declaration": true,
   },
   "include": ["lib/**/*", "typings/**/*"],
   "exclude": ["node_modules"]

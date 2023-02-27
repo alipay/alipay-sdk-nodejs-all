@@ -227,7 +227,6 @@ class AlipaySdk {
         json: false,
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
-      /* tslint:disable-next-line */
       }, (err, _response, body) => {
         if (err) {
           err.message = '[AlipaySdk]exec error';
@@ -291,7 +290,6 @@ class AlipaySdk {
     });
     return this._pageExec(method, { formData });
   }
-
 
   // page 类接口，兼容原来的 formData 格式
   private _pageExec(method: string, option: IRequestOption = {}): string {
