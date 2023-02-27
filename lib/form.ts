@@ -11,7 +11,7 @@ export interface IFile {
 }
 export interface IField {
   name: string;
-  value: string | Object;
+  value: string | object;
 }
 
 class AliPayForm {
@@ -42,7 +42,7 @@ class AliPayForm {
    * @param fieldName 字段名
    * @param fieldValue 字段值
    */
-  addField(fieldName: string, fieldValue: any | Object) {
+  addField(fieldName: string, fieldValue: any | object) {
     if (isJSON(fieldValue)) {
       // 当 fieldValue 为 json 字符串时，解析出 json
       this.fields.push({ name: fieldName, value: JSON.parse(fieldValue) });

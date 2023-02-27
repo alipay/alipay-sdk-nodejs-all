@@ -1,3 +1,4 @@
+/* eslint-disable prefer-promise-reject-errors */
 /**
  * @author tudou527
  * @email [tudou527@gmail.com]
@@ -17,6 +18,7 @@ import AliPayForm from './form';
 import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt } from './util';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require('../package.json');
 
 /**
@@ -106,7 +108,7 @@ class AlipaySdk {
   public config: AlipaySdkConfig;
 
   /**
-   * @constructor
+   * @class
    * @param {AlipaySdkConfig} config 初始化 SDK 配置
    */
   constructor(config: AlipaySdkConfig) {
@@ -128,10 +130,10 @@ class AlipaySdk {
       config.alipayRootCertSn = is.empty(config.alipayRootCertContent) ? getSNFromPath(config.alipayRootCertPath, true)
         : getSN(config.alipayRootCertContent, true);
       config.alipayPublicKey = is.empty(config.alipayPublicCertContent) ?
-      loadPublicKeyFromPath(config.alipayPublicCertPath) : loadPublicKey(config.alipayPublicCertContent);
+        loadPublicKeyFromPath(config.alipayPublicCertPath) : loadPublicKey(config.alipayPublicCertContent);
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     } else if (config.alipayPublicKey) {
-        // 普通公钥模式，传入了支付宝公钥
+      // 普通公钥模式，传入了支付宝公钥
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     }
     this.config = Object.assign({
@@ -189,12 +191,12 @@ class AlipaySdk {
   // 文件上传
   private multipartExec(method: string, option: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
     const config = this.config;
-    let signParams = {} as { [key: string]: string | Object };
-    let formData = {} as { [key: string]: string | Object | fs.ReadStream };
+    let signParams = {} as { [key: string]: string | object };
+    let formData = {} as { [key: string]: string | object | fs.ReadStream };
     const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
     const errorLog = (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
-    option.formData.getFields().forEach((field) => {
+    option.formData.getFields().forEach(field => {
       // 字段加入签名参数（文件不需要签名）
       signParams[field.name] = field.value;
       formData[field.name] = field.value;
@@ -205,7 +207,7 @@ class AlipaySdk {
 
     formData = snakeCaseKeys(formData);
 
-    option.formData.getFiles().forEach((file) => {
+    option.formData.getFiles().forEach(file => {
       // 文件名需要转换驼峰为下划线
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
@@ -237,11 +239,9 @@ class AlipaySdk {
         infoLog && infoLog('[AlipaySdk]exec response: %s', body);
 
         try {
-          let data;
-          let responseKey;
           const result = JSON.parse(body);
-          responseKey = `${method.replace(/\./g, '_')}_response`;
-          data = result[responseKey];
+          const responseKey = `${method.replace(/\./g, '_')}_response`;
+          const data = result[responseKey];
 
           // 开放平台返回错误时，`${responseKey}` 对应的值不存在
           if (data) {
@@ -266,7 +266,7 @@ class AlipaySdk {
    * @param {string} method 方法名
    * @param {IRequestParams} params 请求参数
    * @param {object} params.bizContent 业务请求参数
-   * @returns {string} 请求字符串
+   * @return {string} 请求字符串
    */
   public sdkExec(method: string, params: IRequestParams) {
     const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
@@ -280,11 +280,11 @@ class AlipaySdk {
    * @param {IRequestParams} params 请求参数
    * @param {object} params.bizContent 业务请求参数
    * @param {string} params.method 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 html
-   * @returns {string} 请求链接或表单 HTML
+   * @return {string} 请求链接或表单 HTML
    */
   public pageExec(method: string, params: IRequestParams & { method?: 'GET' | 'POST' }) {
     const formData = new AliPayForm();
-    Object.entries(params).forEach(([k, v]) => {
+    Object.entries(params).forEach(([ k, v ]) => {
       if (k === 'method') formData.setMethod(v?.toLowerCase());
       else formData.addField(k, v);
     });
@@ -293,11 +293,11 @@ class AlipaySdk {
 
   // page 类接口，兼容原来的 formData 格式
   private _pageExec(method: string, option: IRequestOption = {}): string {
-    let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | Object };
+    let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | object };
     const config = this.config;
     const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
 
-    option.formData.getFields().forEach((field) => {
+    option.formData.getFields().forEach(field => {
       signParams[field.name] = field.value;
     });
 
@@ -313,7 +313,7 @@ class AlipaySdk {
       url, method, JSON.stringify(signParams));
 
     if (option.formData.getMethod() === 'get') {
-      const query = Object.keys(execParams).map((key) => {
+      const query = Object.keys(execParams).map(key => {
         return `${key}=${encodeURIComponent(execParams[key])}`;
       });
 
@@ -323,10 +323,10 @@ class AlipaySdk {
     const formName = `alipaySDKSubmit${Date.now()}`;
     return (`
       <form action="${url}" method="post" name="${formName}" id="${formName}">
-        ${Object.keys(execParams).map((key) => {
-          const value = String(execParams[key]).replace(/\"/g, '&quot;');
-          return `<input type="hidden" name="${key}" value="${value}" />`;
-        }).join('')}
+        ${Object.keys(execParams).map(key => {
+        const value = String(execParams[key]).replace(/\"/g, '&quot;');
+        return `<input type="hidden" name="${key}" value="${value}" />`;
+      }).join('')}
       </form>
       <script>document.forms["${formName}"].submit();</script>
     `);
@@ -334,19 +334,21 @@ class AlipaySdk {
 
   // 消息验签
   private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2', raw?: boolean) {
-    const signContent = Object.keys(signArgs).sort().filter(val => val).map((key) => {
-      let value = signArgs[key];
+    const signContent = Object.keys(signArgs).sort().filter(val => val)
+      .map(key => {
+        let value = signArgs[key];
 
-      if (Array.prototype.toString.call(value) !== '[object String]') {
-        value = JSON.stringify(value);
-      }
-      // 如果 value 中包含了诸如 % 字符，decodeURIComponent 会报错
-      // 而且 notify 消息大部分都是 post 请求，无需进行 decodeURIComponent 操作
-      if (raw) {
-        return `${key}=${value}`;
-      }
-      return `${key}=${decodeURIComponent(value)}`;
-    }).join('&');
+        if (Array.prototype.toString.call(value) !== '[object String]') {
+          value = JSON.stringify(value);
+        }
+        // 如果 value 中包含了诸如 % 字符，decodeURIComponent 会报错
+        // 而且 notify 消息大部分都是 post 请求，无需进行 decodeURIComponent 操作
+        if (raw) {
+          return `${key}=${value}`;
+        }
+        return `${key}=${decodeURIComponent(value)}`;
+      })
+      .join('&');
 
     const verifier = crypto.createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
 
@@ -492,7 +494,7 @@ class AlipaySdk {
 
           reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
         })
-        .catch((err) => {
+        .catch(err => {
           err.message = '[AlipaySdk]exec error';
           errorLog && errorLog(err);
           reject(err);
@@ -526,7 +528,7 @@ class AlipaySdk {
    * 通知验签
    * @param {JSON} postData 服务端的消息内容
    * @param {Boolean} raw 是否使用 raw 内容而非 decode 内容验签
-   * @returns { Boolean } 验签是否成功
+   * @return { Boolean } 验签是否成功
    */
   public checkNotifySign(postData: any, raw?: boolean): boolean {
     const signStr = postData.sign;

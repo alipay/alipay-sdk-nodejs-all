@@ -8,7 +8,7 @@
     "tsc": "tsc -p ./tsconfig.json",
     "tsc:watch": "tsc -w",
     "dev": "tsc -w",
-    "lint": "eslint --fix",
+    "lint": "eslint --fix .",
     "lint:no-fix": "eslint .",
     "test": "npm run build && mocha",
     "ci": " npm run lint:no-fix && npm run tsc && nyc mocha -t 6000",
