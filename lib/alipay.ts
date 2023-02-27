@@ -270,7 +270,9 @@ class AlipaySdk {
    */
   public sdkExec(method: string, params: IRequestParams) {
     const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
-    const sdkStr = new URLSearchParams(data).toString();
+    const sdkStr = Object.keys(data).map(key => {
+      return `${key}=${encodeURIComponent(data[key])}`;
+    }).join('&');
     return sdkStr;
   }
 
@@ -428,6 +430,7 @@ class AlipaySdk {
        * fromData 中不包含文件时，认为是 page 类接口（返回 form 表单）
        * 比如 PC 端支付接口 alipay.trade.page.pay
        */
+      console.warn('[Warning] page interface through formdata is deprecated. Use sdk.pageExec instead');
       return this._pageExec(method, option);
     }
 
