@@ -10,7 +10,7 @@
     "dev": "tsc -w",
     "lint": "eslint .",
     "test": "npm run build && mocha",
-    "ci": "&& npm run tsc && nyc mocha -t 6000",
+    "ci": "npm run tsc && nyc mocha -t 6000",
     "prepublishOnly": "npm run tsc && npm run test"
   },
   "author": "dersoncheng",
