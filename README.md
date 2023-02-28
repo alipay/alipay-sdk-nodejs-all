@@ -85,7 +85,7 @@ const result = await alipaySdk.exec('alipay.open.auth.token.app.query', {
 用于向支付宝服务器发起请求。与具体接口相关的业务参数，需要放在 bizContent 中。
 ```typescript
 const result = await alipay.exec('alipay.trade.pay', {
-  notify_url: 'http:/www.notify.com/notify', // 通知回调地址
+  notify_url: 'http://www.notify.com/notify', // 通知回调地址
   bizContent: {
     out_trade_no: '商家的交易码，需保持唯一性',
     total_amount: '0.1',
@@ -120,6 +120,8 @@ const result = await alipaySdk.exec(
 ### pageExec 示例接口
 pageExec 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，如电脑网站支付（[alipay.trade.page.pay
 ](https://opendocs.alipay.com/open/028r8t?scene=22)）等接口。
+
+表单示例：
 ```typescript
 const bizContent = {
   out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
@@ -132,25 +134,40 @@ const bizContent = {
 // 支付页面接口，返回 html 代码片段，内容为 Form 表单
 const result = sdk.pageExec('alipay.trade.page.pay', {
   method: 'POST',
-	bizContent,
+  bizContent,
   returnUrl: 'https://www.taobao.com'
 });
+```
 
+```html
+<form action="https://openapi.alipay.com/gateway.do?method=alipay.trade.app.pay&app_id=2021002182632749&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=2023-02-28%2011%3A48%3A28&app_auth_token=202302BBbcfad868001a4df3bbfa99e8a6913F10&sign=j9DjDGgxLt3jbOQZy7q7Qu8baKWTl4hZlxOHa%2B46hC1djmFx%2FIyBqzQntPMurzz3f8efXJsalZz3nqZ9ClowCCxBfBvqE0cdzCDAeQ1GMgjd7dbWgjfNNcqKgmJPsIkLaHnP5vTvj%2BA27SqkeZCMbeVfv%2B4nYurXaFB9dNBtA%3D%3D" method="post" name="alipaySDKSubmit1677556108819" id="alipaySDKSubmit1677556108819">
+    <input type="hidden" name="alipay_sdk" value="alipay-sdk-nodejs-3.3.0" /><input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;:&quot;ziheng-test-eeee&quot;,&quot;product_code&quot;:&quot;QUICK_MSECURITY_PAY&quot;,&quot;subject&quot;:&quot;订单标题&quot;,&quot;total_amount&quot;:&quot;0.01&quot;,&quot;body&quot;:&quot;订单描述&quot;}" />
+  </form>
+<script>document.forms["alipaySDKSubmit1677556108819"].submit();</script>
+
+```
+
+支付链接示例：
+```ts
 // 支付页面接口，返回支付链接，交由用户打开，会跳转至支付宝网站
 const result = sdk.pageExec('alipay.trade.page.pay', {
   method: 'GET',
-	bizContent,
+  bizContent,
   returnUrl: 'https://www.taobao.com'
 });
 
+// 返回示例：https://openapi.alipay.com/gateway.do?method=alipay.trade.app.pay&app_id=2021002182632749&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=2023-02-28%2011%3A46%3A35&app_auth_token=202302BBbcfaf3bbfa99e8a6913F10&sign=TPi33NcaKLRBLJDofon84D8itMoBkVAdJsfmIiQDScEw4NHAklXvcvn148A2t47YxDSK0urBnhS0%2BEV%2BVR6h6aKgp931%2FfFbG1I3SAguMjMbr23gnbS68d4spcQ%3D%3D&alipay_sdk=alipay-sdk-nodejs-3.3.0&biz_content=blabla
+
 
 ```
+
+
 <a name="Rw8WE"></a>
 ### sdkExec 示例接口
 sdkExec 方法主要是服务端生成请求字符串使用的，不会直接支付扣款，需传值到客户端进行调用收银台输入密码完成支付，如 App 支付接口 [alipay.trade.app.pay](https://opendocs.alipay.com/apis/api_1/alipay.trade.app.pay)。
 ```typescript
 // App 支付接口，生成请求字符串，
-const result = sdk.sdkExec('alipay.trade.app.pay', {
+const orderStr = sdk.sdkExec('alipay.trade.app.pay', {
   bizContent: {
     out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
     product_code: "FAST_INSTANT_TRADE_PAY",
@@ -168,8 +185,8 @@ my.tradePay({
   orderStr: 'method=alipay.trade.app.pay&app_id=2021002182632749&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=2023-02-24%2016%3A20%3A28&app_auth_token=202302BBbcfad868001a4df3bbfa99e8a6913F10&sign=M%2B2sTNATtUk3i8cOhHGtqjVDHIHSpPReZgjfLfIgbQD4AvI%2Fh%2B%2FS2lkqfJVnI%2Bu0IQ2z7auE1AYQ0wd7yPC4%2B2m5WnN21Q6uQhCCHOsg30mXdnkdB3rgXIiFOSuURRwnaiBmKNKdhaXel51fxYZOTOApV47K6ZUsOlPxc%2FVJWUnC7Hrl64%2BAKqtbv%2BcaefzapYsJwGDzMAGccHGfxevSoZ2Ev7S0FsrDe4LBx4m%2BCWSIFASWFyWYxJq%2BJg7LH1HJqBdBk1jjh5JJ3bNlEqJk8MEFU7sNRae2ErdEPOwCchWkQOaVGOGpFlEHuTSvxnAKnjRkFerE14v%2BVm6weC1Tbw%3D%3D&alipay_sdk=alipay-sdk-nodejs-3.2.0&biz_content=%7B%22out_trade_no%22%3A%22ziheng-test-eeee%22%2C%22product_code%22%3A%22QUICK_MSECURITY_PAY%22%2C%22subject%22%3A%22%E8%AE%A2%E5%8D%95%E6%A0%87%E9%A2%98%22%2C%22total_amount%22%3A%220.01%22%2C%22body%22%3A%22%E8%AE%A2%E5%8D%95%E6%8F%8F%E8%BF%B0%22%7D',
   success: (res) => {
     my.alert({
-    	content: JSON.stringify(res),
-  	});
+      content: JSON.stringify(res),
+    });
   },
   fail: (res) => {
     my.alert({
