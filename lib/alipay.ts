@@ -198,9 +198,12 @@ class AlipaySdk {
 
     option.formData.getFields().forEach(field => {
       // 字段加入签名参数（文件不需要签名）
-      signParams[field.name] = typeof field.value === 'object' ? JSON.stringify(field.value) : field.value;
-      // （兼容 pageExec）formData 的字段类型应为 string。
-      formData[field.name] = typeof field.value === 'object' ? JSON.stringify(field.value) : field.value;
+      if (field.value) {
+        // （兼容 pageExec）formData 的字段类型应为 string。
+        const parsedFieldValue = typeof field.value === 'object' ? JSON.stringify(field.value) : field.value;
+        signParams[field.name] = parsedFieldValue;
+        formData[field.name] = parsedFieldValue;
+      }
     });
 
     // 签名方法中使用的 key 是驼峰
