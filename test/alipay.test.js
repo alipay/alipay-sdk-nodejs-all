@@ -474,7 +474,6 @@ describe('sdk', function() {
         .exec('alipay.open.agent.facetoface.sign', {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
-          console.log(ret);
           ret.code.should.eql('40004');
           ret.subCode.should.eql('BATCH_IS_NOT_EXIST');
           done();
