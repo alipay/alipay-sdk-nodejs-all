@@ -195,9 +195,11 @@ class AlipaySdk {
     const errorLog = (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
     option.formData.getFields().forEach(field => {
+      // formData 的字段类型应为 string。（兼容 null）
+      const parsedFieldValue = (typeof field.value === 'object' && field.value !== null) ? JSON.stringify(field.value) : field.value;
       // 字段加入签名参数（文件不需要签名）
-      signParams[field.name] = field.value;
-      formData[field.name] = field.value;
+      signParams[field.name] = parsedFieldValue;
+      formData[field.name] = parsedFieldValue;
     });
 
     // 签名方法中使用的 key 是驼峰

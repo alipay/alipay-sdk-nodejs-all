@@ -431,6 +431,7 @@ describe('sdk', function() {
         .exec('alipay.offline.material.image.upload', {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
+          // 该用例沙箱环境系统繁忙
           ret.code.should.eql('20000');
           // ret.msg.should.eql('Success');
           // (!ret.imageId).should.eql(false);
@@ -445,39 +446,38 @@ describe('sdk', function() {
         }).catch(done)
     });
 
-    // it('upload by uri', function(done) {
-    //   const infoLog = [];
-    //   const errorLog = [];
-    //   const log = {
-    //     info(...args) { infoLog.push(args.join('')) },
-    //     error(...args) { errorLog.push(args.join('')) },
-    //   }
-    //   const filePath = 'https://lidvdsgz.cdn.bspapp.com/2138306492-pretest/901abc40-8024-11e9-ba2f-f31ddc563146.png';
+    it('multipart should serialize object field', function(done) {
+      const infoLog = [];
+      const errorLog = [];
+      const log = {
+        info(...args) { infoLog.push(args.join('')) },
+        error(...args) { errorLog.push(args.join('')) },
+      }
+      const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
-    //   const form = new FormData();
-    //   form.addField('imageType', 'jpg');
-    //   form.addField('imageName', '测试图片.jpg');
-    //   form.addFile('imageContent', '测试图片.jpg', filePath);
+      const form = new FormData();
+      form.addField('batchNo', '2023041718395879900017017');
+      form.addField('imageName', '图片.jpg');
+      form.addField('mcc_code', 'A0002_B0201');
+      form.addField('shopAddress', {
+        countryCode: '156',
+        provinceCode: '340000',
+        cityCode: '340100',
+        districtCode: '340103',
+        detailAddress: '合肥市包河区中国视觉人工智能产业港A4',
+      });
+      form.addFile('shop_scene_pic', '图片.jpg', filePath);
+      this.timeout(20000);
 
-    //   this.timeout(30000);
-
-    //   sdk
-    //     .exec('alipay.offline.material.image.upload', {
-    //     }, { log, formData: form, validateSign: true })
-    //     .then(ret => {
-    //       ret.code.should.eql('20000');
-    //       ret.msg.should.eql('Success');
-    //       (!ret.imageId).should.eql(false);
-    //       (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
-
-    //       infoLog.length.should.eql(2);
-    //       (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-    //       (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-    //       errorLog.should.eql([]);
-
-    //       done();
-    //     }).catch(done)
-    // });
+      sdk
+        .exec('alipay.open.agent.facetoface.sign', {
+        }, { log, formData: form, validateSign: true })
+        .then(ret => {
+          ret.code.should.eql('40004');
+          ret.subCode.should.eql('BATCH_IS_NOT_EXIST');
+          done();
+        }).catch(done)
+    });
 
     it('sign error', function(done) {
       const infoLog = [];
@@ -1292,7 +1292,8 @@ describe('sdk', function() {
       })
     });
 
-    it('execute with validateSign is true', function(done) {
+    // 沙箱网关环境问题
+    it.skip('execute with validateSign is true', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
