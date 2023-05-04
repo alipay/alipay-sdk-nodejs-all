@@ -19,7 +19,6 @@
   "license": "ISC",
   "dependencies": {
     "@fidm/x509": "^1.2.1",
-    "@types/node": "^9.6.0",
     "bignumber.js": "^9.0.0",
     "camelcase-keys": "^4.2.0",
     "crypto-js": "^4.0.0",
@@ -27,7 +26,6 @@
     "iconv-lite": "^0.4.24",
     "is": "^3.2.1",
     "is-json": "^2.0.1",
-    "isuri": "^2.0.3",
     "lodash": "^4.17.20",
     "moment": "^2.16.0",
     "snakecase-keys": "^1.1.1",
