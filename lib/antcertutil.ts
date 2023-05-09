@@ -1,6 +1,5 @@
 /**
  * @author yisheng.cl
- * @email [yisheng.cl@alibaba-inc.com]
 */
 
 import * as fs from 'fs';

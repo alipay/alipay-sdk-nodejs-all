@@ -1,7 +1,6 @@
 /* eslint-disable prefer-promise-reject-errors */
 /**
- * @author tudou527
- * @email [tudou527@gmail.com]
+ * @author troyeagle
 */
 
 import * as is from 'is';
