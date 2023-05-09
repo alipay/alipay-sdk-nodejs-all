@@ -14,6 +14,7 @@ Alipay SDK for Node.js 用于给 Node 服务器提供调用支付宝开放平台
 
 - 先前往[支付宝开发平台-开发者中心](https://openhome.alipay.com/platform/developerIndex.htm)完成开发者接入的一些准备工作，包括创建应用、为应用添加功能包、设置[应用的接口加签方式](https://opendocs.alipay.com/common/02kf5p)等。
    - 可以使用 [支付宝开放平台秘钥工具](https://opendocs.alipay.com/common/02kipk) 获取所需的公私钥，并在平台上上传公钥。
+   - 本 SDK 默认采用 `PKCS1` 的格式解析密钥，与密钥工具的默认生成格式不一致。请使用密钥工具【格式转换】功能转为 `PKCS1`，或在本 SDK 初始化时显式指定 `keyType: 'PKCS8'`。
 - 在设置加签方式结束之后，记录必要信息用于初始化 SDK。
    - 公钥证书模式（推荐）： `appId`、`应用私钥`、`应用公钥证书文件`、`支付宝公钥证书文件`、`支付宝根证书文件`
    - 公钥模式：`appId`、`应用私钥`、`应用公钥`、`支付宝公钥`
@@ -30,6 +31,7 @@ const AlipaySdk = require('alipay-sdk');
 // 普通公钥模式
 const alipaySdk = new AlipaySdk({
   appId: '2016123456789012',
+  // keyType: 'PKCS1', // 默认值。请与生成的密钥格式保持一致，参考平台配置一节
   privateKey: fs.readFileSync('private-key.pem', 'ascii'),
   alipayPublicKey: fs.readFileSync('alipay-public-key.pem', 'ascii'),
 });
@@ -83,6 +85,7 @@ const result = await alipaySdk.exec('alipay.open.auth.token.app.query', {
 <a name="Y6rw4"></a>
 ### exec 示例接口
 用于向支付宝服务器发起请求。与具体接口相关的业务参数，需要放在 bizContent 中。
+
 ```typescript
 const result = await alipay.exec('alipay.trade.pay', {
   notify_url: 'http://www.notify.com/notify', // 通知回调地址
@@ -93,6 +96,9 @@ const result = await alipay.exec('alipay.trade.pay', {
   }
 });
 ```
+
+> 请注意 `bizContent` 为驼峰，与其他语言的 SDK 可能有区别。部分接口，如 [`alipay.system.oauth.token`](https://opendocs.alipay.com/open/05nai1)，其请求参数不在 bizContent 中。具体可参考官网各接口定义。
+
 <a name="tPtNK"></a>
 ### 使用 AlipayFormData 配置表单
 部分接口需要上传文件。SDK 内部封装了一个 Form 对象，用以在发起 multipart/form-data 请求时使用。以 [上传门店照片和视频接口](https://opendocs.alipay.com/apis/api_3/alipay.offline.material.image.upload) 为例：
@@ -227,20 +233,20 @@ const signRes = sdk.checkNotifySign(queryObj);
 | --- | --- | --- | --- |
 | appId | 应用ID | `string` | 是 |
 | privateKey | 应用私钥字符串。RSA签名验签工具：<br />[https://docs.open.alipay.com/291/106097](https://docs.open.alipay.com/291/106097) | `string` | 是 |
-| signType | 签名种类 | `"RSA2"&#124;"RSA"` | 否 |
+| signType | 签名种类 | `"RSA2"` &#124; `"RSA"` | 否 |
 | alipayPublicKey | 支付宝公钥（需要对返回值做验签时候必填） | `string` | 否 |
 | gateway | 网关 | `string` | 否 |
 | timeout | 网关超时时间（单位毫秒，默认 5s） | `number` | 否 |
 | camelcase | 是否把网关返回的下划线 key 转换为驼峰写法 | `boolean` | 否 |
-| keyType | 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY | `"PKCS1"&#124;"PKCS8"` | 否 |
+| keyType | 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY | `"PKCS1"` &#124; `"PKCS8"` | 否 |
 | appCertPath | 应用公钥证书文件路径 | `string` | 否 |
-| appCertContent | 应用公钥证书文件内容 | `string&#124;Buffer` | 否 |
+| appCertContent | 应用公钥证书文件内容 | `string Buffer` | 否 |
 | appCertSn | 应用公钥证书sn | `string` | 否 |
 | alipayRootCertPath | 支付宝根证书文件路径 | `string` | 否 |
-| alipayRootCertContent | 支付宝根证书文件内容 | `string&#124;Buffer` | 否 |
+| alipayRootCertContent | 支付宝根证书文件内容 | `string` &#124; `Buffer` | 否 |
 | alipayRootCertSn | 支付宝根证书sn | `string` | 否 |
 | alipayPublicCertPath | 支付宝公钥证书文件路径 | `string` | 否 |
-| alipayPublicCertContent | 支付宝公钥证书文件内容 | `string&#124;Buffer` | 否 |
+| alipayPublicCertContent | 支付宝公钥证书文件内容 | `string` &#124; `Buffer` | 否 |
 | alipayCertSn | 支付宝公钥证书sn | `string` | 否 |
 | encryptKey | AES密钥，调用AES加解密相关接口时需要 | `string` | 否 |
 | wsServiceUrl | 服务器地址 | `string` | 否 |
