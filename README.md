@@ -97,7 +97,7 @@ const result = await alipay.exec('alipay.trade.pay', {
 });
 ```
 
-> 请注意 `bizContent` 为驼峰，与其他语言的 SDK 可能有区别。部分接口，如 [`alipay.system.oauth.token`](https://opendocs.alipay.com/open/05nai1)，其请求参数不在 bizContent 中。具体可参考官网各接口定义。
+> 部分接口，如 [`alipay.system.oauth.token`](https://opendocs.alipay.com/open/05nai1)，其请求参数不在 bizContent 中。具体可参考官网各接口定义。
 
 <a name="tPtNK"></a>
 ### 使用 AlipayFormData 配置表单

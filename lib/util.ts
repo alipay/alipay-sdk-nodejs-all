@@ -78,7 +78,11 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     signParams.wsServiceUrl = config.wsServiceUrl;
   }
 
-  const bizContent = params.bizContent;
+  // 兼容官网的 biz_content;
+  if (params.bizContent && params.biz_content) {
+    throw Error('不能同时设置 bizContent 和 biz_content');
+  }
+  const bizContent = params.bizContent || params.biz_content;
 
   if (bizContent) {
     // AES加密
