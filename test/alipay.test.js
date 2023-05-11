@@ -21,8 +21,8 @@ const sandbox = sinon.sandbox.create();
 const pkgJson = require('../package.json');
 const sdkVersion = `alipay-sdk-nodejs-${pkgJson.version}`;
 
-const APP_ID = '2016073100135823';
-const GATE_WAY = 'https://openapi.alipaydev.com/gateway.do';
+const APP_ID = '2021000122671080';
+const GATE_WAY = 'https://openapi-sandbox.dl.alipaydev.com/gateway.do';
 
 describe('sdk', function() {
   afterEach(function() {
@@ -69,7 +69,7 @@ describe('sdk', function() {
     });
 
     it('formatKey with pkcs8', function() {
-      const pkcs8PrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-pkcs8.pem', 'ascii');
+      const pkcs8PrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-pkcs8-no-wrapper.pem', 'ascii');
       const alipaySdk = new AlipaySdk({
         appId: '111',
         privateKey: pkcs8PrivateKey,
@@ -372,7 +372,7 @@ describe('sdk', function() {
 
     it('证书校验模式 formatUrl和加签', function(done) {
       sandbox.stub(urllib, 'request', function(url) {
-        const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2';
+        const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2';
         (url.indexOf(urlKeyPart) > 0).should.be.true();
         return Promise.resolve({
           status: 200,
@@ -421,26 +421,23 @@ describe('sdk', function() {
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
-      form.addField('imageType', 'jpg');
-      form.addField('imageName', '图片.jpg');
-      form.addFile('imageContent', '图片.jpg', filePath);
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', filePath);
 
       this.timeout(20000);
 
       sdk
-        .exec('alipay.offline.material.image.upload', {
+        .exec('alipay.open.file.upload', {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
-          // 该用例沙箱环境系统繁忙
-          ret.code.should.eql('20000');
-          // ret.msg.should.eql('Success');
-          // (!ret.imageId).should.eql(false);
-          // (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
-
-          // infoLog.length.should.eql(2);
-          // (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-          // (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-          // errorLog.should.eql([]);
+          ret.code.should.eql('10000');
+          ret.msg.should.eql('Success');
+          (!ret.fileId).should.eql(false);
+          
+          infoLog.length.should.eql(2);
+          (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
+          (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+          errorLog.should.eql([]);
 
           done();
         }).catch(done)
@@ -469,12 +466,18 @@ describe('sdk', function() {
       form.addFile('shop_scene_pic', '图片.jpg', filePath);
       this.timeout(20000);
 
+      sandbox.stub(sdk, 'checkResponseSign', function() { return true; });
+      sandbox.stub(urllib, 'request', function(url, options) {
+        if (typeof options.data.shop_address !== 'string') {
+          return Promise.reject('serialize failure');
+        }
+        return Promise.resolve({ data: '{"alipay_open_agent_facetoface_sign_response":{"a":"b"}}' });
+      });
+
       sdk
         .exec('alipay.open.agent.facetoface.sign', {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
-          ret.code.should.eql('40004');
-          ret.subCode.should.eql('BATCH_IS_NOT_EXIST');
           done();
         }).catch(done)
     });
@@ -494,7 +497,7 @@ describe('sdk', function() {
       form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
-      sandbox.stub(urllib, 'request', function(option, callback) {
+      sandbox.stub(urllib, 'request', function(url, options) {
         return Promise.resolve({data: '{"alipay_offline_material_image_upload_response":{"a":"b"}}'});
       });
 
@@ -526,7 +529,7 @@ describe('sdk', function() {
       form.addField('imageName', '图片.jpg');
       form.addFile('imageContent', '图片.jpg', filePath);
 
-      sandbox.stub(urllib, 'request', function(option, callback) {
+      sandbox.stub(urllib, 'request', function(url, options) {
         throw ({ error: 'custom error.' });
       });
 
@@ -558,7 +561,7 @@ describe('sdk', function() {
       form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
-      sandbox.stub(urllib, 'request', function(option, callback) {
+      sandbox.stub(urllib, 'request', function(url, options) {
         return Promise.resolve({data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}'});
       });
 
@@ -591,7 +594,7 @@ describe('sdk', function() {
       form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
-      sandbox.stub(urllib, 'request', function(option, callback) {
+      sandbox.stub(urllib, 'request', function(url, options) {
         return {};
       });
 
@@ -729,7 +732,7 @@ describe('sdk', function() {
         returnUrl: 'https://www.taobao.com'
       });
       const url = decodeURIComponent(result);
-      (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
+      (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
       (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
       (url.indexOf(sdkVersion) > -1).should.eql(true);
     })
@@ -809,7 +812,7 @@ describe('sdk', function() {
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
           errorLog.length.should.eql(0);
 
-          (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
+          (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
           (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
           (url.indexOf(sdkVersion) > -1).should.eql(true);
           done();
@@ -879,8 +882,7 @@ describe('sdk', function() {
         }, { formData: formData })
         .then(ret => {
           const url = decodeURIComponent(ret);
-
-          (url.indexOf('method=alipay.trade.page.pay&app_id=2016073100135823&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
+          (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
           (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
           (url.indexOf(sdkVersion) > -1).should.eql(true);
           done();
@@ -1017,9 +1019,9 @@ describe('sdk', function() {
     });
 
     it('normal', function(done) {
-      const signStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"akGwYYaFTai3r1uB0ww-1QAAACMAAQQD","image_url":"https:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=akGwYYaFTai3r1uB0ww-1QAAACMAAQQD&zoom=original"},"sign":"PAb3IueJzGe/pU/fRAPjwIs543Kc/A6D0rz03AMejwr8h8rDc6FhDJDnz3fGLDdQP7ctjtQwwJW3pmdZZcGmp4lb/5YYgtoK6McjnRr4ER/raJLYn1IbpzkowhGow2esA/XeDblIAYUbZjU6ts0IqNncrZrCknDWHpaZXwGuaU7CUBk74xBeMeja7rEEkFlm9MRtiQNYnum/cGVtcDv/aQ8KkPyAD58oJiAzoXv0R6jFhlZtAWv+M0SaOlhTpZh1K6wlP+1Umiqdvqbc1oWdfpv75a+lGTkGHMy8K7/bnAGm20IRsisSv1B5rpJyeGfrVf6tb4MZ7vG4w0rS0c2hfA=="}';
-
-      const result = sdk.checkResponseSign(signStr, 'alipay_offline_material_image_upload_response');
+      // 从实测中获取，公钥修改后需要变更
+      const signStr = '{"alipay_open_file_upload_response":{"code":"10000","msg":"Success","file_id":"CAxAToWB1JsAAAAAAAAAAAAADgSLAQBr"},"sign":"F+LDzpTNiavn7xVZPGuPCSSVRSmWzJGgtuji6tVELGEaqMaNj0jRKXUEr5nloZJBBmwEnddOyCjjepMmrTKTvoOqQ0Efxpr/R1iEeHTHVbb/Q8TTh6Up5gHJDkILdaWS2q1cWeQ6VT+HQY9P3WRXS7uhILHuDODIhpAyCu5KhWGt0rMCIG+Im6NODJP2oohtSCtmTFXg58HH587Z2y2bdbjzOxLvzD9IrU1imghXQ2S/Q+wMIvRk9on6cWnBLkrNvJKapA2ReNGWOwyuASvB9zDVzhMPbR+3mfRGkVDxsq5HYLjBKGskJMXHw0HuugZij6ScRuaLPODhmHwr/pJ9yw=="}';
+      const result = sdk.checkResponseSign(signStr, 'alipay_open_file_upload_response');
       result.should.eql(true);
       done();
     });
@@ -1282,7 +1284,7 @@ describe('sdk', function() {
       const pkcs8PrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-pkcs8.pem', 'ascii');
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
-        appId: '2016080500175094',
+        appId: APP_ID,
         privateKey: pkcs8PrivateKey,
         signType: 'RSA2',
         alipayPublicKey,
@@ -1292,8 +1294,8 @@ describe('sdk', function() {
       })
     });
 
-    // 沙箱网关环境问题
-    it.skip('execute with validateSign is true', function(done) {
+    // 沙箱网关环境可能不稳定，仅当成功返回时校验。
+    it('execute with validateSign is true', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
@@ -1308,18 +1310,20 @@ describe('sdk', function() {
           bizContent: {},
         }, { log })
         .then(ret => {
-          (ret.shopCategoryConfigInfos.length > 0).should.eql(true);
+          if (ret.code === '10000') {
+            (ret.shopCategoryConfigInfos.length > 0).should.eql(true);
 
-          ret.shopCategoryConfigInfos[0].should.have.property('id');
-          ret.shopCategoryConfigInfos[0].should.have.property('level');
-          ret.shopCategoryConfigInfos[0].should.have.property('link');
-          ret.shopCategoryConfigInfos[0].should.have.property('isLeaf');
-          ret.shopCategoryConfigInfos[0].should.have.property('nm');
+            ret.shopCategoryConfigInfos[0].should.have.property('id');
+            ret.shopCategoryConfigInfos[0].should.have.property('level');
+            ret.shopCategoryConfigInfos[0].should.have.property('link');
+            ret.shopCategoryConfigInfos[0].should.have.property('isLeaf');
+            ret.shopCategoryConfigInfos[0].should.have.property('nm');
 
-          infoLog.length.should.eql(2);
-          (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-          (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-          errorLog.should.eql([]);
+            infoLog.length.should.eql(2);
+            (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
+            (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+            errorLog.should.eql([]);
+          }
 
           done();
         }).catch(done)

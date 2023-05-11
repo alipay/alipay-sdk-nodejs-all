@@ -229,7 +229,6 @@ class AlipaySdk {
         data: formData,
         dataType: 'text',
       });
-
       const { data: body } = response;
       infoLog && infoLog('[AlipaySdk]exec response: %s', body);
 
