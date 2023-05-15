@@ -1,13 +1,11 @@
 # Changelog
 
-## [1.0.0-beta.2](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-05-15)
+## [3.4.0-beta.1](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-05-15)
 
 
 ### Bug Fixes
 
 * beta2 ([bc0e8f0](https://github.com/alipay/alipay-sdk-nodejs-all/commit/bc0e8f0c85c11b22864eeb3fbf3dccffc421aae0))
-
-## 1.0.0-beta.1 (2023-05-15)
 
 
 ### Features
@@ -33,3 +31,18 @@
 * 修改验签方法，同时支持带 sign_type 验签和不带 sign_type 的情况 ([178b4e8](https://github.com/alipay/alipay-sdk-nodejs-all/commit/178b4e8803c0ed9f3a6ca35fa55caae60b060e55))
 * 处理 exec response 异常的情况 ([#86](https://github.com/alipay/alipay-sdk-nodejs-all/issues/86)) ([43ada85](https://github.com/alipay/alipay-sdk-nodejs-all/commit/43ada85013867faf95d38b3d27e35595d6344eef))
 * 开放平台返回 error response 时返回失败；增加 js 调用文档 ([9107ceb](https://github.com/alipay/alipay-sdk-nodejs-all/commit/9107cebb6e1727997a86e2162e725720c67dfa92))
+
+
+
+3.1.7 / 2021-09-07
+==================
+
+**features**
+  * [[`fb6b24e`](https://github.com/alipay/alipay-sdk-nodejs-all.git/commit/fb6b24e021d2827bc168a2b669ebd15eb188bc88)] - feat: checkNotifySign 增加可选参数 decodeURIComponent 操作和 ws_service_url 参数 (#85) (sky <<hubcarl@126.com>>)
+
+**fixes**
+  * [[`43ada85`](https://github.com/alipay/alipay-sdk-nodejs-all.git/commit/43ada85013867faf95d38b3d27e35595d6344eef)] - fix: 处理 exec response 异常的情况 (#86) (Barret李靖 <<barret.china@gmail.com>>)
+
+**others**
+  * [[`0b340c7`](https://github.com/alipay/alipay-sdk-nodejs-all.git/commit/0b340c7c794e3db52daf59354fcabbcde230595a)] - 新增AES加解密功能 (弩哥 <<nuge.lw@antfin.com>>)
+  * [[`3108aa3`](https://github.com/alipay/alipay-sdk-nodejs-all.git/commit/3108aa3448b00243836fdc4e45de020ed05f64e2)] - chore: 删除 aes 加密文档入口(功能未实现) (tudou527 <<tudou527@gmail.com>>),
