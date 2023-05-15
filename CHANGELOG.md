@@ -1,0 +1,28 @@
+# Changelog
+
+## 1.0.0-beta.1 (2023-05-15)
+
+
+### Features
+
+* add pageExec and sdkExec support ([#94](https://github.com/alipay/alipay-sdk-nodejs-all/issues/94)) ([e5309b8](https://github.com/alipay/alipay-sdk-nodejs-all/commit/e5309b8f31a9c9e5f1b592106d82b64342fc4eaa))
+* beta ([6d52dc3](https://github.com/alipay/alipay-sdk-nodejs-all/commit/6d52dc3196ec4903300c121dbb566c7a66dce8a2))
+* checkNotifySign 增加可选参数 decodeURIComponent 操作和 ws_service_url 参数 ([#85](https://github.com/alipay/alipay-sdk-nodejs-all/issues/85)) ([fb6b24e](https://github.com/alipay/alipay-sdk-nodejs-all/commit/fb6b24e021d2827bc168a2b669ebd15eb188bc88))
+* new token ([3fe99ff](https://github.com/alipay/alipay-sdk-nodejs-all/commit/3fe99ffe0547eddd9613826977e5beae5a8aeaec))
+* 文件上传添加URI的支持 ([3958000](https://github.com/alipay/alipay-sdk-nodejs-all/commit/3958000c38d4d30e1dd79f229753916418cc2172))
+
+
+### Bug Fixes
+
+* beta ([15eaca8](https://github.com/alipay/alipay-sdk-nodejs-all/commit/15eaca83a19ef3bf5e27fc6458ae5214649f56eb))
+* field ([4c33503](https://github.com/alipay/alipay-sdk-nodejs-all/commit/4c33503e43df016f2be0360989556ded5fb5d631))
+* multipart should serialize object fields ([15caa6c](https://github.com/alipay/alipay-sdk-nodejs-all/commit/15caa6c082c274a1e17cba8b0392b11e3f0dfece))
+* multipart should serialize object fields ([#98](https://github.com/alipay/alipay-sdk-nodejs-all/issues/98)) ([6995e68](https://github.com/alipay/alipay-sdk-nodejs-all/commit/6995e6838a77cb6aafae7499d469e7d1257cf25a))
+* null ([109608f](https://github.com/alipay/alipay-sdk-nodejs-all/commit/109608fea77c8209b7a8d060b088808059ed8fa3))
+* testcase ([f8174c5](https://github.com/alipay/alipay-sdk-nodejs-all/commit/f8174c5b2e58e3c4302173fff12f83d86539ed7a))
+* types ([eaa625c](https://github.com/alipay/alipay-sdk-nodejs-all/commit/eaa625cf5c50f825a280ea0a517db38df65181e3))
+* value ([a6eb586](https://github.com/alipay/alipay-sdk-nodejs-all/commit/a6eb58647911a4b6914feb33780359427b19a59d))
+* workflow ([b4889c4](https://github.com/alipay/alipay-sdk-nodejs-all/commit/b4889c4cbb6f4d5cacfb18c7103d05d74a80898a))
+* 修改验签方法，同时支持带 sign_type 验签和不带 sign_type 的情况 ([178b4e8](https://github.com/alipay/alipay-sdk-nodejs-all/commit/178b4e8803c0ed9f3a6ca35fa55caae60b060e55))
+* 处理 exec response 异常的情况 ([#86](https://github.com/alipay/alipay-sdk-nodejs-all/issues/86)) ([43ada85](https://github.com/alipay/alipay-sdk-nodejs-all/commit/43ada85013867faf95d38b3d27e35595d6344eef))
+* 开放平台返回 error response 时返回失败；增加 js 调用文档 ([9107ceb](https://github.com/alipay/alipay-sdk-nodejs-all/commit/9107cebb6e1727997a86e2162e725720c67dfa92))
