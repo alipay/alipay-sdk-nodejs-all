@@ -1,15 +1,11 @@
 /* eslint-disable prefer-promise-reject-errors */
 /**
- * @author tudou527
- * @email [tudou527@gmail.com]
+ * @author troyeagle
 */
 
-import * as fs from 'fs';
 import * as is from 'is';
 import * as crypto from 'crypto';
 import * as urllib from 'urllib';
-import * as request from 'request';
-import * as isuri from 'isuri';
 import * as decamelize from 'decamelize';
 import * as camelcaseKeys from 'camelcase-keys';
 import * as snakeCaseKeys from 'snakecase-keys';
@@ -189,10 +185,11 @@ class AlipaySdk {
   }
 
   // 文件上传
-  private multipartExec(method: string, option: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
+  private async multipartExec(method: string, option: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
     const config = this.config;
     let signParams = {} as { [key: string]: string | object };
-    let formData = {} as { [key: string]: string | object | fs.ReadStream };
+    let formData = {} as { [key: string]: string | object };
+    const formFiles = {} as { [key: string]: string };
     const infoLog = (option.log && is.fn(option.log.info)) ? option.log.info : null;
     const errorLog = (option.log && is.fn(option.log.error)) ? option.log.error : null;
 
@@ -213,7 +210,7 @@ class AlipaySdk {
       // 文件名需要转换驼峰为下划线
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
-      formData[fileKey] = !isuri.isValid(file.path) ? fs.createReadStream(file.path) : request(file.path);
+      formFiles[fileKey] = file.path;
     });
 
     // 计算签名
@@ -224,43 +221,45 @@ class AlipaySdk {
     infoLog && infoLog('[AlipaySdk]start exec url: %s, method: %s, params: %s',
       url, method, JSON.stringify(signParams));
 
-    return new Promise((resolve, reject) => {
-      request.post({
-        url,
-        formData,
-        json: false,
+    try {
+      const response = await urllib.request(url, {
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
-      }, (err, _response, body) => {
-        if (err) {
-          err.message = '[AlipaySdk]exec error';
-          errorLog && errorLog(err);
-          return reject(err);
-        }
-
-        infoLog && infoLog('[AlipaySdk]exec response: %s', body);
-
-        try {
-          const result = JSON.parse(body);
-          const responseKey = `${method.replace(/\./g, '_')}_response`;
-          const data = result[responseKey];
-
-          // 开放平台返回错误时，`${responseKey}` 对应的值不存在
-          if (data) {
-            // 验签
-            const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
-            if (validateSuccess) {
-              return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
-            }
-            return reject({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
-          }
-        } catch (e) {
-          return reject({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
-        }
-
-        return reject({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+        files: formFiles,
+        data: formData,
+        dataType: 'text',
       });
-    });
+      const { data: body } = response;
+      infoLog && infoLog('[AlipaySdk]exec response: %s', body);
+
+      let data;
+      const responseKey = `${method.replace(/\./g, '_')}_response`;
+      try {
+        const result = JSON.parse(body);
+        data = result[responseKey];
+      } catch (e) {
+        throw ({ serverResult: body, errorMessage: '[AlipaySdk]Response 格式错误' });
+      }
+
+      // 开放平台返回错误时，`${responseKey}` 对应的值不存在
+      if (data) {
+        // 验签
+        const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
+        if (validateSuccess) {
+          return config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
+        }
+        throw ({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+      }
+
+      throw ({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+    } catch (e) {
+      // 统一兜底
+      if (!e.errorMessage) e.message = '[AlipaySdk]exec error';
+      errorLog && errorLog(e);
+      throw e;
+    }
+
+
   }
 
   /**

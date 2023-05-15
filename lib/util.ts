@@ -1,6 +1,5 @@
 /**
  * @author tudou527
- * @email [tudou527@gmail.com]
 */
 
 import * as crypto from 'crypto';
@@ -55,8 +54,7 @@ function aesDecrypt(data, aesKey) {
  * 签名
  * @description https://opendocs.alipay.com/common/02kf5q
  * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
- * @param {object} bizContent 业务请求参数
- * @param {object} publicArgs 公共请求参数
+ * @param {object} params 请求参数
  * @param {object} config sdk 配置
  */
 function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
@@ -80,7 +78,11 @@ function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
     signParams.wsServiceUrl = config.wsServiceUrl;
   }
 
-  const bizContent = params.bizContent;
+  // 兼容官网的 biz_content;
+  if (params.bizContent && params.biz_content) {
+    throw Error('不能同时设置 bizContent 和 biz_content');
+  }
+  const bizContent = params.bizContent || params.biz_content;
 
   if (bizContent) {
     // AES加密

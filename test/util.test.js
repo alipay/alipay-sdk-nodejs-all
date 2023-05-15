@@ -7,7 +7,7 @@ const { sign } = require('../lib/util');
 const privateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key.pem', 'ascii');
 
 describe('util', function() {
-  it('sign', function() {
+  it('sign - bizContent and biz_content should be the same', function() {
     const data = sign('alipay.security.risk.content.analyze', { publicArgs: 1, bizContent: { a_b: 1, aBc: 'Ab' } }, { 
       appId: 'app111',
       charset: 'utf-8',
@@ -24,5 +24,17 @@ describe('util', function() {
     data.public_args.should.eql(1);
     data.biz_content.should.eql('{"a_b":1,"a_bc":"Ab"}');
     (data.sign !== '').should.eql(true);
+
+    const data2 = sign('alipay.security.risk.content.analyze', { publicArgs: 1, biz_content: { a_b: 1, aBc: 'Ab' } }, { 
+      appId: 'app111',
+      charset: 'utf-8',
+      version: '1.0.0',
+      signType: 'RSA2',
+      privateKey,
+    });
+
+    data2.biz_content.should.eql('{"a_b":1,"a_bc":"Ab"}');
+    data.sign.should.eql(data2.sign);
   });
+
 });

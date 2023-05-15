@@ -1,6 +1,5 @@
 /**
  * @author tudou527
- * @email [tudou527@gmail.com]
 */
 import * as isJSON from 'is-json';
 
