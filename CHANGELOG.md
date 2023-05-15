@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.2](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2023-05-15)
+
+
+### Bug Fixes
+
+* beta2 ([bc0e8f0](https://github.com/alipay/alipay-sdk-nodejs-all/commit/bc0e8f0c85c11b22864eeb3fbf3dccffc421aae0))
+
 ## 1.0.0-beta.1 (2023-05-15)
 
 
