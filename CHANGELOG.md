@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.3.1...v3.4.0) (2023-05-16)
+
+
+### Features
+
+* add workflow support ([#100](https://github.com/alipay/alipay-sdk-nodejs-all/issues/100)) ([78fe1c9](https://github.com/alipay/alipay-sdk-nodejs-all/commit/78fe1c9921f799531095f117b8153aa86744f104)), closes [#94](https://github.com/alipay/alipay-sdk-nodejs-all/issues/94) [#85](https://github.com/alipay/alipay-sdk-nodejs-all/issues/85) [#98](https://github.com/alipay/alipay-sdk-nodejs-all/issues/98) [#86](https://github.com/alipay/alipay-sdk-nodejs-all/issues/86)
+* trigger master release ([#106](https://github.com/alipay/alipay-sdk-nodejs-all/issues/106)) ([d4a65e2](https://github.com/alipay/alipay-sdk-nodejs-all/commit/d4a65e2d254ed2b6fbf87c98112bd185cb3d80fd))
+
 ## [3.3.2-beta.2](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.3.2-beta.1...v3.3.2-beta.2) (2023-05-15)
 
 
