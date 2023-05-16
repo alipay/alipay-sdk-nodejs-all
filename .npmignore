@@ -2,3 +2,5 @@ test
 coverage
 lib/*.ts
 !lib/*.d.ts
+.vscode
+.github
