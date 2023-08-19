@@ -1,17 +1,18 @@
 {
   "name": "alipay-sdk",
   "version": "3.4.0",
-  "description": "蚂蚁金服开放平台 node sdk",
+  "description": "支付宝开放平台 Node.js SDK",
   "main": "lib/alipay.js",
   "scripts": {
     "build": "npm run tsc",
     "tsc": "tsc -p ./tsconfig.json",
     "tsc:watch": "tsc -w",
+    "clean": "tsc -b --clean",
     "dev": "tsc -w",
     "lint": "eslint .",
     "test": "npm run build && mocha",
     "ci": "npm run tsc && nyc mocha -t 6000",
-    "prepublishOnly": "npm run tsc && npm run test"
+    "prepublishOnly": "npm run clean && npm run tsc"
   },
   "author": "dersoncheng",
   "homepage": "https://github.com/ali-sdk/alipay-sdk",

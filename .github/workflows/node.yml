@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [8, 10, 12, 14, 16, 18]
+        node-version: [8, 10, 12, 14, 16, 18, 20]
         os: [ubuntu-latest]
 
     steps:
@@ -37,6 +37,9 @@ jobs:
     - name: Install Dependencies
       run: npm i
 
+    - name: Test
+      run: npm run ci
+
     - name: Code Coverage
       uses: codecov/codecov-action@v1
       with:
@@ -47,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [16, 18]
+        node-version: [16, 18, 20]
 
     steps:
       - name: Checkout Git Source
