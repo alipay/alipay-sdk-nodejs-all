@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.4.0...v3.5.0) (2023-08-19)
+
+
+### Features
+
+* 支持直接 require sdk ([#110](https://github.com/alipay/alipay-sdk-nodejs-all/issues/110)) ([b7acb4b](https://github.com/alipay/alipay-sdk-nodejs-all/commit/b7acb4bd3e5f0d73d0b3aa4936a3833d23f86f0c))
+
 ## [3.4.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.3.1...v3.4.0) (2023-05-16)
 
 
