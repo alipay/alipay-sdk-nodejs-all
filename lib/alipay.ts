@@ -572,4 +572,8 @@ class AlipaySdk {
   }
 }
 
+// support require on cjs: `const AlipaySdk = require('alipay-sdk')`
+exports = module.exports = AlipaySdk;
+Object.defineProperty(exports, '__esModule', { value: true });
+
 export default AlipaySdk;
