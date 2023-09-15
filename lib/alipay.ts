@@ -233,7 +233,7 @@ class AlipaySdk {
       });
       const { data: body, headers } = response;
       infoLog && infoLog('[AlipaySdk]exec response: %s, headers: %j', body, headers);
-      const traceId = headers && headers['trace_id'];
+      const traceId = headers && headers.trace_id;
 
       let data;
       const responseKey = `${method.replace(/\./g, '_')}_response`;
@@ -463,7 +463,7 @@ class AlipaySdk {
       })
         .then((ret: { status: number, data: string, headers: object }) => {
           infoLog && infoLog('[AlipaySdk]exec response: %s, headers: %j', ret, ret.headers);
-          const traceId = ret.headers && ret.headers['trace_id'];
+          const traceId = ret.headers && ret.headers.trace_id;
 
           if (ret.status === 200) {
             /**
