@@ -461,7 +461,7 @@ class AlipaySdk {
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
       })
-        .then((ret: { status: number, data: string, headers: object }) => {
+        .then((ret: { status: number, data: string, headers: Record<string, string> }) => {
           infoLog && infoLog('[AlipaySdk]exec response: %s, headers: %j', ret, ret.headers);
           const traceId = ret.headers && ret.headers.trace_id;
 
