@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.5.0...v3.6.0) (2023-09-15)
+
+
+### Features
+
+* 将 openapi 的 trace_id 打印并返回 ([#111](https://github.com/alipay/alipay-sdk-nodejs-all/issues/111)) ([284b5aa](https://github.com/alipay/alipay-sdk-nodejs-all/commit/284b5aa79c9687a64f7068712ab7e3aab8e41dd6))
+
 ## [3.5.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.4.0...v3.5.0) (2023-08-19)
 
 
