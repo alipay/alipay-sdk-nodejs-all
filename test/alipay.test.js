@@ -2,6 +2,7 @@
 
 require('should');
 const fs = require('fs');
+const { format } = require('util');
 const path = require('path');
 const sinon = require('sinon');
 const urllib = require('urllib');
@@ -120,7 +121,7 @@ describe('sdk', function() {
 
     it('status not 200', function (done) {
       sandbox.stub(urllib, 'request', function() {
-        return Promise.resolve({ status: 503 })
+        return Promise.resolve({ status: 503, headers: { trace_id: 'mock-trace-id' } })
       });
 
       sdk.exec('alipay.security.risk.content.analyze', {
@@ -131,8 +132,9 @@ describe('sdk', function() {
         }
       }).catch(function(err){
         err.should.eql({
-            serverResult: { status: 503 },
-            errorMessage: '[AlipaySdk]HTTP 请求错误'
+          serverResult: { status: 503, headers: { trace_id: 'mock-trace-id' } },
+          errorMessage: '[AlipaySdk]HTTP 请求错误',
+          traceId: 'mock-trace-id',
         });
         done();
       })
@@ -143,6 +145,7 @@ describe('sdk', function() {
         return Promise.resolve({
           status: 200,
           data: '{"alipay_security_risk_content_analyze_response":{"a":1,"b":2},"sign":"signStr"}',
+          headers: { trace_id: 'mock-trace-id' },
         });
       });
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
@@ -158,9 +161,11 @@ describe('sdk', function() {
         err.should.eql({
           serverResult: {
             status: 200,
-            data: '{"alipay_security_risk_content_analyze_response":{"a":1,"b":2},"sign":"signStr"}'
+            data: '{"alipay_security_risk_content_analyze_response":{"a":1,"b":2},"sign":"signStr"}',
+            headers: { trace_id: 'mock-trace-id' },
           },
-          errorMessage: '[AlipaySdk]验签失败'
+          errorMessage: '[AlipaySdk]验签失败',
+          traceId: 'mock-trace-id',
         });
         done();
       })
@@ -170,6 +175,7 @@ describe('sdk', function() {
       const response = {
         status: 200,
         data: undefined,
+        headers: { trace_id: 'mock-trace-id' },
       };
       sandbox.stub(urllib, 'request', function() {
         return Promise.resolve(response);
@@ -183,8 +189,8 @@ describe('sdk', function() {
         }
       }).catch(function(err){
         err.should.eql({
-            serverResult: response,
-            errorMessage: '[AlipaySdk]Response 格式错误'
+          serverResult: response,
+          errorMessage: '[AlipaySdk]Response 格式错误',
         });
         done();
       })
@@ -195,6 +201,7 @@ describe('sdk', function() {
         return Promise.resolve({
           status: 200,
           data: '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}',
+          headers: { trace_id: 'mock-trace-id' },
         });
       });
       sandbox.stub(sdk, 'checkResponseSign', function() { return true; });
@@ -207,7 +214,7 @@ describe('sdk', function() {
         },
         publicArgs: {},
       }, { validateSign: true }).then(function(data){
-        data.should.eql({ aB: 1, cD: 2 });
+        data.should.eql({ aB: 1, cD: 2, traceId: 'mock-trace-id' });
         done();
       })
     });
@@ -365,6 +372,7 @@ describe('sdk', function() {
             data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}'
           },
           errorMessage: '[AlipaySdk]HTTP 请求错误',
+          traceId: undefined,
         });
         done();
       })
@@ -415,8 +423,8 @@ describe('sdk', function() {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
+        info(...args) { infoLog.push(format(...args)) },
+        error(...args) { errorLog.push(format(...args)) },
       }
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
@@ -430,6 +438,7 @@ describe('sdk', function() {
         .exec('alipay.open.file.upload', {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
+          console.log(ret);
           ret.code.should.eql('10000');
           ret.msg.should.eql('Success');
           (!ret.fileId).should.eql(false);
@@ -437,7 +446,10 @@ describe('sdk', function() {
           infoLog.length.should.eql(2);
           (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
           (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
+          // include trace_id
+          infoLog[1].should.match(/,"trace_id":"\w+",/);
           errorLog.should.eql([]);
+          ret.traceId.length.should.eql(29);
 
           done();
         }).catch(done)
@@ -510,6 +522,7 @@ describe('sdk', function() {
           err.should.eql({
             serverResult: '{"alipay_offline_material_image_upload_response":{"a":"b"}}',
             errorMessage: '[AlipaySdk]验签失败',
+            traceId: undefined,
           });
           done();
         });
@@ -562,7 +575,10 @@ describe('sdk', function() {
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
       sandbox.stub(urllib, 'request', function(url, options) {
-        return Promise.resolve({data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}'});
+        return Promise.resolve({
+          data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
+          headers: { trace_id: 'mock-trace-id' },
+        });
       });
 
       sdk
@@ -574,6 +590,7 @@ describe('sdk', function() {
           err.should.eql({
             serverResult: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
             errorMessage: '[AlipaySdk]HTTP 请求错误',
+            traceId: 'mock-trace-id',
           });
           done();
         });

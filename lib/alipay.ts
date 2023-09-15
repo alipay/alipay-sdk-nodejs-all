@@ -76,6 +76,8 @@ export interface AlipaySdkCommonResult {
   sub_code?: string;
   /** 错误辅助信息 */
   sub_msg?: string;
+  /** trace id */
+  traceId?: string;
   /** 请求返回内容，详见各业务接口 */
   [key: string]: any;
 }
@@ -229,8 +231,9 @@ class AlipaySdk {
         data: formData,
         dataType: 'text',
       });
-      const { data: body } = response;
-      infoLog && infoLog('[AlipaySdk]exec response: %s', body);
+      const { data: body, headers } = response;
+      infoLog && infoLog('[AlipaySdk]exec response: %s, headers: %j', body, headers);
+      const traceId = headers && headers['trace_id'];
 
       let data;
       const responseKey = `${method.replace(/\./g, '_')}_response`;
@@ -246,12 +249,16 @@ class AlipaySdk {
         // 验签
         const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
         if (validateSuccess) {
-          return config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
+          const result = config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
+          if (result && traceId) {
+            result.traceId = traceId;
+          }
+          return result;
         }
-        throw ({ serverResult: body, errorMessage: '[AlipaySdk]验签失败' });
+        throw ({ serverResult: body, errorMessage: '[AlipaySdk]验签失败', traceId });
       }
 
-      throw ({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+      throw ({ serverResult: body, errorMessage: '[AlipaySdk]HTTP 请求错误', traceId });
     } catch (e) {
       // 统一兜底
       if (!e.errorMessage) e.message = '[AlipaySdk]exec error';
@@ -454,8 +461,9 @@ class AlipaySdk {
         timeout: config.timeout,
         headers: { 'user-agent': this.sdkVersion },
       })
-        .then((ret: { status: number, data: string }) => {
-          infoLog && infoLog('[AlipaySdk]exec response: %s', ret);
+        .then((ret: { status: number, data: string, headers: object }) => {
+          infoLog && infoLog('[AlipaySdk]exec response: %s, headers: %j', ret, ret.headers);
+          const traceId = ret.headers && ret.headers['trace_id'];
 
           if (ret.status === 200) {
             /**
@@ -488,15 +496,19 @@ class AlipaySdk {
               const validateSuccess = option.validateSign ? this.checkResponseSign(ret.data, responseKey) : true;
 
               if (validateSuccess) {
-                return resolve(config.camelcase ? camelcaseKeys(data, { deep: true }) : data);
+                const result = config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
+                if (result && traceId) {
+                  result.traceId = traceId;
+                }
+                return resolve(result);
               }
-              return reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败' });
+              return reject({ serverResult: ret, errorMessage: '[AlipaySdk]验签失败', traceId });
             }
 
-            return reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+            return reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误', traceId });
           }
 
-          reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误' });
+          reject({ serverResult: ret, errorMessage: '[AlipaySdk]HTTP 请求错误', traceId });
         })
         .catch(err => {
           err.message = '[AlipaySdk]exec error';
