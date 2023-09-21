@@ -27,7 +27,7 @@ Alipay SDK for Node.js 用于给 Node 服务器提供调用支付宝开放平台
 ### 普通公钥模式
 ```typescript
 const AlipaySdk = require('alipay-sdk');
-// TypeScript，可以使用 import AlipaySdk from 'alipay-sdk';
+// esmodule / typescript，可以使用 import AlipaySdk from 'alipay-sdk';
 // 普通公钥模式
 const alipaySdk = new AlipaySdk({
   appId: '2016123456789012',
@@ -103,7 +103,7 @@ const result = await alipay.exec('alipay.trade.pay', {
 ### 使用 AlipayFormData 配置表单
 部分接口需要上传文件。SDK 内部封装了一个 Form 对象，用以在发起 multipart/form-data 请求时使用。以 [上传门店照片和视频接口](https://opendocs.alipay.com/apis/api_3/alipay.offline.material.image.upload) 为例：
 ```typescript
-import AlipayFormData from 'alipay-sdk/lib/form';
+const AlipayFormData = require('alipay-sdk/lib/form');
 
 const formData = new AlipayFormData();
 
