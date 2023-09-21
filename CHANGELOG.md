@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.6.0...v3.6.1) (2023-09-21)
+
+
+### Bug Fixes
+
+* formdata used in cjs ([#112](https://github.com/alipay/alipay-sdk-nodejs-all/issues/112)) ([80afc30](https://github.com/alipay/alipay-sdk-nodejs-all/commit/80afc30a38f0a16f446ad6ee244b0e12efc9d764))
+
 ## [3.6.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.5.0...v3.6.0) (2023-09-15)
 
 
