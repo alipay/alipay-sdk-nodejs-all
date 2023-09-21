@@ -65,4 +65,7 @@ class AliPayForm {
   }
 }
 
+exports = module.exports = AliPayForm;
+Object.defineProperty(exports, '__esModule', { value: true });
+
 export default AliPayForm;
