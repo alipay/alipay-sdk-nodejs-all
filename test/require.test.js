@@ -23,4 +23,14 @@ describe('require', () => {
     });
     assert.equal(typeof sdk.exec, 'function');
   });
+
+  it('should require work on normal cjs for AlipayFormData', () => {
+    const AlipayForm = require('../lib/form');
+    const AlipayForm2 = require('../lib/form').default;
+    assert.strictEqual(AlipayForm, AlipayForm2);
+
+    const form = new AlipayForm();
+
+    assert.equal(typeof form.addFile, 'function');
+  })
 });
