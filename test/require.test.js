@@ -19,7 +19,7 @@ describe('require', () => {
       alipayPublicKey,
       camelcase: true,
       timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA=='
+      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
     });
     assert.equal(typeof sdk.exec, 'function');
   });
@@ -32,5 +32,5 @@ describe('require', () => {
     const form = new AlipayForm();
 
     assert.equal(typeof form.addFile, 'function');
-  })
+  });
 });

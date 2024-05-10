@@ -1,19 +1,34 @@
-/**
- * @author tudou527
-*/
-import * as isJSON from 'is-json';
+// forked form https://github.com/joaquimserafim/is-json/blob/master/index.js#L6
+function isJSONString(value: any) {
+  if (typeof value !== 'string') return false;
+  value = value.replace(/\s/g, '').replace(/\n|\r/, '');
+  if (/^\{(.*?)\}$/.test(value)) {
+    return /"(.*?)":(.*?)/g.test(value);
+  }
+
+  if (/^\[(.*?)\]$/.test(value)) {
+    return value.replace(/^\[/, '')
+      .replace(/\]$/, '')
+      .replace(/},{/g, '}\n{')
+      .split(/\n/)
+      .map((s: string) => { return isJSONString(s); })
+      .reduce(function(_prev: string, curr: string) { return !!curr; });
+  }
+  return false;
+}
 
 export interface IFile {
   name: string;
   path: string;
   fieldName: string;
 }
+
 export interface IField {
   name: string;
   value: string | object;
 }
 
-class AliPayForm {
+export class AlipayFormData {
   private method: 'get' | 'post';
   public files: IFile[];
   public fields: IField[];
@@ -41,8 +56,8 @@ class AliPayForm {
    * @param fieldName 字段名
    * @param fieldValue 字段值
    */
-  addField(fieldName: string, fieldValue: any | object) {
-    if (isJSON(fieldValue)) {
+  addField(fieldName: string, fieldValue: any) {
+    if (isJSONString(fieldValue)) {
       // 当 fieldValue 为 json 字符串时，解析出 json
       this.fields.push({ name: fieldName, value: JSON.parse(fieldValue) });
     } else {
@@ -64,8 +79,3 @@ class AliPayForm {
     });
   }
 }
-
-exports = module.exports = AliPayForm;
-Object.defineProperty(exports, '__esModule', { value: true });
-
-export default AliPayForm;

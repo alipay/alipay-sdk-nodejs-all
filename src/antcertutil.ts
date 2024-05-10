@@ -1,39 +1,40 @@
-/**
- * @author yisheng.cl
-*/
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { BigNumber } from 'bignumber.js';
+import { Certificate } from '@fidm/x509';
 
-import * as fs from 'fs';
-import bignumber_js_1 from 'bignumber.js';
-import * as crypto from 'crypto';
-import X509_1 = require('@fidm/x509');
 /** 从公钥证书文件里读取支付宝公钥 */
-function loadPublicKeyFromPath(filePath: string): string {
+export function loadPublicKeyFromPath(filePath: string): string {
   const fileData = fs.readFileSync(filePath);
-  const certificate = X509_1.Certificate.fromPEM(fileData);
+  const certificate = Certificate.fromPEM(fileData);
   return certificate.publicKeyRaw.toString('base64');
 }
+
 /** 从公钥证书内容或buffer读取支付宝公钥 */
-function loadPublicKey(content: string|Buffer): string {
+export function loadPublicKey(content: string|Buffer): string {
   const pemContent = typeof content === 'string' ? Buffer.from(content) : content;
-  const certificate = X509_1.Certificate.fromPEM(pemContent);
+  const certificate = Certificate.fromPEM(pemContent);
   return certificate.publicKeyRaw.toString('base64');
 }
+
 /** 从证书文件里读取序列号 */
-function getSNFromPath(filePath: string, isRoot = false): string {
+export function getSNFromPath(filePath: string, isRoot = false): string {
   const fileData = fs.readFileSync(filePath);
   return getSN(fileData, isRoot);
 }
+
 /** 从上传的证书内容或Buffer读取序列号 */
-function getSN(fileData: string|Buffer, isRoot = false): string {
+export function getSN(fileData: string|Buffer, isRoot = false): string {
   const pemData = typeof fileData === 'string' ? Buffer.from(fileData) : fileData;
   if (isRoot) {
     return getRootCertSN(pemData);
   }
-  const certificate = X509_1.Certificate.fromPEM(pemData);
+  const certificate = Certificate.fromPEM(pemData);
   return getCertSN(certificate);
 }
+
 /** 读取序列号 */
-function getCertSN(certificate: any): string {
+function getCertSN(certificate: Certificate): string {
   const { issuer, serialNumber } = certificate;
   const principalName = issuer.attributes
     .reduceRight((prev, curr) => {
@@ -42,16 +43,17 @@ function getCertSN(certificate: any): string {
       return result;
     }, '')
     .slice(0, -1);
-  const decimalNumber = new bignumber_js_1(serialNumber, 16).toString(10);
+  const decimalNumber = new BigNumber(serialNumber, 16).toString(10);
   const SN = crypto
     .createHash('md5')
     .update(principalName + decimalNumber, 'utf8')
     .digest('hex');
   return SN;
 }
+
 /** 读取根证书序列号 */
 function getRootCertSN(rootContent: Buffer): string {
-  const certificates = X509_1.Certificate.fromPEMs(rootContent);
+  const certificates = Certificate.fromPEMs(rootContent);
   let rootCertSN = '';
   certificates.forEach(item => {
     if (item.signatureOID.startsWith('1.2.840.113549.1.1')) {
@@ -65,10 +67,3 @@ function getRootCertSN(rootContent: Buffer): string {
   });
   return rootCertSN;
 }
-
-export {
-  getSN,
-  getSNFromPath,
-  loadPublicKeyFromPath,
-  loadPublicKey,
-};

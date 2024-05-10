@@ -5,9 +5,9 @@ const https = require('https');
 const path = require('path');
 const { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } = require('../lib/antcertutil');
 
-const appCertPath = path.join(__dirname,'/fixtures/appCertPublicKey_2021001161683774.crt');
-const alipayPublicCertPath = path.join(__dirname,'/fixtures/alipayCertPublicKey_RSA2.crt');
-const rootCertPath = path.join(__dirname,'/fixtures/alipayRootCert.crt');
+const appCertPath = path.join(__dirname, '/fixtures/appCertPublicKey_2021001161683774.crt');
+const alipayPublicCertPath = path.join(__dirname, '/fixtures/alipayCertPublicKey_RSA2.crt');
+const rootCertPath = path.join(__dirname, '/fixtures/alipayRootCert.crt');
 
 // const appCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/appCertPublicKey_2021001161683774.crt';
 const alipayPublicCertUrl = 'https://openhome-crt.oss-cn-beijing.aliyuncs.com/alipayCertPublicKey_RSA2.crt';
@@ -19,86 +19,86 @@ const alipayPublicCertSnVal = '7513daaaa48aa3ba2e4018d84402479c';
 const rootCertSnVal = '687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6';
 
 describe('antcertutil', function() {
-    it('loadPublicKeyFromPath', function() {
-        const publicKey = loadPublicKeyFromPath(alipayPublicCertPath);
-        (publicKey !== '').should.eql(true);
-        (publicKey == publicKeyVal).should.eql(true);
-    });
+  it('loadPublicKeyFromPath', function() {
+    const publicKey = loadPublicKeyFromPath(alipayPublicCertPath);
+    (publicKey !== '').should.eql(true);
+    (publicKey == publicKeyVal).should.eql(true);
+  });
 });
 
 describe('antcertutil', function() {
-    it('loadPublicKey', async function() {
-        function getRequest(url) {
-            return new Promise(resolved => {
-                https.get(url, (res) => {
-                    const { statusCode } = res;
-                    let rawData = '';
-                    res.on('data', (chunk) => { rawData += chunk; });
-                    res.on('end', () => {
-                        try {
-                          resolved(rawData);
-                        } catch (e) {
-                          console.error(e.message);
-                        }
-                      });
-                });
-            });
-        }
-        const alipayPublicCertContent = await getRequest(alipayPublicCertUrl);
-        const publicKey = loadPublicKey(alipayPublicCertContent);
-        (publicKey !== '').should.eql(true);
-        (publicKey == publicKeyVal).should.eql(true);
-    });
+  it('loadPublicKey', async function() {
+    function getRequest(url) {
+      return new Promise(resolved => {
+        https.get(url, res => {
+          const { statusCode } = res;
+          let rawData = '';
+          res.on('data', chunk => { rawData += chunk; });
+          res.on('end', () => {
+            try {
+              resolved(rawData);
+            } catch (e) {
+              console.error(e.message);
+            }
+          });
+        });
+      });
+    }
+    const alipayPublicCertContent = await getRequest(alipayPublicCertUrl);
+    const publicKey = loadPublicKey(alipayPublicCertContent);
+    (publicKey !== '').should.eql(true);
+    (publicKey == publicKeyVal).should.eql(true);
+  });
 });
 
 describe('antcertutil', function() {
-    it('getSNFromPath', function() {
-        const appCertSn = getSNFromPath(appCertPath, false);
-        (appCertSn !== '').should.eql(true);
-        (appCertSn == appCertSnVal).should.eql(true);
-        const alipayPublicCertSn = getSNFromPath(alipayPublicCertPath, false);
-        (alipayPublicCertSn !== '').should.eql(true);
-        (alipayPublicCertSn == alipayPublicCertSnVal).should.eql(true);
-        const rootCertSn = getSNFromPath(rootCertPath, true);
-        (rootCertSn !== '').should.eql(true);
-        (rootCertSn == rootCertSnVal).should.eql(true);
-    });
+  it('getSNFromPath', function() {
+    const appCertSn = getSNFromPath(appCertPath, false);
+    (appCertSn !== '').should.eql(true);
+    (appCertSn == appCertSnVal).should.eql(true);
+    const alipayPublicCertSn = getSNFromPath(alipayPublicCertPath, false);
+    (alipayPublicCertSn !== '').should.eql(true);
+    (alipayPublicCertSn == alipayPublicCertSnVal).should.eql(true);
+    const rootCertSn = getSNFromPath(rootCertPath, true);
+    (rootCertSn !== '').should.eql(true);
+    (rootCertSn == rootCertSnVal).should.eql(true);
+  });
 });
 
 describe('antcertutil', function() {
-    it('getSN', async function() {
-        function getRequest(url) {
-            return new Promise(resolved => {
-                https.get(url, (res) => {
-                    const { statusCode } = res;
-                    let rawData = '';
-                    res.on('data', (chunk) => { rawData += chunk; });
-                    res.on('end', () => {
-                        try {
-                          resolved(rawData);
-                        } catch (e) {
-                          console.error(e.message);
-                        }
-                      });
-                });
-            });
-        }
+  it('getSN', async function() {
+    function getRequest(url) {
+      return new Promise(resolved => {
+        https.get(url, res => {
+          const { statusCode } = res;
+          let rawData = '';
+          res.on('data', chunk => { rawData += chunk; });
+          res.on('end', () => {
+            try {
+              resolved(rawData);
+            } catch (e) {
+              console.error(e.message);
+            }
+          });
+        });
+      });
+    }
 
-        // AccessDenied
-        // const appCertContent = await getRequest(appCertUrl);
-        // const appCertSn = getSN(appCertContent, false);
-        // (appCertSn !== '').should.eql(true);
-        // (appCertSn == appCertSnVal).should.eql(true);
+    // AccessDenied
+    // const appCertContent = await getRequest(appCertUrl);
+    // const appCertSn = getSN(appCertContent, false);
+    // (appCertSn !== '').should.eql(true);
+    // (appCertSn == appCertSnVal).should.eql(true);
 
-        const alipayPublicCertContent = await getRequest(alipayPublicCertUrl);
-        const alipayPublicCertSn = getSN(alipayPublicCertContent, false);
-        (alipayPublicCertSn !== '').should.eql(true);
-        (alipayPublicCertSn == alipayPublicCertSnVal).should.eql(true);
+    const alipayPublicCertContent = await getRequest(alipayPublicCertUrl);
+    const alipayPublicCertSn = getSN(alipayPublicCertContent, false);
+    (alipayPublicCertSn !== '').should.eql(true);
+    (alipayPublicCertSn == alipayPublicCertSnVal).should.eql(true);
 
-        // AccessDenied
-        // const rootCertContent = await getRequest(alipayRootCertUrl);
-        // const rootCertSn = getSN(rootCertContent, true);
-        // (rootCertSn !== '').should.eql(true);
-        // (rootCertSn == rootCertSnVal).should.eql(true);
-    });
+    // AccessDenied
+    // const rootCertContent = await getRequest(alipayRootCertUrl);
+    // const rootCertSn = getSN(rootCertContent, true);
+    // (rootCertSn !== '').should.eql(true);
+    // (rootCertSn == rootCertSnVal).should.eql(true);
+  });
 });

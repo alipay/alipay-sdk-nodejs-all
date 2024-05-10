@@ -1,12 +1,10 @@
-'use strict';
-
 require('should');
 const fs = require('fs');
 const { format } = require('util');
 const path = require('path');
 const sinon = require('sinon');
 const urllib = require('urllib');
-const moment = require('moment');
+const { YYYYMMDDHHmmss } = require('utility');
 
 const FormData = require('../lib/form').default;
 const AlipaySdk = require('../lib/alipay').default;
@@ -36,7 +34,7 @@ describe('sdk', function() {
         const sdk = new AlipaySdk({
           alipayPublicKey,
           gateway: GATE_WAY,
-          privateKey: privateKey,
+          privateKey,
         });
       } catch (e) {
         (e.toString().indexOf('config.appId is required') > -1).should.eql(true);
@@ -60,8 +58,8 @@ describe('sdk', function() {
       const noWrapperPublicKey = fs.readFileSync(__dirname + '/fixtures/alipay-public-key-no-wrapper.pem', 'ascii');
       const alipaySdk = new AlipaySdk({
         appId: '111',
-        privateKey: privateKey,
-        alipayPublicKey: alipayPublicKey,
+        privateKey,
+        alipayPublicKey,
         gateway: GATE_WAY,
       });
 
@@ -88,19 +86,19 @@ describe('sdk', function() {
     const sdkBaseConfig = {
       gateway: GATE_WAY,
       appId: APP_ID,
-      privateKey: privateKey,
+      privateKey,
       signType: 'RSA2',
       alipayPublicKey,
       camelcase: true,
       timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA=='
+      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
     };
 
     beforeEach(function() {
-      sdk = new AlipaySdk(sdkBaseConfig)
+      sdk = new AlipaySdk(sdkBaseConfig);
     });
 
-    it('request error.', function (done) {
+    it('request error.', function(done) {
       sandbox.stub(urllib, 'request', function() {
         return new Promise(function() {
           throw Error('custom error.');
@@ -112,16 +110,16 @@ describe('sdk', function() {
           account_type: 'MOBILE_NO',
           account: '13812345678',
           version: '2.0',
-        }
-      }).catch(function(err){
+        },
+      }).catch(function(err) {
         (err.toString().indexOf('[AlipaySdk]exec error') > -1).should.eql(true);
         done();
       });
     });
 
-    it('status not 200', function (done) {
+    it('status not 200', function(done) {
       sandbox.stub(urllib, 'request', function() {
-        return Promise.resolve({ status: 503, headers: { trace_id: 'mock-trace-id' } })
+        return Promise.resolve({ status: 503, headers: { trace_id: 'mock-trace-id' } });
       });
 
       sdk.exec('alipay.security.risk.content.analyze', {
@@ -129,15 +127,15 @@ describe('sdk', function() {
           account_type: 'MOBILE_NO',
           account: '13812345678',
           version: '2.0',
-        }
-      }).catch(function(err){
+        },
+      }).catch(function(err) {
         err.should.eql({
           serverResult: { status: 503, headers: { trace_id: 'mock-trace-id' } },
           errorMessage: '[AlipaySdk]HTTP 请求错误',
           traceId: 'mock-trace-id',
         });
         done();
-      })
+      });
     });
 
     it('validateSign error', function(done) {
@@ -157,7 +155,7 @@ describe('sdk', function() {
           version: '2.0',
         },
         publicArgs: {},
-      }, { validateSign: true }).catch(function(err){
+      }, { validateSign: true }).catch(function(err) {
         err.should.eql({
           serverResult: {
             status: 200,
@@ -168,10 +166,10 @@ describe('sdk', function() {
           traceId: 'mock-trace-id',
         });
         done();
-      })
+      });
     });
 
-    it('response error', function (done) {
+    it('response error', function(done) {
       const response = {
         status: 200,
         data: undefined,
@@ -186,14 +184,14 @@ describe('sdk', function() {
           account_type: 'MOBILE_NO',
           account: '13812345678',
           version: '2.0',
-        }
-      }).catch(function(err){
+        },
+      }).catch(function(err) {
         err.should.eql({
           serverResult: response,
           errorMessage: '[AlipaySdk]Response 格式错误',
         });
         done();
-      })
+      });
     });
 
     it('config.camelcase is true', function(done) {
@@ -213,17 +211,17 @@ describe('sdk', function() {
           version: '2.0',
         },
         publicArgs: {},
-      }, { validateSign: true }).then(function(data){
+      }, { validateSign: true }).then(function(data) {
         data.should.eql({ aB: 1, cD: 2, traceId: 'mock-trace-id' });
         done();
-      })
+      });
     });
 
     it('config.camelcase is false', function(done) {
       const alipaySdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         alipayPublicKey,
         camelcase: false,
       });
@@ -231,7 +229,7 @@ describe('sdk', function() {
         return Promise.resolve({
           status: 200,
           data: '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}',
-        })
+        });
       });
       sandbox.stub(alipaySdk, 'checkResponseSign', function() { return true; });
 
@@ -242,10 +240,10 @@ describe('sdk', function() {
           version: '2.0',
         },
         publicArgs: {},
-      }, { validateSign: true }).then(function(data){
+      }, { validateSign: true }).then(function(data) {
         data.should.eql({ a_b: 1, c_d: 2 });
         done();
-      })
+      });
     });
 
     it('NO_RIGHT Api', function(done) {
@@ -253,7 +251,7 @@ describe('sdk', function() {
         return Promise.resolve({
           status: 200,
           data: '{"alipay_commerce_cityfacilitator_station_query_response":{"code":"40004","msg":"Business Failed","subCode":"NO_RIGHT","subMsg":"无权限使用接口"},"sign":"signStr"}',
-        })
+        });
       });
 
       sdk
@@ -266,54 +264,54 @@ describe('sdk', function() {
             msg: 'Business Failed',
             subCode: 'NO_RIGHT',
             subMsg: '无权限使用接口',
-          })
+          });
           done();
-        }).catch (e => {
+        }).catch(e => {
           done();
-        })
+        });
     });
 
-    it('execute needEncrypt', function (done) {
-      sandbox.stub(urllib, "request", function () {
+    it('execute needEncrypt', function(done) {
+      sandbox.stub(urllib, 'request', function() {
         return Promise.resolve({
           status: 200,
           data: JSON.stringify({
             alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
-            sign: "abcde=",
+            sign: 'abcde=',
           }),
         });
       });
 
-      var bizContent = {
+      const bizContent = {
         merchantAppId: '2021001170662064',
-      }
+      };
 
       sdk
         .exec('alipay.open.auth.app.aes.set', {
           bizContent,
-          needEncrypt: true
+          needEncrypt: true,
         })
         .then(ret => {
           ret.should.eql({
             code: '10000',
             msg: 'Success',
-            aesKey: 'cW8mcZgoMGUVp5g7uv7bHw=='
-          })
+            aesKey: 'cW8mcZgoMGUVp5g7uv7bHw==',
+          });
 
-          done()
-        }).catch((error) => {
-          error.should.eql(false)
-          done()
-        })
-    })
+          done();
+        }).catch(error => {
+          error.should.eql(false);
+          done();
+        });
+    });
 
     it('error log enable', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       sandbox.stub(urllib, 'request', function() {
         return new Promise(function() {
           throw Error('custom error.');
@@ -325,7 +323,7 @@ describe('sdk', function() {
           bizContent: {
             appName: 'cmsmng',
             appScene: 'papilio-alipay',
-            publishDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+            publishDate: YYYYMMDDHHmmss(),
             accountId: 'hanwen.sah',
             accountType: '0',
             appMainScene: 'papilio-alipay',
@@ -363,19 +361,19 @@ describe('sdk', function() {
           version: '2.0',
         },
         publicArgs: {},
-      }, { validateSign: true }).then(function(data){
+      }, { validateSign: true }).then(function(data) {
         done();
       }).catch(e => {
         e.should.eql({
           serverResult: {
             status: 200,
-            data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}'
+            data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
           },
           errorMessage: '[AlipaySdk]HTTP 请求错误',
           traceId: undefined,
         });
         done();
-      })
+      });
     });
 
     it('证书校验模式 formatUrl和加签', function(done) {
@@ -398,7 +396,7 @@ describe('sdk', function() {
         bizContent: {
           foo: 'bar',
         },
-      }, { validateSign: false }).then(function(data){
+      }, { validateSign: false }).then(function(data) {
         done();
       });
     });
@@ -411,21 +409,21 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: true,
         timeout: 10000,
-      })
+      });
     });
 
     it('normal', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(format(...args)) },
-        error(...args) { errorLog.push(format(...args)) },
-      }
+        info(...args) { infoLog.push(format(...args)); },
+        error(...args) { errorLog.push(format(...args)); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -442,7 +440,7 @@ describe('sdk', function() {
           ret.code.should.eql('10000');
           ret.msg.should.eql('Success');
           (!ret.fileId).should.eql(false);
-          
+
           infoLog.length.should.eql(2);
           (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
           (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
@@ -452,16 +450,16 @@ describe('sdk', function() {
           ret.traceId.length.should.eql(29);
 
           done();
-        }).catch(done)
+        }).catch(done);
     });
 
     it('multipart should serialize object field', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -491,16 +489,16 @@ describe('sdk', function() {
         }, { log, formData: form, validateSign: true })
         .then(ret => {
           done();
-        }).catch(done)
+        }).catch(done);
     });
 
     it('sign error', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -510,7 +508,7 @@ describe('sdk', function() {
 
       sandbox.stub(sdk, 'checkResponseSign', function() { return false; });
       sandbox.stub(urllib, 'request', function(url, options) {
-        return Promise.resolve({data: '{"alipay_offline_material_image_upload_response":{"a":"b"}}'});
+        return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"a":"b"}}' });
       });
 
       sdk
@@ -534,7 +532,7 @@ describe('sdk', function() {
       const log = {
         info(...args) { infoLog.push(args.join('')); },
         error(...args) { errorLog.push(JSON.stringify(args)); },
-      }
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -551,21 +549,21 @@ describe('sdk', function() {
         }, { log, formData: form })
         .then(() => {
           done();
-        }).catch((err) => {
+        }).catch(err => {
           // err.message.should.eql('[AlipaySdk]exec error');
           errorLog[0].should.eql('[{"error":"custom error.","message":"[AlipaySdk]exec error"}]');
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
           done();
-        })
+        });
     });
 
     it('error response', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -596,13 +594,13 @@ describe('sdk', function() {
         });
     });
 
-    it('response parse error', function (done) {
+    it('response parse error', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -633,7 +631,7 @@ describe('sdk', function() {
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       sandbox.stub(urllib, 'request', function({}, callback) {
-        return Promise.resolve({data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"mock_image_id","img_url":"mock_image_url"}}'});
+        return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"mock_image_id","img_url":"mock_image_url"}}' });
       });
 
       const form = new FormData();
@@ -646,12 +644,12 @@ describe('sdk', function() {
       const newSdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: false,
         timeout: 10000,
-      })
+      });
 
       newSdk
         .exec('alipay.offline.material.image.upload', {
@@ -664,16 +662,16 @@ describe('sdk', function() {
             img_url: 'mock_image_url',
           });
           done();
-        }).catch(done)
+        }).catch(done);
     });
 
     it('validate sign is false', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const filePath = path.join(__dirname, './fixtures/demo.jpg');
 
       const form = new FormData();
@@ -682,8 +680,8 @@ describe('sdk', function() {
       form.addFile('imageContent', '图片.jpg', filePath);
 
       sandbox.stub(urllib, 'request', function() {
-        return Promise.resolve({data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"u16noGtTSH-r9UI0FGmIfAAAACMAAQED","image_url":"https://oalipay-dl-django.alicdn.com/rest/1.0/image?fileIds=u16noGtTSH-r9UI0FGmIfAAAACMAAQED&zoom=original"}}'});
-      })
+        return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"u16noGtTSH-r9UI0FGmIfAAAACMAAQED","image_url":"https://oalipay-dl-django.alicdn.com/rest/1.0/image?fileIds=u16noGtTSH-r9UI0FGmIfAAAACMAAQED&zoom=original"}}' });
+      });
 
       sdk
         .exec('alipay.offline.material.image.upload', {
@@ -700,7 +698,7 @@ describe('sdk', function() {
           errorLog.should.eql([]);
 
           done();
-        }).catch(done)
+        }).catch(done);
     });
   });
 
@@ -710,28 +708,28 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: true,
-      })
+      });
     });
 
-    it('post', async function () {
+    it('post', async function() {
       const result = await sdk.pageExec('alipay.trade.page.pay', {
         method: 'POST',
         bizContent: {
-          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-          product_code: "FAST_INSTANT_TRADE_PAY",
-          subject: "abc",
-          body: "234",
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
           // timeout_express: "90m",
-          total_amount: "0.01"
+          total_amount: '0.01',
         },
-        returnUrl: 'https://www.taobao.com'
+        returnUrl: 'https://www.taobao.com',
       });
       (result.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
-      (result.indexOf(`<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;`) > -1).should.eql(true);
+      (result.indexOf('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;') > -1).should.eql(true);
       (result.indexOf(sdkVersion) > -1).should.eql(true);
     });
 
@@ -739,20 +737,20 @@ describe('sdk', function() {
       const result = await sdk.pageExec('alipay.trade.page.pay', {
         method: 'GET',
         bizContent: {
-          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-          product_code: "FAST_INSTANT_TRADE_PAY",
-          subject: "abc",
-          body: "234",
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
           // timeout_express: "90m",
-          total_amount: "0.01"
+          total_amount: '0.01',
         },
-        returnUrl: 'https://www.taobao.com'
+        returnUrl: 'https://www.taobao.com',
       });
       const url = decodeURIComponent(result);
       (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
       (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
       (url.indexOf(sdkVersion) > -1).should.eql(true);
-    })
+    });
   });
 
   describe('pageExec - legacy form data', function() {
@@ -762,60 +760,60 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: true,
-      })
+      });
     });
 
     it('post', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const bizContent = {
-        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-        product_code: "FAST_INSTANT_TRADE_PAY",
-        subject: "abc",
-        body: "234",
+        out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+        product_code: 'FAST_INSTANT_TRADE_PAY',
+        subject: 'abc',
+        body: '234',
         // timeout_express: "90m",
-        total_amount: "0.01"
-      }
+        total_amount: '0.01',
+      };
       const formData = new FormData();
       formData.addField('returnUrl', 'https://www.taobao.com');
       formData.addField('bizContent', bizContent);
 
       sdk
         .exec('alipay.trade.page.pay', {
-        }, { log, formData: formData })
+        }, { log, formData })
         .then(ret => {
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
           errorLog.length.should.eql(0);
           (ret.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
-          (ret.indexOf(`<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;`) > -1).should.eql(true);
+          (ret.indexOf('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;') > -1).should.eql(true);
           (ret.indexOf(sdkVersion) > -1).should.eql(true);
           done();
-        }).catch(done)
+        }).catch(done);
     });
 
     it('get', function(done) {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
       const bizContent = {
-        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-        product_code: "FAST_INSTANT_TRADE_PAY",
-        subject: "abc",
-        body: "234",
+        out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+        product_code: 'FAST_INSTANT_TRADE_PAY',
+        subject: 'abc',
+        body: '234',
         // timeout_express: "90m",
-        total_amount: "0.01"
-      }
+        total_amount: '0.01',
+      };
       const formData = new FormData();
       formData.setMethod('get');
       formData.addField('returnUrl', 'https://www.taobao.com');
@@ -823,7 +821,7 @@ describe('sdk', function() {
 
       sdk
         .exec('alipay.trade.page.pay', {
-        }, { log, formData: formData })
+        }, { log, formData })
         .then(ret => {
           const url = decodeURIComponent(ret);
           (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
@@ -833,17 +831,17 @@ describe('sdk', function() {
           (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
           (url.indexOf(sdkVersion) > -1).should.eql(true);
           done();
-        }).catch(done)
+        }).catch(done);
     });
 
     it('get - bizContent stringify is optional', async function() {
       const bizContent = {
-        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-        product_code: "FAST_INSTANT_TRADE_PAY",
-        subject: "abc",
-        body: "234",
-        total_amount: "0.01"
-      }
+        out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+        product_code: 'FAST_INSTANT_TRADE_PAY',
+        subject: 'abc',
+        body: '234',
+        total_amount: '0.01',
+      };
 
       const stringified = JSON.stringify(bizContent);
 
@@ -853,9 +851,9 @@ describe('sdk', function() {
       formData.addField('returnUrl', 'https://www.taobao.com');
       formData.addField('bizContent', stringified);
 
-      
+
       const result1 = await sdk.exec('alipay.trade.page.pay', {
-      }, { formData: formData });
+      }, { formData });
       const url1 = decodeURIComponent(result1);
       const index1 = url1.indexOf(stringified);
 
@@ -882,13 +880,13 @@ describe('sdk', function() {
 
     it('disable log', function(done) {
       const bizContent = {
-        out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-        product_code: "FAST_INSTANT_TRADE_PAY",
-        subject: "abc",
-        body: "234",
+        out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+        product_code: 'FAST_INSTANT_TRADE_PAY',
+        subject: 'abc',
+        body: '234',
         // timeout_express: "90m",
-        total_amount: "0.01"
-      }
+        total_amount: '0.01',
+      };
       const formData = new FormData();
       formData.setMethod('get');
       formData.addField('returnUrl', 'https://www.taobao.com');
@@ -896,14 +894,14 @@ describe('sdk', function() {
 
       sdk
         .exec('alipay.trade.page.pay', {
-        }, { formData: formData })
+        }, { formData })
         .then(ret => {
           const url = decodeURIComponent(ret);
           (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
           (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
           (url.indexOf(sdkVersion) > -1).should.eql(true);
           done();
-        }).catch(done)
+        }).catch(done);
     });
   });
 
@@ -913,25 +911,25 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: true,
-      })
+      });
     });
 
     it('normal', async function() {
       const result = await sdk.sdkExec('alipay.trade.app.pay', {
         bizContent: {
-          out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
-          product_code: "FAST_INSTANT_TRADE_PAY",
-          subject: "abc",
-          body: "234",
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
           // timeout_express: "90m",
-          total_amount: "0.01"
+          total_amount: '0.01',
         },
-        returnUrl: 'https://www.taobao.com'
-      })
+        returnUrl: 'https://www.taobao.com',
+      });
 
       const urlDecodedStr = decodeURIComponent(result);
       urlDecodedStr.indexOf('method=alipay.trade.app.pay').should.be.above(-1);
@@ -946,11 +944,11 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         signType: 'RSA2',
         alipayPublicKey,
         camelcase: true,
-      })
+      });
     });
 
     it('normal', function() {
@@ -993,10 +991,10 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         alipayPublicKey,
         camelcase: true,
-      })
+      });
     });
 
     it('alipayPublicKey is null', function(done) {
@@ -1051,7 +1049,7 @@ describe('sdk', function() {
       sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         alipayPublicKey: notifyAlipayPublicKeyV2,
         camelcase: true,
       });
@@ -1061,7 +1059,7 @@ describe('sdk', function() {
       const sdk = new AlipaySdk({
         gateway: GATE_WAY,
         appId: APP_ID,
-        privateKey: privateKey,
+        privateKey,
         camelcase: true,
       });
 
@@ -1074,11 +1072,11 @@ describe('sdk', function() {
 
     describe('verify sign should delete sign_type', function() {
       beforeEach(function() {
-        let notifyAlipayPublicKeyV1 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqObrdC7hrgAVM98tK0nv3hSQRGGKT4lBsQjHiGjeYZjOPIPHR5knm2jnnz/YGIXIofVHkA/tAlBAd5DrY7YpvI4tP5EONLtZKC2ghBMx7McI2wRD0xiqzxOQr1FuhZGJ8/AUokBzJrzY+aGX2xcOrxFYRlFilvVLTXg4LWjR1tdPkO6+i7wQZAIVMClPkwVRZEbaERRHlKqTzv2gGv5rDU8gRoe1LeaN+6BlbTqHWkQcNCUNrA8C6l17XAXGKDsm/9TFWwO8EPHHHCaQdjtV5/FdcWIt+L8SR1ss7EXTjYDFtxcKVv9rEoY1lX8T4mX+GbXfZHraG5NCF1+XioL5JwIDAQAB';
+        const notifyAlipayPublicKeyV1 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqObrdC7hrgAVM98tK0nv3hSQRGGKT4lBsQjHiGjeYZjOPIPHR5knm2jnnz/YGIXIofVHkA/tAlBAd5DrY7YpvI4tP5EONLtZKC2ghBMx7McI2wRD0xiqzxOQr1FuhZGJ8/AUokBzJrzY+aGX2xcOrxFYRlFilvVLTXg4LWjR1tdPkO6+i7wQZAIVMClPkwVRZEbaERRHlKqTzv2gGv5rDU8gRoe1LeaN+6BlbTqHWkQcNCUNrA8C6l17XAXGKDsm/9TFWwO8EPHHHCaQdjtV5/FdcWIt+L8SR1ss7EXTjYDFtxcKVv9rEoY1lX8T4mX+GbXfZHraG5NCF1+XioL5JwIDAQAB';
         sdk = new AlipaySdk({
           gateway: GATE_WAY,
           appId: APP_ID,
-          privateKey: privateKey,
+          privateKey,
           alipayPublicKey: notifyAlipayPublicKeyV1,
           camelcase: true,
         });
@@ -1095,7 +1093,7 @@ describe('sdk', function() {
           buyer_id: '2088102534368455',
           invoice_amount: '0.10',
           notify_id: '2019081500222155624068450559358070',
-          fund_bill_list: [ { amount: '0.10', fundChannel: 'ALIPAYACCOUNT' } ],
+          fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
           notify_type: 'trade_status_sync',
           trade_status: 'TRADE_SUCCESS',
           receipt_amount: '0.10',
@@ -1127,7 +1125,7 @@ describe('sdk', function() {
           buyer_id: '2088102534368455',
           invoice_amount: '0.10',
           notify_id: '2019081500222155624068450559358070',
-          fund_bill_list: [ { amount: '0.10', fundChannel: 'ALIPAYACCOUNT' } ],
+          fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
           notify_type: 'trade_status_sync',
           trade_status: 'TRADE_SUCCESS',
           receipt_amount: '0.10',
@@ -1173,7 +1171,7 @@ describe('sdk', function() {
           total_amount: '0.01',
           trade_no: '111111112019052322001426431037869358',
           trade_status: 'TRADE_SUCCESS',
-          version: '1.0'
+          version: '1.0',
         };
 
         sdk.checkNotifySign(postData).should.eql(false);
@@ -1185,7 +1183,7 @@ describe('sdk', function() {
             bizContent: '{"key":"value % has special charactar"}',
             sign: 'test',
           });
-        } catch(e) {
+        } catch (e) {
           e.message.includes('URI malformed').should.eql(true);
         }
       });
@@ -1197,14 +1195,14 @@ describe('sdk', function() {
             bizContent: '{"key":"value % has special charactar"}',
             sign: 'test',
           }, true);
-        } catch(e) {
+        } catch (e) {
           hasError = true;
         }
         hasError.should.eql(false);
       });
     });
 
-    describe('verify sign should not delete sign_type', function () {
+    describe('verify sign should not delete sign_type', function() {
       it('with sign_type arguments verify success', function() {
         const postData = {
           app_id: '2017122801303261',
@@ -1262,7 +1260,7 @@ describe('sdk', function() {
         sdk.checkNotifySign(postData).should.eql(true);
       });
 
-      it('verify fail', function(){
+      it('verify fail', function() {
         const postData = {
           app_id: '2017122801303261',
           charset: 'UTF-8',
@@ -1308,7 +1306,7 @@ describe('sdk', function() {
         camelcase: true,
         timeout: 10000,
         keyType: 'PKCS8',
-      })
+      });
     });
 
     // 沙箱网关环境可能不稳定，仅当成功返回时校验。
@@ -1316,9 +1314,9 @@ describe('sdk', function() {
       const infoLog = [];
       const errorLog = [];
       const log = {
-        info(...args) { infoLog.push(args.join('')) },
-        error(...args) { errorLog.push(args.join('')) },
-      }
+        info(...args) { infoLog.push(args.join('')); },
+        error(...args) { errorLog.push(args.join('')); },
+      };
 
       this.timeout(20000);
 
@@ -1343,28 +1341,28 @@ describe('sdk', function() {
           }
 
           done();
-        }).catch(done)
+        }).catch(done);
     });
   });
 
-  it('配置了config.wsServiceUrl', (done) => {
-    const wsServiceUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net'
+  it('配置了config.wsServiceUrl', done => {
+    const wsServiceUrl = 'http://openapi-ztt-1.gz00b.dev.alipay.net';
     const sdk = new AlipaySdk({
       appId: APP_ID,
-      privateKey: privateKey,
+      privateKey,
       signType: 'RSA2',
       alipayPublicKey,
       camelcase: true,
-      wsServiceUrl
-    })
+      wsServiceUrl,
+    });
 
-    let requestParams =  null
+    let requestParams = null;
 
     sandbox.stub(urllib, 'request', function(params) {
-      requestParams = params
+      requestParams = params;
 
       return new Promise(function(reject) {
-        reject(new Error(''))
+        reject(new Error(''));
       });
     });
 
@@ -1373,12 +1371,12 @@ describe('sdk', function() {
         account_type: 'MOBILE_NO',
         account: '13812345678',
         version: '2.0',
-      }
+      },
     }).catch(() => {
-      const flag = requestParams.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1
+      const flag = requestParams.indexOf(`ws_service_url=${encodeURIComponent(wsServiceUrl)}`) > -1;
 
-      flag.should.eql(true)
-      done()
-    })
+      flag.should.eql(true);
+      done();
+    });
   });
 });
