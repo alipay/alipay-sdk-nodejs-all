@@ -18,8 +18,8 @@ export interface AlipaySdkConfig {
   camelcase?: boolean;
   /** 编码（只支持 utf-8） */
   charset?: 'utf-8';
-  /** api版本 */
-  version?: '1.0';
+  /** api 版本 */
+  version?: string;
   /** 指定 urllib 库 */
   urllib?: any;
   /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */

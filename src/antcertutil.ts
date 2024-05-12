@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import crypto from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { BigNumber } from 'bignumber.js';
 import { Certificate } from '@fidm/x509';
 
@@ -10,8 +10,8 @@ export function loadPublicKeyFromPath(filePath: string): string {
   return certificate.publicKeyRaw.toString('base64');
 }
 
-/** 从公钥证书内容或buffer读取支付宝公钥 */
-export function loadPublicKey(content: string|Buffer): string {
+/** 从公钥证书内容或 Buffer 读取支付宝公钥 */
+export function loadPublicKey(content: string | Buffer): string {
   const pemContent = typeof content === 'string' ? Buffer.from(content) : content;
   const certificate = Certificate.fromPEM(pemContent);
   return certificate.publicKeyRaw.toString('base64');
@@ -23,8 +23,8 @@ export function getSNFromPath(filePath: string, isRoot = false): string {
   return getSN(fileData, isRoot);
 }
 
-/** 从上传的证书内容或Buffer读取序列号 */
-export function getSN(fileData: string|Buffer, isRoot = false): string {
+/** 从上传的证书内容或 Buffer 读取序列号 */
+export function getSN(fileData: string | Buffer, isRoot = false): string {
   const pemData = typeof fileData === 'string' ? Buffer.from(fileData) : fileData;
   if (isRoot) {
     return getRootCertSN(pemData);
@@ -44,8 +44,7 @@ function getCertSN(certificate: Certificate): string {
     }, '')
     .slice(0, -1);
   const decimalNumber = new BigNumber(serialNumber, 16).toString(10);
-  const SN = crypto
-    .createHash('md5')
+  const SN = createHash('md5')
     .update(principalName + decimalNumber, 'utf8')
     .digest('hex');
   return SN;

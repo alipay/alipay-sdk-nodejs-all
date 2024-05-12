@@ -101,6 +101,7 @@ export class AlipaySdk {
     this.config = Object.assign({
       urllib,
       gateway: 'https://openapi.alipay.com/gateway.do',
+      endpoint: 'https://openapi.alipay.com',
       timeout: 5000,
       camelcase: true,
       signType: 'RSA2',
@@ -153,7 +154,7 @@ export class AlipaySdk {
   // 文件上传
   private async multipartExec(method: string, option: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
     const config = this.config;
-    let signParams = {} as { [key: string]: string | object };
+    let signParams = {} as Record<string, string>;
     let formData = {} as { [key: string]: string | object };
     const formFiles = {} as { [key: string]: string };
     option.formData!.getFields().forEach(field => {
@@ -261,10 +262,10 @@ export class AlipaySdk {
 
   // page 类接口，兼容原来的 formData 格式
   private _pageExec(method: string, option: IRequestOption = {}): string {
-    let signParams = { alipaySdk: this.sdkVersion } as { [key: string]: string | object };
+    let signParams = { alipaySdk: this.sdkVersion } as Record<string, string>;
     const config = this.config;
     option.formData!.getFields().forEach(field => {
-      signParams[field.name] = field.value;
+      signParams[field.name] = field.value as string;
     });
 
     // 签名方法中使用的 key 是驼峰
@@ -416,6 +417,10 @@ export class AlipaySdk {
         headers: {
           'user-agent': this.sdkVersion,
           'alipay-request-id': option.traceId ?? createTraceId(),
+          // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
+          // 加密请求和文件上传 API 除外。
+          'content-type': 'application/json',
+          accept: 'application/json',
         },
       });
     } catch (err: any) {

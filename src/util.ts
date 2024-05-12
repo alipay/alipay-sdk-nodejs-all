@@ -1,9 +1,7 @@
 import { createSign, randomUUID } from 'node:crypto';
 import { YYYYMMDDHHmmss } from 'utility';
-import iconv from 'iconv-lite';
 import snakeCaseKeys from 'snakecase-keys';
 import CryptoJS from 'crypto-js';
-import { omit, padEnd } from 'lodash';
 import type { AlipaySdkConfig } from './types.js';
 
 export const ALIPAY_ALGORITHM_MAPPING = {
@@ -13,7 +11,8 @@ export const ALIPAY_ALGORITHM_MAPPING = {
 
 function parseKey(aesKey: string) {
   return {
-    iv: CryptoJS.enc.Hex.parse(padEnd('', 32, '0')),
+    // padEnd('', 32, '0'): 00000000000000000000000000000000
+    iv: CryptoJS.enc.Hex.parse('00000000000000000000000000000000'),
     key: CryptoJS.enc.Base64.parse(aesKey),
   };
 }
@@ -52,40 +51,39 @@ export function aesDecrypt(data: any, aesKey: string) {
  * @param {object} params 请求参数
  * @param {object} config sdk 配置
  */
-export function sign(method: string, params: any = {}, config: AlipaySdkConfig): any {
-
-  let signParams = Object.assign({
+export function sign(method: string, params: Record<string, any>, config: Required<AlipaySdkConfig>): any {
+  const signParams: Record<string, any> = {
     method,
     appId: config.appId,
     charset: config.charset,
     version: config.version,
     signType: config.signType,
     timestamp: YYYYMMDDHHmmss(),
-  }, omit(params, [ 'bizContent', 'needEncrypt' ]));
-  if (config.appCertSn && config.alipayRootCertSn) {
-    signParams = Object.assign({
-      appCertSn: config.appCertSn,
-      alipayRootCertSn: config.alipayRootCertSn,
-    }, signParams);
+  };
+  for (const key in params) {
+    if (key === 'bizContent' || key === 'biz_content' || key === 'needEncrypt') continue;
+    signParams[key] = params[key];
   }
-
+  if (config.appCertSn && config.alipayRootCertSn) {
+    signParams.appCertSn = config.appCertSn;
+    signParams.alipayRootCertSn = config.alipayRootCertSn;
+  }
   if (config.wsServiceUrl) {
     signParams.wsServiceUrl = config.wsServiceUrl;
   }
 
   // 兼容官网的 biz_content;
   if (params.bizContent && params.biz_content) {
-    throw Error('不能同时设置 bizContent 和 biz_content');
+    throw new TypeError('不能同时设置 bizContent 和 biz_content');
   }
-  const bizContent = params.bizContent || params.biz_content;
+  const bizContent = params.bizContent ?? params.biz_content;
 
   if (bizContent) {
     // AES加密
     if (params.needEncrypt) {
       if (!config.encryptKey) {
-        throw new Error('请设置encryptKey参数');
+        throw new TypeError('请设置 encryptKey 参数');
       }
-
       signParams.encryptType = 'AES';
       signParams.bizContent = aesEncrypt(
         snakeCaseKeys(bizContent),
@@ -98,14 +96,14 @@ export function sign(method: string, params: any = {}, config: AlipaySdkConfig):
 
   // params key 驼峰转下划线
   const decamelizeParams = snakeCaseKeys(signParams);
-
   // 排序
   const signStr = Object.keys(decamelizeParams).sort().map(key => {
     let data = decamelizeParams[key];
     if (Array.prototype.toString.call(data) !== '[object String]') {
       data = JSON.stringify(data);
     }
-    return `${key}=${iconv.encode(data, config.charset!)}`;
+    // return `${key}=${iconv.encode(data, config.charset!)}`;
+    return `${key}=${data}`;
   })
     .join('&');
 
@@ -132,7 +130,6 @@ export function decamelize(text: string) {
   }
 
   const replacement = `$1${separator}$2`;
-
   // Split lowercase sequences followed by uppercase character.
   // `dataForUSACounties` → `data_For_USACounties`
   // `myURLstring → `my_URLstring`
