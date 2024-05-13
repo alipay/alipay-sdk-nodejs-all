@@ -1,4 +1,4 @@
-# Alipay SDK
+# Alipay OpenAPI SDK
 
 [![NPM version][npm-image]][npm-url]
 [![CI](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml/badge.svg)](https://github.com/alipay/alipay-sdk-nodejs-all/actions/workflows/node.yml)
@@ -16,7 +16,7 @@
 
 ## 简介
 
-Alipay SDK for Node.js 用于给 Node.js 服务器提供调用支付宝开放平台的能力。
+Alipay OpenAPI SDK for Node.js / 用于给 Node.js 服务器提供调用支付宝开放平台的能力。
 包括向支付宝服务器发起 OpenAPI 请求、订单信息生成，以及配套的证书、加签和验签能力。
 
 基于[支付宝 API v3 接口规范](https://opendocs.alipay.com/open-v3/054oog?pathHash=7834d743)实现。

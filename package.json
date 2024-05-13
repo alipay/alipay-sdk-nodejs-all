@@ -1,7 +1,7 @@
 {
   "name": "alipay-sdk",
   "version": "3.6.1",
-  "description": "支付宝开放平台 Node.js SDK",
+  "description": "支付宝开放平台 Node.js SDK / Alipay OpenAPI SDK for Node.js",
   "scripts": {
     "dev": "tsc -w",
     "lint": "eslint src test --ext ts",
@@ -33,6 +33,7 @@
     "eslint": "8",
     "eslint-config-egg": "13",
     "git-contributor": "^2.1.5",
+    "mm": "^3.4.0",
     "tshy": "^1.14.0",
     "tshy-after": "^1.0.0",
     "typescript": "5"

@@ -1,8 +1,11 @@
+import { debuglog } from 'node:util';
 import { createSign, randomUUID } from 'node:crypto';
 import { YYYYMMDDHHmmss } from 'utility';
 import snakeCaseKeys from 'snakecase-keys';
 import CryptoJS from 'crypto-js';
 import type { AlipaySdkConfig } from './types.js';
+
+const debug = debuglog('alipay-sdk:util');
 
 export const ALIPAY_ALGORITHM_MAPPING = {
   RSA: 'RSA-SHA1',
@@ -45,13 +48,13 @@ export function aesDecrypt(data: any, aesKey: string) {
 }
 
 /**
- * 签名
+ * OpenAPI 2.0 签名
  * @description https://opendocs.alipay.com/common/02kf5q
  * @param {string} method 调用接口方法名，比如 alipay.ebpp.bill.add
  * @param {object} params 请求参数
  * @param {object} config sdk 配置
  */
-export function sign(method: string, params: Record<string, any>, config: Required<AlipaySdkConfig>): any {
+export function sign(method: string, params: Record<string, any>, config: Required<AlipaySdkConfig>) {
   const signParams: Record<string, any> = {
     method,
     appId: config.appId,
@@ -95,23 +98,26 @@ export function sign(method: string, params: Record<string, any>, config: Requir
   }
 
   // params key 驼峰转下划线
-  const decamelizeParams = snakeCaseKeys(signParams);
+  const decamelizeParams: Record<string, any> = snakeCaseKeys(signParams);
   // 排序
-  const signStr = Object.keys(decamelizeParams).sort().map(key => {
-    let data = decamelizeParams[key];
-    if (Array.prototype.toString.call(data) !== '[object String]') {
-      data = JSON.stringify(data);
-    }
-    // return `${key}=${iconv.encode(data, config.charset!)}`;
-    return `${key}=${data}`;
-  })
+  // ignore biz_content
+  const signString = Object.keys(decamelizeParams).sort()
+    .map(key => {
+      let data = decamelizeParams[key];
+      if (Array.prototype.toString.call(data) !== '[object String]') {
+        data = JSON.stringify(data);
+      }
+      // return `${key}=${iconv.encode(data, config.charset!)}`;
+      return `${key}=${data}`;
+    })
     .join('&');
 
   // 计算签名
-  const sign = createSign(ALIPAY_ALGORITHM_MAPPING[config.signType!])
-    .update(signStr, 'utf8').sign(config.privateKey, 'base64');
-
-  return Object.assign(decamelizeParams, { sign });
+  const algorithm = ALIPAY_ALGORITHM_MAPPING[config.signType];
+  decamelizeParams.sign = createSign(algorithm)
+    .update(signString, 'utf8').sign(config.privateKey, 'base64');
+  debug('algorithm: %s, signString: %o, sign: %o', algorithm, signString, sign);
+  return decamelizeParams;
 }
 
 // forked from https://github.com/sindresorhus/decamelize/blob/main/index.js
