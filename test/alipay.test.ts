@@ -10,7 +10,7 @@ import {
   APP_ID, GATE_WAY,
   STABLE_APP_ID, STABLE_GATE_WAY, STABLE_ENDPOINT, STABLE_APP_PRIVATE_KEY, STABLE_ALIPAY_PUBLIC_KEY,
 } from './helper.js';
-import { AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
+import { AlipayFormData, AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
 
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
@@ -21,6 +21,39 @@ const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
 
 describe('test/alipay.test.ts', () => {
   afterEach(mm.restore);
+
+  let sdk: AlipaySdk;
+  const sdkBaseConfig: AlipaySdkConfig = {
+    gateway: GATE_WAY,
+    appId: APP_ID,
+    privateKey,
+    signType: 'RSA2',
+    alipayPublicKey,
+    camelcase: true,
+    timeout: 10000,
+    encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
+  };
+  let sdkStable: AlipaySdk;
+  const sdkStableConfig: AlipaySdkConfig = {
+    gateway: STABLE_GATE_WAY,
+    endpoint: STABLE_ENDPOINT,
+    appId: STABLE_APP_ID,
+    privateKey: STABLE_APP_PRIVATE_KEY,
+    signType: 'RSA2',
+    alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
+    camelcase: true,
+    timeout: 10000,
+    encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
+  };
+
+  const mockAgent = new MockAgent();
+  setGlobalDispatcher(mockAgent);
+
+  beforeEach(() => {
+    sdk = new AlipaySdk(sdkBaseConfig);
+    sdkStable = new AlipaySdk(sdkStableConfig);
+    assert(sdkStable);
+  });
 
   describe('config error', () => {
     it('appId is null', () => {
@@ -78,28 +111,8 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  describe('exec()', () => {
-    let sdkStable: AlipaySdk;
-    const sdkStableConfig: AlipaySdkConfig = {
-      gateway: STABLE_GATE_WAY,
-      endpoint: STABLE_ENDPOINT,
-      appId: STABLE_APP_ID,
-      privateKey: STABLE_APP_PRIVATE_KEY,
-      signType: 'RSA2',
-      alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
-      camelcase: true,
-      timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
-    };
-
-    const mockAgent = new MockAgent();
-    setGlobalDispatcher(mockAgent);
-
-    beforeEach(() => {
-      sdkStable = new AlipaySdk(sdkStableConfig);
-    });
-
-    it('验证调用成功', async () => {
+  describe('curl()', () => {
+    it('POST 验证调用成功', async () => {
       // https://opendocs.alipay.com/open-v3/b6702530_alipay.user.info.share?scene=common&pathHash=d03d61a2
       await assert.rejects(async () => {
         await sdkStable.curl('POST', '/v3/alipay/user/info/share', {
@@ -115,41 +128,79 @@ describe('test/alipay.test.ts', () => {
         return true;
       });
     });
+
+    it('POST 文件上传', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', filePath);
+
+      const uploadResult = await sdkStable.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', form);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it('GET 验证调用成功', async () => {
+      // https://opendocs.alipay.com/open-v3/c166c117_alipay.user.certify.open.query?scene=common&pathHash=ee31ddc1
+      // await assert.rejects(async () => {
+      //   await sdkStable.curl('GET', '/v3/alipay/user/certify/open/query', {
+      //     certify_id: 'OC201809253000000393900404029253',
+      //   });
+      // }, err => {
+      //   assert(err instanceof AlipayRequestError);
+      //   assert.equal(err.message, '无效的访问令牌');
+      //   assert.equal(err.links!.length, 1);
+      //   assert.equal(err.code, 'invalid-auth-token');
+      //   assert(err.traceId);
+      //   assert.equal(err.responseHttpStatus, 401);
+      //   return true;
+      // });
+      // https://opendocs.alipay.com/open-v3/5ea1017e_alipay.open.auth.userauth.relationship.query?scene=common&pathHash=0d3291b4
+      await assert.rejects(async () => {
+        await sdkStable.curl('GET', '/v3/alipay/open/auth/userauth/relationship/query', {
+          scopes: 'auth_user,auth_zhima',
+          open_id: '074a1CcTG1LelxKe4xQC0zgNdId0nxi95b5lsNpazWYoCo5',
+        });
+      }, err => {
+        assert(err instanceof AlipayRequestError);
+        assert.equal(err.message, 'appid和openid不匹配');
+        assert.equal(err.code, 'app-openid-not-match');
+        assert(err.traceId);
+        assert.equal(err.responseHttpStatus, 400);
+        return true;
+      });
+      // https://opendocs.alipay.com/open-v3/d6c4d425_alipay.data.dataservice.bill.downloadurl.query?scene=common&pathHash=cc65bfb0
+      const tradeResult = await sdkStable.curl<{
+        bill_download_url: string;
+      }>('GET', '/v3/alipay/data/dataservice/bill/downloadurl/query', {
+        bill_type: 'trade',
+        bill_date: '2016-04-05',
+      });
+      assert.equal(tradeResult.responseHttpStatus, 200);
+      assert(tradeResult.traceId);
+      assert(tradeResult.data.bill_download_url);
+      // https://github.com/alipay/alipay-sdk-java-all/blob/9c2d7099579a42c454b0e00e3755a640758d0ae4/v3/docs/AlipayMarketingActivityApi.md
+      await assert.rejects(async () => {
+        await sdkStable.curl('GET', '/v3/alipay/marketing/activity/2016042700826004508401111111', {
+          merchantId: '2088202967380463',
+          merchantAccessMode: 'AGENCY_MODE',
+        });
+      }, err => {
+        assert(err instanceof AlipayRequestError);
+        assert.equal(err.message, '参数有误活动不存在');
+        assert.equal(err.code, 'INVALID_PARAMETER');
+        assert(err.traceId);
+        assert.equal(err.responseHttpStatus, 400);
+        return true;
+      });
+    });
   });
 
   describe('exec()', () => {
-    let sdk: AlipaySdk;
-    const sdkBaseConfig: AlipaySdkConfig = {
-      gateway: GATE_WAY,
-      appId: APP_ID,
-      privateKey,
-      signType: 'RSA2',
-      alipayPublicKey,
-      camelcase: true,
-      timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
-    };
-    let sdkStable: AlipaySdk;
-    const sdkStableConfig: AlipaySdkConfig = {
-      gateway: STABLE_GATE_WAY,
-      appId: STABLE_APP_ID,
-      privateKey: STABLE_APP_PRIVATE_KEY,
-      signType: 'RSA2',
-      alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
-      camelcase: true,
-      timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
-    };
-
-    const mockAgent = new MockAgent();
-    setGlobalDispatcher(mockAgent);
-
-    beforeEach(() => {
-      sdk = new AlipaySdk(sdkBaseConfig);
-      sdkStable = new AlipaySdk(sdkStableConfig);
-      assert(sdkStable);
-    });
-
     it('验证调用成功', async () => {
       const result = await sdkStable.exec('alipay.security.risk.content.analyze', {
         bizContent: {

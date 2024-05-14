@@ -1,8 +1,9 @@
 import { debuglog } from 'node:util';
 import { createVerify, randomUUID, createSign } from 'node:crypto';
-import urllib, { type HttpClientResponse, type HttpMethod } from 'urllib';
+import urllib, { type HttpClientResponse, type HttpMethod, type RequestOptions } from 'urllib';
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
+import FormStream from 'formstream';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
 import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId } from './util.js';
@@ -44,6 +45,12 @@ export class AlipayRequestError extends Error {
     this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);
   }
+}
+
+export interface AlipayCommonResult<T = any> {
+  data: T;
+  responseHttpStatus: number;
+  traceId: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -182,39 +189,72 @@ export class AlipaySdk {
    * Alipay OpenAPI V3
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async curl(method: HttpMethod, pathUrl: string, data?: object, options?: AlipayCURLOptions) {
+  public async curl<T = any>(method: HttpMethod, pathUrl: string, data?: Record<string, any>,
+    options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
     const httpMethod = method.toUpperCase();
-    const url = `${this.config.endpoint}${pathUrl}`;
+    let url = `${this.config.endpoint}${pathUrl}`;
     // TODO: 需要支持 app_cert_sn
     const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
-    const httpRequestBody = data ? JSON.stringify(data) : '';
+    let httpRequestUrl = pathUrl;
+    let httpRequestBody = '';
+    const requestOptions: RequestOptions = {
+      method,
+      dataType: 'json',
+      timeout: this.config.timeout,
+    };
+    requestOptions.headers = {
+      'user-agent': this.sdkVersion,
+      'alipay-request-id': options?.requestId ?? createRequestId(),
+      accept: 'application/json',
+      // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
+      // 加密请求和文件上传 API 除外。
+      'Content-Type': 'application/json',
+    };
+    if (data) {
+      if (httpMethod === 'GET') {
+        if (data instanceof AlipayFormData) {
+          throw new TypeError('GET 请求不允许提交 form 表单数据');
+        }
+        const urlObject = new URL(url);
+        for (const key in data) {
+          urlObject.searchParams.set(key, data[key]);
+        }
+        url = urlObject.toString();
+        httpRequestUrl = `${urlObject.pathname}${urlObject.search}`;
+      } else {
+        if (data instanceof AlipayFormData) {
+          const form = new FormStream();
+          const dataField = {} as Record<string, string | object>;
+          for (const item of data.fields) {
+            dataField[item.name] = item.value;
+          }
+          httpRequestBody = JSON.stringify(dataField);
+          form.field('data', httpRequestBody, 'application/json');
+          // 文件上传 https://opendocs.alipay.com/open-v3/054oog#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0
+          for (const item of data.files) {
+            form.file(item.name, item.path, item.fieldName);
+          }
+          requestOptions.stream = form as any;
+          Object.assign(requestOptions.headers, form.headers());
+        } else {
+          httpRequestBody = data ? JSON.stringify(data) : '';
+          requestOptions.content = httpRequestBody;
+        }
+      }
+    }
     // TODO: 需要支撑 appAuthToken
-    const signString = `${authString}\n${httpMethod}\n${pathUrl}\n${httpRequestBody}\n`;
+    const signString = `${authString}\n${httpMethod}\n${httpRequestUrl}\n${httpRequestBody}\n`;
     const signature = createSign('RSA-SHA256')
       .update(signString, 'utf-8')
       .sign(this.config.privateKey, 'base64');
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
-    const headers: Record<string, string> = {
-      authorization,
-      'user-agent': this.sdkVersion,
-      'alipay-request-id': options?.requestId ?? createRequestId(),
-      // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
-      // 加密请求和文件上传 API 除外。
-      'content-type': 'application/json',
-      accept: 'application/json',
-    };
+    requestOptions.headers.authorization = authorization;
     debug('curl %s %s, with data: %j, options: %j, headers: %j',
-      method, url, data, options, headers);
+      method, url, data, options, requestOptions.headers);
     let httpResponse: HttpClientResponse<any>;
     try {
-      httpResponse = await urllib.request(url, {
-        method: 'POST',
-        content: httpRequestBody,
-        dataType: 'json',
-        timeout: this.config.timeout,
-        headers,
-      });
+      httpResponse = await urllib.request(url, requestOptions);
     } catch (err: any) {
       debug('HttpClient Request error: %s', err);
       throw new AlipayRequestError(`HttpClient Request error, ${err.message}`, {
@@ -240,9 +280,9 @@ export class AlipaySdk {
     }
     return {
       data: httpResponse.data,
-      httpStatus: httpResponse.status,
+      responseHttpStatus: httpResponse.status,
       traceId,
-    };
+    } satisfies AlipayCommonResult<T>;
   }
 
   // 文件上传
