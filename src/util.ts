@@ -176,6 +176,6 @@ function handlePreserveConsecutiveUppercase(decamelized: string, separator: stri
   );
 }
 
-export function createTraceId() {
+export function createRequestId() {
   return randomUUID().replaceAll('-', '');
 }

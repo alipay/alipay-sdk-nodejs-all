@@ -1,28 +1,46 @@
 import { debuglog } from 'node:util';
-import { createVerify } from 'node:crypto';
-import urllib, { type HttpClientResponse } from 'urllib';
+import { createVerify, randomUUID, createSign } from 'node:crypto';
+import urllib, { type HttpClientResponse, type HttpMethod } from 'urllib';
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
-import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createTraceId } from './util.js';
+import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId } from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
 
 const debug = debuglog('alipay-sdk');
 
+// {
+//   link: 'https://open.alipay.com/api/errCheck?traceId=0603331617156962044358274991886',
+//   desc: '解决方案'
+// }
+export interface AlipayRequestErrorSupportLink {
+  link: string;
+  desc: string;
+}
+
 export interface AlipayRequestErrorOptions extends ErrorOptions {
+  code?: string;
   traceId?: string;
+  responseHttpStatus?: number;
   responseDataRaw?: string;
+  links?: AlipayRequestErrorSupportLink[];
 }
 
 export class AlipayRequestError extends Error {
+  code?: string;
   traceId?: string;
+  responseHttpStatus?: number;
   responseDataRaw?: string;
+  links?: AlipayRequestErrorSupportLink[];
 
   constructor(message: string, options?: AlipayRequestErrorOptions) {
     super(message, options);
+    this.code = options?.code;
     this.traceId = options?.traceId;
+    this.responseHttpStatus = options?.responseHttpStatus;
     this.responseDataRaw = options?.responseDataRaw;
+    this.links = options?.links;
     this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);
   }
@@ -63,6 +81,11 @@ export interface IRequestOption {
    * @see https://opendocs.alipay.com/open-v3/054oog?pathHash=7834d743#%E8%AF%B7%E6%B1%82%E7%9A%84%E5%94%AF%E4%B8%80%E6%A0%87%E8%AF%86
    */
   traceId?: string;
+}
+
+export interface AlipayCURLOptions {
+  /** 调用方的 requestId，用于定位一次请求，需要每次请求保持唯一 */
+  requestId?: string;
 }
 
 /**
@@ -153,6 +176,73 @@ export class AlipaySdk {
       }
     }
     return { execParams, url: requestUrl.toString() };
+  }
+
+  /**
+   * Alipay OpenAPI V3
+   * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
+   */
+  public async curl(method: HttpMethod, pathUrl: string, data?: object, options?: AlipayCURLOptions) {
+    const httpMethod = method.toUpperCase();
+    const url = `${this.config.endpoint}${pathUrl}`;
+    // TODO: 需要支持 app_cert_sn
+    const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
+    const httpRequestBody = data ? JSON.stringify(data) : '';
+    // TODO: 需要支撑 appAuthToken
+    const signString = `${authString}\n${httpMethod}\n${pathUrl}\n${httpRequestBody}\n`;
+    const signature = createSign('RSA-SHA256')
+      .update(signString, 'utf-8')
+      .sign(this.config.privateKey, 'base64');
+    const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
+    debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
+    const headers: Record<string, string> = {
+      authorization,
+      'user-agent': this.sdkVersion,
+      'alipay-request-id': options?.requestId ?? createRequestId(),
+      // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
+      // 加密请求和文件上传 API 除外。
+      'content-type': 'application/json',
+      accept: 'application/json',
+    };
+    debug('curl %s %s, with data: %j, options: %j, headers: %j',
+      method, url, data, options, headers);
+    let httpResponse: HttpClientResponse<any>;
+    try {
+      httpResponse = await urllib.request(url, {
+        method: 'POST',
+        content: httpRequestBody,
+        dataType: 'json',
+        timeout: this.config.timeout,
+        headers,
+      });
+    } catch (err: any) {
+      debug('HttpClient Request error: %s', err);
+      throw new AlipayRequestError(`HttpClient Request error, ${err.message}`, {
+        cause: err,
+      });
+    }
+    debug('exec response status: %s, headers: %j, raw body: %o',
+      httpResponse.status, httpResponse.headers, httpResponse.data);
+    const traceId = httpResponse.headers['alipay-trace-id'] as string;
+    // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
+    if (httpResponse.status >= 400) {
+      const errorData = httpResponse.data as {
+        code: string;
+        message: string;
+        links: AlipayRequestErrorSupportLink[];
+      };
+      throw new AlipayRequestError(errorData.message, {
+        code: errorData.code,
+        links: errorData.links,
+        responseHttpStatus: httpResponse.status,
+        traceId,
+      });
+    }
+    return {
+      data: httpResponse.data,
+      httpStatus: httpResponse.status,
+      traceId,
+    };
   }
 
   // 文件上传
@@ -420,7 +510,7 @@ export class AlipaySdk {
         timeout: config.timeout,
         headers: {
           'user-agent': this.sdkVersion,
-          'alipay-request-id': option.traceId ?? createTraceId(),
+          'alipay-request-id': option.traceId ?? createRequestId(),
           // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
           // 加密请求和文件上传 API 除外。
           // 'content-type': 'application/json',

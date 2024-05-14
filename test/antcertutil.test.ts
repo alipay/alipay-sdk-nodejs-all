@@ -1,7 +1,9 @@
 import { strict as assert } from 'node:assert';
 import urllib from 'urllib';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from '../src/antcertutil.js';
-import { getFixturesFile } from './helper.js';
+import {
+  getFixturesFile,
+} from './helper.js';
 
 const appCertPath = getFixturesFile('appCertPublicKey_2021001161683774.crt');
 const alipayPublicCertPath = getFixturesFile('alipayCertPublicKey_RSA2.crt');

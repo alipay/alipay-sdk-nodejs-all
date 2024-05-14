@@ -12,7 +12,9 @@ export interface AlipaySdkConfig {
   alipayPublicKey?: string;
   /** 网关 */
   gateway?: string;
-  /** 网关超时时间（单位毫秒，默认 5s） */
+  /** V3 endpoint, default is https://openapi.alipay.com */
+  endpoint?: string;
+  /** 网关超时时间（单位毫秒，默认 5000） */
   timeout?: number;
   /** 是否把网关返回的下划线 key 转换为驼峰写法 */
   camelcase?: boolean;

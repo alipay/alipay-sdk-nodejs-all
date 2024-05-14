@@ -5,24 +5,19 @@ import { strict as assert } from 'node:assert';
 import urllib, { MockAgent, setGlobalDispatcher } from 'urllib';
 // import { YYYYMMDDHHmmss } from 'utility';
 import mm from 'mm';
-import { getFixturesFile } from './helper.js';
-import { AlipaySdk, AlipaySdkConfig } from '../src/index.js';
+import {
+  readFixturesFile, getFixturesFile,
+  APP_ID, GATE_WAY,
+  STABLE_APP_ID, STABLE_GATE_WAY, STABLE_ENDPOINT, STABLE_APP_PRIVATE_KEY, STABLE_ALIPAY_PUBLIC_KEY,
+} from './helper.js';
+import { AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
 
-const privateKey = fs.readFileSync(getFixturesFile('app-private-key.pem'), 'ascii');
-const alipayPublicKey = fs.readFileSync(getFixturesFile('alipay-public-key.pem'), 'ascii');
+const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
+const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
 // const notifyAlipayPublicKeyV2 = fs.readFileSync(getFixturesFile('alipay-notify-sign-public-key-v2.pem'), 'ascii');
 // const alipayRootCertPath = getFixturesFile('alipayRootCert.crt');
 // const alipayPublicCertPath = getFixturesFile('alipayCertPublicKey_RSA2.crt');
 // const appCertPath = getFixturesFile('appCertPublicKey_2021001161683774.crt');
-
-const APP_ID = '2021000122671080';
-const GATE_WAY = 'https://openapi-sandbox.dl.alipaydev.com/gateway.do';
-
-const STABLE_APP_ID = '2014060600164699';
-const STABLE_GATE_WAY = 'http://openapi.stable.dl.alipaydev.com/gateway.do';
-const STABLE_APP_PRIVATE_KEY =
-  fs.readFileSync(getFixturesFile('app_2014060600164699_rsa2_private_key_no_wrapper.pem'), 'ascii');
-const STABLE_ALIPAY_PUBLIC_KEY = fs.readFileSync(getFixturesFile('alipay_stable_rsa2_public_key.pem'), 'ascii');
 
 describe('test/alipay.test.ts', () => {
   afterEach(mm.restore);
@@ -84,6 +79,45 @@ describe('test/alipay.test.ts', () => {
   });
 
   describe('exec()', () => {
+    let sdkStable: AlipaySdk;
+    const sdkStableConfig: AlipaySdkConfig = {
+      gateway: STABLE_GATE_WAY,
+      endpoint: STABLE_ENDPOINT,
+      appId: STABLE_APP_ID,
+      privateKey: STABLE_APP_PRIVATE_KEY,
+      signType: 'RSA2',
+      alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
+      camelcase: true,
+      timeout: 10000,
+      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
+    };
+
+    const mockAgent = new MockAgent();
+    setGlobalDispatcher(mockAgent);
+
+    beforeEach(() => {
+      sdkStable = new AlipaySdk(sdkStableConfig);
+    });
+
+    it('验证调用成功', async () => {
+      // https://opendocs.alipay.com/open-v3/b6702530_alipay.user.info.share?scene=common&pathHash=d03d61a2
+      await assert.rejects(async () => {
+        await sdkStable.curl('POST', '/v3/alipay/user/info/share', {
+          auth_token: '20120823ac6ffaa4d2d84e7384bf983531473993',
+        });
+      }, err => {
+        assert(err instanceof AlipayRequestError);
+        assert.equal(err.message, '无效的访问令牌');
+        assert.equal(err.links!.length, 1);
+        assert.equal(err.code, 'invalid-auth-token');
+        assert(err.traceId);
+        assert.equal(err.responseHttpStatus, 401);
+        return true;
+      });
+    });
+  });
+
+  describe('exec()', () => {
     let sdk: AlipaySdk;
     const sdkBaseConfig: AlipaySdkConfig = {
       gateway: GATE_WAY,
@@ -116,7 +150,7 @@ describe('test/alipay.test.ts', () => {
       assert(sdkStable);
     });
 
-    it.only('验证调用成功', async () => {
+    it('验证调用成功', async () => {
       const result = await sdkStable.exec('alipay.security.risk.content.analyze', {
         bizContent: {
           account_type: 'MOBILE_NO',
