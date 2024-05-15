@@ -250,47 +250,53 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  describe('curlStream()', () => {
-    const sdkStableConfig: AlipaySdkConfig = {
-      gateway: STABLE_GATE_WAY,
-      // endpoint: STABLE_ENDPOINT,
-      endpoint: 'http://doraemonprod-124.gz00b.dev.alipay.net',
-      appId: STABLE_APP_ID,
-      privateKey: STABLE_APP_PRIVATE_KEY,
+  describe('sse(), curlStream()', () => {
+    if (!process.env.TEST_ALIPAY_APP_ID) {
+      return;
+    }
+    // 测试密钥维护找@苏千，https://u.alipay.cn/_25tzRNHiQZU
+    const sdk = new AlipaySdk({
+      appId: process.env.TEST_ALIPAY_APP_ID,
+      privateKey: process.env.TEST_ALIPAY_APP_PRIVATE_KEY!,
       signType: 'RSA2',
-      alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
-      camelcase: true,
+      alipayPublicKey: process.env.TEST_ALIPAY_PUBLIC_KEY,
       timeout: 10000,
-      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
-    };
-    const sdkStable = new AlipaySdk(sdkStableConfig);
+    });
 
     it('SSE 请求成功', async () => {
-      // const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
-      const url = '/open/v1/agents/completion/generate';
-      const result = await sdkStable.curlStream('POST', url, {
+      const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
+      const iterator = sdk.sse('POST', url, {
         body: {
+          session_id: randomUUID(),
           agent_id: '202405AP00045923',
-          outer_user_id: '1234',
+          outer_user_id: '2088002032947123',
           query: '你好',
           request_id: randomUUID(),
-          _openapiContext: {
-            method: '123',
-            principalInfo: {
-              appId: '123',
-              pid: '2088001969784501',
-            },
-            invokePrincipalInfo: {
-              appId: '123',
-              pid: '2088001969784501',
-            },
-          },
         },
       });
-      assert.equal(result.responseHttpStatus, 200);
-      // assert(result.traceId);
-      for await (const chunk of result.stream) {
-        console.log('[chunk] size: %d, content string: %j', chunk.length, chunk.toString());
+      for await (const item of iterator) {
+        console.log(item);
+        assert(item.type);
+        assert(item.type === 'data' || item.type === 'event');
+        assert(item.value);
+        assert.equal(typeof item.value, 'string');
+      }
+    });
+
+    it('curlStream 请求成功', async () => {
+      const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
+      const { stream } = await sdk.curlStream('POST', url, {
+        body: {
+          session_id: randomUUID(),
+          agent_id: '202405AP00045923',
+          outer_user_id: '2088002032947123',
+          query: '你好',
+          request_id: randomUUID(),
+        },
+      });
+      for await (const item of stream) {
+        assert(Buffer.isBuffer(item));
+        console.log('item %o', item.toString());
       }
     });
   });

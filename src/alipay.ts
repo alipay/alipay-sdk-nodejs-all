@@ -7,6 +7,7 @@ import type {
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
 import FormStream from 'formstream';
+import { Stream as SSEStream } from 'sse-decoder';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
 import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId, readableToBytes } from './util.js';
@@ -65,6 +66,11 @@ export interface AlipayCommonResultStream {
   stream: RawResponseWithMeta;
   responseHttpStatus: number;
   traceId: string;
+}
+
+export interface AlipaySEEItem {
+  type: 'event' | 'data';
+  value: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -219,6 +225,32 @@ export class AlipaySdk {
    */
   public async curlStream<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResultStream> {
     return await this.#curl<T>(method, pathUrl, options, 'stream') as AlipayCommonResultStream;
+  }
+
+  /**
+   * Alipay OpenAPI V3 with SSE Response
+   * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
+   */
+  public async* sse(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions) {
+    const { stream } = await this.curlStream(method, pathUrl, options);
+    const parsedStream = SSEStream.fromReadableStream<string>(stream as any, undefined, {
+      disableJSONParse: true,
+    });
+    for await (const line of parsedStream) {
+      // debug('[sse] line: %o', line);
+      // event: start
+      // data: { ... }
+      const index = line.indexOf(': ');
+      if (index === -1) continue;
+      const type = line.substring(0, index) as AlipaySEEItem['type'];
+      const value = line.substring(index + 2);
+      const item = {
+        type,
+        value,
+      } satisfies AlipaySEEItem;
+      debug('[sse] yield item: %o', item);
+      yield item;
+    }
   }
 
   async #curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions,

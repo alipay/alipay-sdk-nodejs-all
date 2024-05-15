@@ -1,13 +1,12 @@
 {
   "name": "alipay-sdk",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "publishConfig": {
     "tag": "next",
     "access": "public"
   },
   "description": "支付宝开放平台 Node.js SDK / Alipay OpenAPI SDK for Node.js",
   "scripts": {
-    "dev": "tsc -w",
     "lint": "eslint src test --ext ts",
     "test": "npm run lint -- --fix && egg-bin test",
     "ci": "npm run lint && egg-bin cov && npm run prepublishOnly",
@@ -23,6 +22,7 @@
     "crypto-js": "^4.2.0",
     "formstream": "^1.4.0",
     "snakecase-keys": "^8.0.0",
+    "sse-decoder": "^1.0.0",
     "urllib": "^3.25.0",
     "utility": "^2.1.0"
   },
