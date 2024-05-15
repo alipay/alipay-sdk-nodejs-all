@@ -1,5 +1,7 @@
 import { debuglog } from 'node:util';
 import { createSign, randomUUID } from 'node:crypto';
+import type { Readable } from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
 import { YYYYMMDDHHmmss } from 'utility';
 import snakeCaseKeys from 'snakecase-keys';
 import CryptoJS from 'crypto-js';
@@ -178,4 +180,15 @@ function handlePreserveConsecutiveUppercase(decamelized: string, separator: stri
 
 export function createRequestId() {
   return randomUUID().replaceAll('-', '');
+}
+
+export async function readableToBytes(stream: Readable | ReadableStream) {
+  const chunks: Buffer[] = [];
+  let chunk: Buffer;
+  let totalLength = 0;
+  for await (chunk of stream) {
+    chunks.push(chunk);
+    totalLength += chunk.length;
+  }
+  return Buffer.concat(chunks, totalLength);
 }

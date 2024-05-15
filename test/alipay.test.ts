@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 // import { format } from 'node:util';
 // import path from 'node:path';
 import { strict as assert } from 'node:assert';
@@ -122,7 +123,7 @@ describe('test/alipay.test.ts', () => {
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
-        assert.equal(err.message, '无效的访问令牌');
+        assert.match(err.message, /无效的访问令牌/);
         assert.equal(err.links!.length, 1);
         assert.equal(err.code, 'invalid-auth-token');
         assert(err.traceId);
@@ -212,7 +213,7 @@ describe('test/alipay.test.ts', () => {
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
-        assert.equal(err.message, 'appid和openid不匹配');
+        assert.match(err.message, /appid和openid不匹配 \(traceId: \w+\)/);
         assert.equal(err.code, 'app-openid-not-match');
         assert(err.traceId);
         assert.equal(err.responseHttpStatus, 400);
@@ -240,12 +241,57 @@ describe('test/alipay.test.ts', () => {
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
-        assert.equal(err.message, '参数有误活动不存在');
+        assert.match(err.message, /参数有误活动不存在/);
         assert.equal(err.code, 'INVALID_PARAMETER');
         assert(err.traceId);
         assert.equal(err.responseHttpStatus, 400);
         return true;
       });
+    });
+  });
+
+  describe('curlStream()', () => {
+    const sdkStableConfig: AlipaySdkConfig = {
+      gateway: STABLE_GATE_WAY,
+      // endpoint: STABLE_ENDPOINT,
+      endpoint: 'http://doraemonprod-124.gz00b.dev.alipay.net',
+      appId: STABLE_APP_ID,
+      privateKey: STABLE_APP_PRIVATE_KEY,
+      signType: 'RSA2',
+      alipayPublicKey: STABLE_ALIPAY_PUBLIC_KEY,
+      camelcase: true,
+      timeout: 10000,
+      encryptKey: 'aYA0GP8JEW+D7/UFaskCWA==',
+    };
+    const sdkStable = new AlipaySdk(sdkStableConfig);
+
+    it('SSE 请求成功', async () => {
+      // const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
+      const url = '/open/v1/agents/completion/generate';
+      const result = await sdkStable.curlStream('POST', url, {
+        body: {
+          agent_id: '202405AP00045923',
+          outer_user_id: '1234',
+          query: '你好',
+          request_id: randomUUID(),
+          _openapiContext: {
+            method: '123',
+            principalInfo: {
+              appId: '123',
+              pid: '2088001969784501',
+            },
+            invokePrincipalInfo: {
+              appId: '123',
+              pid: '2088001969784501',
+            },
+          },
+        },
+      });
+      assert.equal(result.responseHttpStatus, 200);
+      // assert(result.traceId);
+      for await (const chunk of result.stream) {
+        console.log('[chunk] size: %d, content string: %j', chunk.length, chunk.toString());
+      }
     });
   });
 
@@ -341,7 +387,7 @@ describe('test/alipay.test.ts', () => {
         console.log(result);
       }, (err: any) => {
         assert.equal(err.name, 'AlipayRequestError');
-        assert.equal(err.message, 'HTTP 请求错误, status: 503');
+        assert.equal(err.message, 'HTTP 请求错误, status: 503 (traceId: mock-trace-id)');
         assert.equal(err.traceId, 'mock-trace-id');
         assert.equal(err.responseDataRaw, '{"message":"mock 400 bad request"}');
         return true;
@@ -376,7 +422,7 @@ describe('test/alipay.test.ts', () => {
         });
       }, (err: any) => {
         assert.equal(err.name, 'AlipayRequestError');
-        assert.equal(err.message, '验签失败');
+        assert.equal(err.message, '验签失败 (traceId: mock-trace-id)');
         assert.equal(err.traceId, 'mock-trace-id');
         assert.equal(err.responseDataRaw, '{"alipay_security_risk_content_analyze_response":{"a":1,"b":2},"sign":"signStr"}');
         return true;

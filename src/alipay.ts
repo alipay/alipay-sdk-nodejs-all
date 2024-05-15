@@ -1,12 +1,15 @@
 import { debuglog } from 'node:util';
 import { createVerify, randomUUID, createSign } from 'node:crypto';
-import urllib, { type HttpClientResponse, type HttpMethod, type RequestOptions } from 'urllib';
+import urllib from 'urllib';
+import type {
+  HttpClientResponse, HttpMethod, RequestOptions, RawResponseWithMeta,
+} from 'urllib';
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
 import FormStream from 'formstream';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
-import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId } from './util.js';
+import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId, readableToBytes } from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
 
 export const AlipayFormStream = FormStream;
@@ -38,6 +41,9 @@ export class AlipayRequestError extends Error {
   links?: AlipayRequestErrorSupportLink[];
 
   constructor(message: string, options?: AlipayRequestErrorOptions) {
+    if (options?.traceId) {
+      message = `${message} (traceId: ${options.traceId})`;
+    }
     super(message, options);
     this.code = options?.code;
     this.traceId = options?.traceId;
@@ -51,6 +57,12 @@ export class AlipayRequestError extends Error {
 
 export interface AlipayCommonResult<T = any> {
   data: T;
+  responseHttpStatus: number;
+  traceId: string;
+}
+
+export interface AlipayCommonResultStream {
+  stream: RawResponseWithMeta;
   responseHttpStatus: number;
   traceId: string;
 }
@@ -194,10 +206,23 @@ export class AlipaySdk {
   }
 
   /**
-   * Alipay OpenAPI V3
+   * Alipay OpenAPI V3 with JSON Response
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
   public async curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
+    return await this.#curl<T>(method, pathUrl, options, 'json') as AlipayCommonResult<T>;
+  }
+
+  /**
+   * Alipay OpenAPI V3 with Stream Response
+   * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
+   */
+  public async curlStream<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResultStream> {
+    return await this.#curl<T>(method, pathUrl, options, 'stream') as AlipayCommonResultStream;
+  }
+
+  async #curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions,
+      dataType: 'json' | 'stream' = 'json'): Promise<AlipayCommonResult<T> | AlipayCommonResultStream> {
     const httpMethod = method.toUpperCase();
     let url = `${this.config.endpoint}${pathUrl}`;
     // TODO: 需要支持 app_cert_sn
@@ -206,7 +231,7 @@ export class AlipaySdk {
     let httpRequestBody = '';
     const requestOptions: RequestOptions = {
       method,
-      dataType: 'json',
+      dataType,
       timeout: this.config.timeout,
     };
     requestOptions.headers = {
@@ -275,8 +300,8 @@ export class AlipaySdk {
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
-    debug('curl %s %s, with body: %s, options: %j, headers: %j',
-      method, url, httpRequestBody, options, requestOptions.headers);
+    debug('curl %s %s, with body: %s, headers: %j, dataType: %s',
+      method, url, httpRequestBody, requestOptions.headers, dataType);
     let httpResponse: HttpClientResponse<any>;
     try {
       httpResponse = await urllib.request(url, requestOptions);
@@ -291,17 +316,32 @@ export class AlipaySdk {
     const traceId = httpResponse.headers['alipay-trace-id'] as string;
     // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
     if (httpResponse.status >= 400) {
-      const errorData = httpResponse.data as {
+      let errorData: {
         code: string;
         message: string;
         links: AlipayRequestErrorSupportLink[];
       };
+      if (dataType === 'stream') {
+        // 需要手动反序列化 JSON 数据
+        const bytes = await readableToBytes(httpResponse.res);
+        errorData = JSON.parse(bytes.toString());
+        debug('stream to errorData: %j', errorData);
+      } else {
+        errorData = httpResponse.data;
+      }
       throw new AlipayRequestError(errorData.message, {
         code: errorData.code,
         links: errorData.links,
         responseHttpStatus: httpResponse.status,
         traceId,
       });
+    }
+    if (dataType === 'stream') {
+      return {
+        stream: httpResponse.res,
+        responseHttpStatus: httpResponse.status,
+        traceId,
+      } satisfies AlipayCommonResultStream;
     }
     return {
       data: httpResponse.data,
