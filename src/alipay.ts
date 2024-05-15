@@ -9,6 +9,8 @@ import { AlipayFormData } from './form.js';
 import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId } from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
 
+export const AlipayFormStream = FormStream;
+
 const debug = debuglog('alipay-sdk');
 
 // {
@@ -91,6 +93,12 @@ export interface IRequestOption {
 }
 
 export interface AlipayCURLOptions {
+  /** 参数需在请求 URL 传参 */
+  query?: Record<string, string | number>;
+  /** 参数需在请求 JSON 传参 */
+  body?: Record<string, any>;
+  /** 表单方式提交数据 */
+  form?: AlipayFormData | FormStream;
   /** 调用方的 requestId，用于定位一次请求，需要每次请求保持唯一 */
   requestId?: string;
 }
@@ -189,8 +197,7 @@ export class AlipaySdk {
    * Alipay OpenAPI V3
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async curl<T = any>(method: HttpMethod, pathUrl: string, data?: Record<string, any>,
-    options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
+  public async curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
     const httpMethod = method.toUpperCase();
     let url = `${this.config.endpoint}${pathUrl}`;
     // TODO: 需要支持 app_cert_sn
@@ -210,36 +217,54 @@ export class AlipaySdk {
       // 加密请求和文件上传 API 除外。
       'Content-Type': 'application/json',
     };
-    if (data) {
-      if (httpMethod === 'GET') {
-        if (data instanceof AlipayFormData) {
-          throw new TypeError('GET 请求不允许提交 form 表单数据');
-        }
-        const urlObject = new URL(url);
-        for (const key in data) {
-          urlObject.searchParams.set(key, data[key]);
-        }
-        url = urlObject.toString();
-        httpRequestUrl = `${urlObject.pathname}${urlObject.search}`;
-      } else {
-        if (data instanceof AlipayFormData) {
-          const form = new FormStream();
-          const dataField = {} as Record<string, string | object>;
-          for (const item of data.fields) {
-            dataField[item.name] = item.value;
+    if (options?.query) {
+      const urlObject = new URL(url);
+      for (const key in options.query) {
+        urlObject.searchParams.set(key, String(options.query[key]));
+      }
+      url = urlObject.toString();
+      httpRequestUrl = `${urlObject.pathname}${urlObject.search}`;
+    }
+    if (httpMethod === 'GET' || httpMethod === 'HEAD') {
+      if (options?.body || options?.form) {
+        throw new TypeError('GET / HEAD 请求不允许提交 body 或 form 数据');
+      }
+    } else {
+      if (options?.form) {
+        // 文件上传，走 multipart/form-data
+        let form: FormStream;
+        if (options.form instanceof AlipayFormData) {
+          form = new FormStream();
+          const dataFieldValue = {} as Record<string, string | object>;
+          for (const item of options.form.fields) {
+            dataFieldValue[item.name] = item.value;
           }
-          httpRequestBody = JSON.stringify(dataField);
+          if (options.body) {
+            // body 有数据也合并到 dataFieldValue 中
+            Object.assign(dataFieldValue, options.body);
+          }
+          httpRequestBody = JSON.stringify(dataFieldValue);
           form.field('data', httpRequestBody, 'application/json');
           // 文件上传 https://opendocs.alipay.com/open-v3/054oog#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0
-          for (const item of data.files) {
+          for (const item of options.form.files) {
             form.file(item.name, item.path, item.fieldName);
           }
-          requestOptions.stream = form as any;
-          Object.assign(requestOptions.headers, form.headers());
+        } else if (options.form instanceof AlipayFormStream) {
+          form = options.form;
+          if (options.body) {
+            // body 有数据设置到 dataFieldValue 中
+            httpRequestBody = JSON.stringify(options.body);
+            form.field('data', httpRequestBody, 'application/json');
+          }
         } else {
-          httpRequestBody = data ? JSON.stringify(data) : '';
-          requestOptions.content = httpRequestBody;
+          throw new TypeError('options.form 必须是 AlipayFormData 或者 AlipayFormStream 类型');
         }
+        requestOptions.content = form as any;
+        Object.assign(requestOptions.headers, form.headers());
+      } else {
+        // 普通模式，走 application/json
+        httpRequestBody = options?.body ? JSON.stringify(options.body) : '';
+        requestOptions.content = httpRequestBody;
       }
     }
     // TODO: 需要支撑 appAuthToken
@@ -250,8 +275,8 @@ export class AlipaySdk {
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
-    debug('curl %s %s, with data: %j, options: %j, headers: %j',
-      method, url, data, options, requestOptions.headers);
+    debug('curl %s %s, with body: %s, options: %j, headers: %j',
+      method, url, httpRequestBody, options, requestOptions.headers);
     let httpResponse: HttpClientResponse<any>;
     try {
       httpResponse = await urllib.request(url, requestOptions);

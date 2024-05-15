@@ -10,7 +10,7 @@ import {
   APP_ID, GATE_WAY,
   STABLE_APP_ID, STABLE_GATE_WAY, STABLE_ENDPOINT, STABLE_APP_PRIVATE_KEY, STABLE_ALIPAY_PUBLIC_KEY,
 } from './helper.js';
-import { AlipayFormData, AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
+import { AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
 
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
@@ -116,7 +116,9 @@ describe('test/alipay.test.ts', () => {
       // https://opendocs.alipay.com/open-v3/b6702530_alipay.user.info.share?scene=common&pathHash=d03d61a2
       await assert.rejects(async () => {
         await sdkStable.curl('POST', '/v3/alipay/user/info/share', {
-          auth_token: '20120823ac6ffaa4d2d84e7384bf983531473993',
+          body: {
+            auth_token: '20120823ac6ffaa4d2d84e7384bf983531473993',
+          },
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
@@ -129,7 +131,7 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
-    it('POST 文件上传', async () => {
+    it('POST 文件上传，使用 AlipayFormData', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
@@ -138,7 +140,48 @@ describe('test/alipay.test.ts', () => {
 
       const uploadResult = await sdkStable.curl<{
         file_id: string;
-      }>('POST', '/v3/alipay/open/file/upload', form);
+      }>('POST', '/v3/alipay/open/file/upload', { form });
+      console.log(uploadResult);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it('POST 文件上传，使用 AlipayFormData with body', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addFile('file_content', '图片.jpg', filePath);
+
+      const uploadResult = await sdkStable.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        body: {
+          biz_code: 'openpt_appstore',
+        },
+      });
+      console.log(uploadResult);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it('POST 文件上传，使用 AlipayFormStream with body', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormStream();
+      form.file('file_content', filePath, '图片.jpg');
+
+      const uploadResult = await sdkStable.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        body: {
+          biz_code: 'openpt_appstore',
+        },
+      });
+      console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
@@ -162,8 +205,10 @@ describe('test/alipay.test.ts', () => {
       // https://opendocs.alipay.com/open-v3/5ea1017e_alipay.open.auth.userauth.relationship.query?scene=common&pathHash=0d3291b4
       await assert.rejects(async () => {
         await sdkStable.curl('GET', '/v3/alipay/open/auth/userauth/relationship/query', {
-          scopes: 'auth_user,auth_zhima',
-          open_id: '074a1CcTG1LelxKe4xQC0zgNdId0nxi95b5lsNpazWYoCo5',
+          query: {
+            scopes: 'auth_user,auth_zhima',
+            open_id: '074a1CcTG1LelxKe4xQC0zgNdId0nxi95b5lsNpazWYoCo5',
+          },
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
@@ -177,8 +222,10 @@ describe('test/alipay.test.ts', () => {
       const tradeResult = await sdkStable.curl<{
         bill_download_url: string;
       }>('GET', '/v3/alipay/data/dataservice/bill/downloadurl/query', {
-        bill_type: 'trade',
-        bill_date: '2016-04-05',
+        query: {
+          bill_type: 'trade',
+          bill_date: '2016-04-05',
+        },
       });
       assert.equal(tradeResult.responseHttpStatus, 200);
       assert(tradeResult.traceId);
@@ -186,8 +233,10 @@ describe('test/alipay.test.ts', () => {
       // https://github.com/alipay/alipay-sdk-java-all/blob/9c2d7099579a42c454b0e00e3755a640758d0ae4/v3/docs/AlipayMarketingActivityApi.md
       await assert.rejects(async () => {
         await sdkStable.curl('GET', '/v3/alipay/marketing/activity/2016042700826004508401111111', {
-          merchantId: '2088202967380463',
-          merchantAccessMode: 'AGENCY_MODE',
+          query: {
+            merchantId: '2088202967380463',
+            merchantAccessMode: 'AGENCY_MODE',
+          },
         });
       }, err => {
         assert(err instanceof AlipayRequestError);
