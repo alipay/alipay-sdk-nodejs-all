@@ -68,9 +68,16 @@ export interface AlipayCommonResultStream {
   traceId: string;
 }
 
-export interface AlipaySEEItem {
-  type: 'event' | 'data';
-  value: string;
+export enum SSEField {
+  EVENT = 'event',
+  DATA = 'data',
+  ID = 'id',
+  RETRY = 'retry',
+}
+
+export interface AlipaySSEItem {
+  event: string;
+  data: string;
 }
 
 export interface AlipaySdkCommonResult {
@@ -236,20 +243,45 @@ export class AlipaySdk {
     const parsedStream = SSEStream.fromReadableStream<string>(stream as any, undefined, {
       disableJSONParse: true,
     });
+    let lastEventName = '';
     for await (const line of parsedStream) {
-      // debug('[sse] line: %o', line);
+      debug('[sse] line: %o', line);
+      // SSE 格式 https://developer.mozilla.org/zh-CN/docs/Web/API/Server-sent_events/Using_server-sent_events#%E4%BA%8B%E4%BB%B6%E6%B5%81%E6%A0%BC%E5%BC%8F
       // event: start
       // data: { ... }
+      //
+      // event: error
+      // data: {"payload":"{\\"errorCode\\":\\"Resource-Not-Found\\",\\"errorMsg\\":\\"应用不存在\\"}","type":"error"}'
+      //
+      // event: end
+      // data: {"type":"end"}
+      if (line.startsWith(':')) {
+        // ignore comment
+        continue;
+      }
       const index = line.indexOf(': ');
       if (index === -1) continue;
-      const type = line.substring(0, index) as AlipaySEEItem['type'];
+      const field = line.substring(0, index) as SSEField;
       const value = line.substring(index + 2);
-      const item = {
-        type,
-        value,
-      } satisfies AlipaySEEItem;
-      debug('[sse] yield item: %o', item);
-      yield item;
+
+      if (field === SSEField.RETRY) {
+        // ignore
+        continue;
+      }
+
+      if (field === SSEField.EVENT) {
+        if (lastEventName) {
+          // 将上一次 event 触发
+          yield { event: lastEventName, data: '' } satisfies AlipaySSEItem;
+        }
+        lastEventName = value;
+        continue;
+      }
+      if (field === SSEField.DATA) {
+        yield { event: lastEventName, data: value } satisfies AlipaySSEItem;
+        // 清空 event
+        lastEventName = '';
+      }
     }
   }
 

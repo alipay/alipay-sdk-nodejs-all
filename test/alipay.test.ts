@@ -274,13 +274,15 @@ describe('test/alipay.test.ts', () => {
           request_id: randomUUID(),
         },
       });
+      let count = 0;
       for await (const item of iterator) {
         console.log(item);
-        assert(item.type);
-        assert(item.type === 'data' || item.type === 'event');
-        assert(item.value);
-        assert.equal(typeof item.value, 'string');
+        assert(item.event);
+        assert(item.data);
+        assert.equal(typeof item.data, 'string');
+        count++;
       }
+      assert.equal(count, 2);
     });
 
     it('curlStream 请求成功', async () => {
