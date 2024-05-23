@@ -298,9 +298,10 @@ export class AlipaySdk {
       dataType,
       timeout: this.config.timeout,
     };
+    const requestId = options?.requestId ?? createRequestId();
     requestOptions.headers = {
       'user-agent': this.sdkVersion,
-      'alipay-request-id': options?.requestId ?? createRequestId(),
+      'alipay-request-id': requestId,
       accept: 'application/json',
       // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
       // 加密请求和文件上传 API 除外。
@@ -373,11 +374,12 @@ export class AlipaySdk {
       debug('HttpClient Request error: %s', err);
       throw new AlipayRequestError(`HttpClient Request error, ${err.message}`, {
         cause: err,
+        traceId: requestId,
       });
     }
     debug('exec response status: %s, headers: %j, raw body: %o',
       httpResponse.status, httpResponse.headers, httpResponse.data);
-    const traceId = httpResponse.headers['alipay-trace-id'] as string;
+    const traceId = httpResponse.headers['alipay-trace-id'] as string ?? requestId;
     // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
     if (httpResponse.status >= 400) {
       let errorData: {
