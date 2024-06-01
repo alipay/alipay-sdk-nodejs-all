@@ -28,6 +28,7 @@ const GATE_WAY = 'https://openapi-sandbox.dl.alipaydev.com/gateway.do';
 describe('sdk', function() {
   afterEach(function() {
     sandbox.restore();
+    delete process.env.ALIPAY_SDK_DEBUG;
   });
 
   describe('config error', function() {
@@ -197,6 +198,7 @@ describe('sdk', function() {
     });
 
     it('config.camelcase is true', function(done) {
+      process.env.ALIPAY_SDK_DEBUG = 1;
       sandbox.stub(urllib, 'request', function() {
         return Promise.resolve({
           status: 200,
@@ -214,7 +216,7 @@ describe('sdk', function() {
         },
         publicArgs: {},
       }, { validateSign: true }).then(function(data){
-        data.should.eql({ aB: 1, cD: 2, traceId: 'mock-trace-id' });
+        data.should.eql({ aB: 1, cD: 2, __traceId__: 'mock-trace-id' });
         done();
       })
     });
@@ -432,8 +434,10 @@ describe('sdk', function() {
       form.addField('biz_code', 'openpt_appstore');
       form.addFile('file_content', '图片.jpg', filePath);
 
+      
       this.timeout(20000);
 
+      process.env.ALIPAY_SDK_DEBUG = 1;
       sdk
         .exec('alipay.open.file.upload', {
         }, { log, formData: form, validateSign: true })
@@ -449,7 +453,7 @@ describe('sdk', function() {
           // include trace_id
           infoLog[1].should.match(/,"trace_id":"\w+",/);
           errorLog.should.eql([]);
-          ret.traceId.length.should.eql(29);
+          ret.__traceId__.length.should.eql(29);
 
           done();
         }).catch(done)

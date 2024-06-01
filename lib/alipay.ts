@@ -17,6 +17,9 @@ import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './an
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require('../package.json');
 
+export function isDebugMode() {
+  return !!process.env.ALIPAY_SDK_DEBUG;
+}
 /**
  * @interface AlipaySdkConfig SDK 配置
  */
@@ -250,8 +253,8 @@ class AlipaySdk {
         const validateSuccess = option.validateSign ? this.checkResponseSign(body, responseKey) : true;
         if (validateSuccess) {
           const result = config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
-          if (result && traceId) {
-            result.traceId = traceId;
+          if (result && traceId && method !== 'GET' && isDebugMode()) {
+            result.__traceId__ = traceId;
           }
           return result;
         }
@@ -497,8 +500,8 @@ class AlipaySdk {
 
               if (validateSuccess) {
                 const result = config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
-                if (result && traceId) {
-                  result.traceId = traceId;
+                if (result && traceId && isDebugMode()) {
+                  result.__traceId__ = traceId;
                 }
                 return resolve(result);
               }
