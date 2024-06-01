@@ -1,7 +1,5 @@
 import fs from 'node:fs';
-import { randomUUID } from 'node:crypto';
-// import { format } from 'node:util';
-// import path from 'node:path';
+import { randomUUID, Verify } from 'node:crypto';
 import { strict as assert } from 'node:assert';
 import urllib, { MockAgent, setGlobalDispatcher } from 'urllib';
 // import { YYYYMMDDHHmmss } from 'utility';
@@ -11,7 +9,9 @@ import {
   APP_ID, GATE_WAY,
   STABLE_APP_ID, STABLE_GATE_WAY, STABLE_ENDPOINT, STABLE_APP_PRIVATE_KEY, STABLE_ALIPAY_PUBLIC_KEY,
 } from './helper.js';
-import { AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, AlipaySdkConfig } from '../src/index.js';
+import {
+  AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, AlipaySdkConfig,
+} from '../src/index.js';
 
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
@@ -697,305 +697,146 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  // describe('multipartExec', () => {
-  //   let sdk;
+  describe('exec with multipart', () => {
+    let sdk: AlipaySdk;
+    before(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+        timeout: 10000,
+      });
+    });
 
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //       timeout: 10000,
-  //     });
-  //   });
+    it('should support exec with options.formData to upload file', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', filePath);
 
-  //   it('normal', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(format(...args)); },
-  //       error(...args) { errorLog.push(format(...args)); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
+      const result = await sdk.exec('alipay.open.file.upload', {}, {
+        formData: form,
+        validateSign: true,
+      });
+      assert.equal(result.code, '10000');
+      assert.equal(result.msg, 'Success');
+      assert(result.traceId!.length >= 29);
+      assert(result.fileId);
+      // console.log(result);
+    });
 
-  //     const form = new AlipayFormData();
-  //     form.addField('biz_code', 'openpt_appstore');
-  //     form.addFile('file_content', '图片.jpg', filePath);
+    it('multipart should serialize object field and validateSign = true', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('batchNo', '2023041718395879900017017');
+      form.addField('imageName', '图片.jpg');
+      form.addField('mcc_code', 'A0002_B0201');
+      form.addField('shopAddress', {
+        countryCode: '156',
+        provinceCode: '340000',
+        cityCode: '340100',
+        districtCode: '340103',
+        detailAddress: '合肥市包河区中国视觉人工智能产业港A4',
+      });
+      form.addFile('shop_scene_pic', '图片.jpg', filePath);
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_open_agent_facetoface_sign_response":{"user_id":"b"},"sign":"xxx"}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
+      mm.data(Verify.prototype, 'verify', true);
 
-  //     this.timeout(20000);
+      const result = await sdk.exec('alipay.open.agent.facetoface.sign', {}, {
+        formData: form,
+        validateSign: true,
+      });
+      assert.deepEqual(result, {
+        userId: 'b',
+        traceId: 'mock-trace-id',
+      });
+    });
 
-  //     sdk
-  //       .exec('alipay.open.file.upload', {
-  //       }, { log, formData: form, validateSign: true })
-  //       .then(ret => {
-  //         console.log(ret);
-  //         ret.code.should.eql('10000');
-  //         ret.msg.should.eql('Success');
-  //         (!ret.fileId).should.eql(false);
+    it('validate sign error', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('batchNo', '2023041718395879900017017');
+      form.addField('imageName', '图片.jpg');
+      form.addField('mcc_code', 'A0002_B0201');
+      form.addField('shopAddress', {
+        countryCode: '156',
+        provinceCode: '340000',
+        cityCode: '340100',
+        districtCode: '340103',
+        detailAddress: '合肥市包河区中国视觉人工智能产业港A4',
+      });
+      form.addFile('shop_scene_pic', '图片.jpg', filePath);
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_open_agent_facetoface_sign_response":{"user_id":"b"},"sign":"xxx"}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-  //         infoLog.length.should.eql(2);
-  //         (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-  //         (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-  //         // include trace_id
-  //         infoLog[1].should.match(/,"trace_id":"\w+",/);
-  //         errorLog.should.eql([]);
-  //         ret.traceId.length.should.eql(29);
+      await assert.rejects(async () => {
+        await sdk.exec('alipay.open.agent.facetoface.sign', {}, {
+          formData: form,
+          validateSign: true,
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, '验签失败，服务端返回的 sign: \'xxx\' 无效, validateStr: \'{"user_id":"b"},"sign":"xxx"}\' (traceId: mock-trace-id)');
+        assert.equal(err.responseDataRaw, '{"alipay_open_agent_facetoface_sign_response":{"user_id":"b"},"sign":"xxx"}');
+        return true;
+      });
+    });
 
-  //         done();
-  //       }).catch(done);
-  //   });
+    it('camelcase is false', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"mock_image_id","img_url":"mock_image_url"}}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-  //   it('multipart should serialize object field', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('imageType', 'jpg');
+      form.addField('imageName', '图片.jpg');
+      form.addFile('imageContent', '图片.jpg', filePath);
 
-  //     const form = new AlipayFormData();
-  //     form.addField('batchNo', '2023041718395879900017017');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addField('mcc_code', 'A0002_B0201');
-  //     form.addField('shopAddress', {
-  //       countryCode: '156',
-  //       provinceCode: '340000',
-  //       cityCode: '340100',
-  //       districtCode: '340103',
-  //       detailAddress: '合肥市包河区中国视觉人工智能产业港A4',
-  //     });
-  //     form.addFile('shop_scene_pic', '图片.jpg', filePath);
-  //     this.timeout(20000);
+      const newSdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: false,
+        timeout: 10000,
+      });
 
-  //     sandbox.stub(sdk, 'checkResponseSign', () => { return true; });
-  //     sandbox.stub(urllib, 'request', function(url, options) {
-  //       if (typeof options.data.shop_address !== 'string') {
-  //         return Promise.reject('serialize failure');
-  //       }
-  //       return Promise.resolve({ data: '{"alipay_open_agent_facetoface_sign_response":{"a":"b"}}' });
-  //     });
-
-  //     sdk
-  //       .exec('alipay.open.agent.facetoface.sign', {
-  //       }, { log, formData: form, validateSign: true })
-  //       .then(ret => {
-  //         done();
-  //       }).catch(done);
-  //   });
-
-  //   it('sign error', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     const form = new AlipayFormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     sandbox.stub(sdk, 'checkResponseSign', () => { return false; });
-  //     sandbox.stub(urllib, 'request', function(url, options) {
-  //       return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"a":"b"}}' });
-  //     });
-
-  //     sdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { formData: form, validateSign: true })
-  //       .then(() => {
-  //         done();
-  //       }).catch(err => {
-  //         err.should.eql({
-  //           serverResult: '{"alipay_offline_material_image_upload_response":{"a":"b"}}',
-  //           errorMessage: '[AlipaySdk]验签失败',
-  //           traceId: undefined,
-  //         });
-  //         done();
-  //       });
-  //   });
-
-  //   it('error log enable', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(JSON.stringify(args)); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     const form = new AlipayFormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     sandbox.stub(urllib, 'request', function(url, options) {
-  //       throw ({ error: 'custom error.' });
-  //     });
-
-  //     sdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { log, formData: form })
-  //       .then(() => {
-  //         done();
-  //       }).catch(err => {
-  //         // err.message.should.eql('[AlipaySdk]exec error');
-  //         errorLog[0].should.eql('[{"error":"custom error.","message":"[AlipaySdk]exec error"}]');
-  //         (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
-  //         done();
-  //       });
-  //   });
-
-  //   it('error response', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     const form = new AlipayFormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     sandbox.stub(sdk, 'checkResponseSign', () => { return false; });
-  //     sandbox.stub(urllib, 'request', function(url, options) {
-  //       return Promise.resolve({
-  //         data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
-  //         headers: { trace_id: 'mock-trace-id' },
-  //       });
-  //     });
-
-  //     sdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { log, formData: form, validateSign: true })
-  //       .then(() => {
-  //         done();
-  //       }).catch(err => {
-  //         err.should.eql({
-  //           serverResult: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
-  //           errorMessage: '[AlipaySdk]HTTP 请求错误',
-  //           traceId: 'mock-trace-id',
-  //         });
-  //         done();
-  //       });
-  //   });
-
-  //   it('response parse error', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     const form = new AlipayFormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     sandbox.stub(sdk, 'checkResponseSign', () => { return false; });
-  //     sandbox.stub(urllib, 'request', function(url, options) {
-  //       return {};
-  //     });
-
-  //     sdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { log, formData: form, validateSign: true })
-  //       .then(() => {
-  //         done();
-  //       }).catch(err => {
-  //         err.should.eql({
-  //           serverResult: undefined,
-  //           errorMessage: '[AlipaySdk]Response 格式错误',
-  //         });
-  //         done();
-  //       });
-  //   });
-
-  //   it('camelcase is false', function(done) {
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     sandbox.stub(urllib, 'request', function({}, callback) {
-  //       return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"mock_image_id","img_url":"mock_image_url"}}' });
-  //     });
-
-  //     const form = new AlipayFormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     this.timeout(20000);
-
-  //     const newSdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: false,
-  //       timeout: 10000,
-  //     });
-
-  //     newSdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { formData: form })
-  //       .then(ret => {
-  //         ret.should.eql({
-  //           code: '10000',
-  //           msg: 'Success',
-  //           image_id: 'mock_image_id',
-  //           img_url: 'mock_image_url',
-  //         });
-  //         done();
-  //       }).catch(done);
-  //   });
-
-  //   it('validate sign is false', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const filePath = path.join(__dirname, './fixtures/demo.jpg');
-
-  //     const form = new FormData();
-  //     form.addField('imageType', 'jpg');
-  //     form.addField('imageName', '图片.jpg');
-  //     form.addFile('imageContent', '图片.jpg', filePath);
-
-  //     sandbox.stub(urllib, 'request', () => {
-  //       return Promise.resolve({ data: '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"u16noGtTSH-r9UI0FGmIfAAAACMAAQED","image_url":"https://oalipay-dl-django.alicdn.com/rest/1.0/image?fileIds=u16noGtTSH-r9UI0FGmIfAAAACMAAQED&zoom=original"}}' });
-  //     });
-
-  //     sdk
-  //       .exec('alipay.offline.material.image.upload', {
-  //       }, { log, formData: form })
-  //       .then(ret => {
-  //         ret.code.should.eql('10000');
-  //         ret.msg.should.eql('Success');
-  //         (!ret.imageId).should.eql(false);
-  //         (ret.imageUrl.indexOf('https://oalipay-dl-django.alicdn.com') > -1).should.eql(true);
-
-  //         infoLog.length.should.eql(2);
-  //         (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-  //         (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-  //         errorLog.should.eql([]);
-
-  //         done();
-  //       }).catch(done);
-  //   });
-  // });
+      const result = await newSdk.exec('alipay.offline.material.image.upload', {}, { formData: form });
+      assert.deepEqual(result, {
+        code: '10000',
+        msg: 'Success',
+        image_id: 'mock_image_id',
+        img_url: 'mock_image_url',
+        traceId: 'mock-trace-id',
+      });
+    });
+  });
 
   // describe('pageExec', () => {
   //   let sdk;
