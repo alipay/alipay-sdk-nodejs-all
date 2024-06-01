@@ -1,6 +1,6 @@
 import { debuglog } from 'node:util';
 import { createVerify, randomUUID, createSign } from 'node:crypto';
-import urllib from 'urllib';
+import urllib, { Agent } from 'urllib';
 import type {
   HttpClientResponse, HttpMethod, RequestOptions, RawResponseWithMeta,
 } from 'urllib';
@@ -16,6 +16,9 @@ import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './an
 export const AlipayFormStream = FormStream;
 
 const debug = debuglog('alipay-sdk');
+const http2Agent = new Agent({
+  allowH2: true,
+});
 
 // {
 //   link: 'https://open.alipay.com/api/errCheck?traceId=0603331617156962044358274991886',
@@ -245,7 +248,7 @@ export class AlipaySdk {
     });
     let lastEventName = '';
     for await (const line of parsedStream) {
-      debug('[sse] line: %o', line);
+      debug('[%s][sse] line: %o', Date.now(), line.substring(0, 100));
       // SSE 格式 https://developer.mozilla.org/zh-CN/docs/Web/API/Server-sent_events/Using_server-sent_events#%E4%BA%8B%E4%BB%B6%E6%B5%81%E6%A0%BC%E5%BC%8F
       // event: start
       // data: { ... }
@@ -298,6 +301,10 @@ export class AlipaySdk {
       dataType,
       timeout: this.config.timeout,
     };
+    if (dataType === 'stream') {
+      // 使用 HTTP/2 请求才支持流式响应
+      requestOptions.dispatcher = http2Agent;
+    }
     const requestId = options?.requestId ?? createRequestId();
     requestOptions.headers = {
       'user-agent': this.sdkVersion,
@@ -305,7 +312,7 @@ export class AlipaySdk {
       accept: 'application/json',
       // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
       // 加密请求和文件上传 API 除外。
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
     };
     if (options?.query) {
       const urlObject = new URL(url);
@@ -365,8 +372,8 @@ export class AlipaySdk {
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
-    debug('curl %s %s, with body: %s, headers: %j, dataType: %s',
-      method, url, httpRequestBody, requestOptions.headers, dataType);
+    debug('[%s] curl %s %s, with body: %s, headers: %j, dataType: %s',
+      Date(), method, url, httpRequestBody, requestOptions.headers, dataType);
     let httpResponse: HttpClientResponse<any>;
     try {
       httpResponse = await urllib.request(url, requestOptions);
@@ -377,9 +384,9 @@ export class AlipaySdk {
         traceId: requestId,
       });
     }
-    debug('exec response status: %s, headers: %j, raw body: %o',
-      httpResponse.status, httpResponse.headers, httpResponse.data);
     const traceId = httpResponse.headers['alipay-trace-id'] as string ?? requestId;
+    debug('exec response status: %s, headers: %j, raw body: %o, traceId: %s',
+      httpResponse.status, httpResponse.headers, httpResponse.data, traceId);
     // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
     if (httpResponse.status >= 400) {
       let errorData: {

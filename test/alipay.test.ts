@@ -264,13 +264,18 @@ describe('test/alipay.test.ts', () => {
     });
 
     it('SSE 请求成功', async () => {
+      // https://qingai.alipay.com
+      const agentId = process.env.TEST_QINGAI_AGENT_ID;
+      if (!agentId) {
+        return;
+      }
+      // https://openapi.alipay.com/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate
       const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
       const iterator = sdk.sse('POST', url, {
         body: {
-          session_id: randomUUID(),
-          agent_id: '202405AP00045923',
-          outer_user_id: '2088002032947123',
-          query: '你好',
+          agent_id: agentId,
+          outer_user_id: agentId,
+          query: '你是谁',
           request_id: randomUUID(),
         },
       });
@@ -282,7 +287,69 @@ describe('test/alipay.test.ts', () => {
         assert.equal(typeof item.data, 'string');
         count++;
       }
-      assert.equal(count, 2);
+      assert(count >= 2);
+
+      // const iterator2 = sdk.sse('POST', url, {
+      //   body: {
+      //     agent_id: agentId,
+      //     outer_user_id: agentId,
+      //     query: 'hello world',
+      //     request_id: randomUUID(),
+      //   },
+      // });
+      // count = 0;
+      // for await (const item of iterator2) {
+      //   console.log(item);
+      //   assert(item.event);
+      //   assert(item.data);
+      //   assert.equal(typeof item.data, 'string');
+      //   count++;
+      // }
+      // assert(count >= 2);
+
+      // 并发
+      // await Promise.all([
+      //   (async () => {
+      //     const iterator = sdk.sse('POST', url, {
+      //       body: {
+      //         agent_id: agentId,
+      //         outer_user_id: agentId,
+      //         // query: '你能做什么，请详细描述',
+      //         query: '你是谁',
+      //         request_id: randomUUID(),
+      //       },
+      //     });
+      //     let count = 0;
+      //     for await (const item of iterator) {
+      //       // console.log('#1', item);
+      //       assert(item.event);
+      //       assert(item.data);
+      //       assert.equal(typeof item.data, 'string');
+      //       count++;
+      //     }
+      //     assert(count >= 2);
+      //   })(),
+      //   (async () => {
+      //     const iterator = sdk.sse('POST', url, {
+      //       body: {
+      //         agent_id: agentId,
+      //         outer_user_id: agentId,
+      //         // query: '你是谁，详细介绍',
+      //         query: 'hello',
+      //         request_id: randomUUID(),
+      //       },
+      //     });
+      //     let count = 0;
+      //     for await (const item of iterator) {
+      //       // console.log('#2', item);
+      //       assert(item.event);
+      //       assert(item.data);
+      //       assert.equal(typeof item.data, 'string');
+      //       count++;
+      //     }
+      //     assert(count >= 2);
+      //   })(),
+      // ]);
     });
 
     it('curlStream 请求成功', async () => {
