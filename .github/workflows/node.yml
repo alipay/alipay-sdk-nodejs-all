@@ -10,10 +10,7 @@ on:
       - master
   pull_request:
     branches:
-      - main
-      - master
-  schedule:
-    - cron: '0 2 * * *'
+      - 3.x
 
 jobs:
   build:
