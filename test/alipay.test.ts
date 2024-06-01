@@ -16,9 +16,9 @@ import { AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, Alipay
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
 // const notifyAlipayPublicKeyV2 = fs.readFileSync(getFixturesFile('alipay-notify-sign-public-key-v2.pem'), 'ascii');
-// const alipayRootCertPath = getFixturesFile('alipayRootCert.crt');
-// const alipayPublicCertPath = getFixturesFile('alipayCertPublicKey_RSA2.crt');
-// const appCertPath = getFixturesFile('appCertPublicKey_2021001161683774.crt');
+const alipayRootCertPath = getFixturesFile('alipayRootCert.crt');
+const alipayPublicCertPath = getFixturesFile('alipayCertPublicKey_RSA2.crt');
+const appCertPath = getFixturesFile('appCertPublicKey_2021001161683774.crt');
 
 describe('test/alipay.test.ts', () => {
   afterEach(mm.restore);
@@ -506,237 +506,195 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
-    // it('response error', function(done) {
-    //   const response = {
-    //     status: 200,
-    //     data: undefined,
-    //     headers: { trace_id: 'mock-trace-id' },
-    //   };
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve(response);
-    //   });
+    it('should return response format error when response data is empty string', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-    //   sdk.exec('alipay.security.risk.content.analyze', {
-    //     bizContent: {
-    //       account_type: 'MOBILE_NO',
-    //       account: '13812345678',
-    //       version: '2.0',
-    //     },
-    //   }).catch(function(err) {
-    //     err.should.eql({
-    //       serverResult: response,
-    //       errorMessage: '[AlipaySdk]Response 格式错误',
-    //     });
-    //     done();
-    //   });
-    // });
+      await assert.rejects(async () => {
+        await sdk.exec('alipay.security.risk.content.analyze', {
+          bizContent: {
+            account_type: 'MOBILE_NO',
+            account: '13812345678',
+            version: '2.0',
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, 'Response 格式错误 (traceId: mock-trace-id)');
+        assert.equal(err.traceId, 'mock-trace-id');
+        assert.equal(err.responseDataRaw, '');
+        return true;
+      });
+    });
 
-    // it('config.camelcase is true', function(done) {
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}',
-    //       headers: { trace_id: 'mock-trace-id' },
-    //     });
-    //   });
-    //   sandbox.stub(sdk, 'checkResponseSign', () => { return true; });
+    it('should config.camelcase default is true', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-    //   sdk.exec('alipay.security.risk.content.analyze', {
-    //     bizContent: {
-    //       account_type: 'MOBILE_NO',
-    //       account: '13812345678',
-    //       version: '2.0',
-    //     },
-    //     publicArgs: {},
-    //   }, { validateSign: true }).then(function(data) {
-    //     data.should.eql({ aB: 1, cD: 2, traceId: 'mock-trace-id' });
-    //     done();
-    //   });
-    // });
+      const result = await sdk.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        },
+        publicArgs: {},
+      });
+      assert.deepEqual(result, {
+        aB: 1, cD: 2, traceId: 'mock-trace-id',
+      });
+    });
 
-    // it('config.camelcase is false', function(done) {
-    //   const alipaySdk = new AlipaySdk({
-    //     gateway: GATE_WAY,
-    //     appId: APP_ID,
-    //     privateKey,
-    //     alipayPublicKey,
-    //     camelcase: false,
-    //   });
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}',
-    //     });
-    //   });
-    //   sandbox.stub(alipaySdk, 'checkResponseSign', () => { return true; });
+    it('should set config.camelcase to false work', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_security_risk_content_analyze_response":{"a_b":1,"c_d":2},"sign":"signStr"}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
+      const alipaySdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        alipayPublicKey,
+        camelcase: false,
+      });
+      const result = await alipaySdk.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        },
+        publicArgs: {},
+      });
+      assert.deepEqual(result, {
+        a_b: 1, c_d: 2, traceId: 'mock-trace-id',
+      });
+    });
 
-    //   const result = alipaySdk.exec('alipay.security.risk.content.analyze', {
-    //     bizContent: {
-    //       account_type: 'MOBILE_NO',
-    //       account: '13812345678',
-    //       version: '2.0',
-    //     },
-    //     publicArgs: {},
-    //   }, { validateSign: true }).then(function(data) {
-    //     data.should.eql({ a_b: 1, c_d: 2 });
-    //     done();
-    //   });
-    // });
+    it('should mock NO_RIGHT Api work', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_commerce_cityfacilitator_station_query_response":{"code":"40004","msg":"Business Failed","subCode":"NO_RIGHT","subMsg":"无权限使用接口"},"sign":"signStr"}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-    // it('NO_RIGHT Api', function(done) {
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: '{"alipay_commerce_cityfacilitator_station_query_response":{"code":"40004","msg":"Business Failed","subCode":"NO_RIGHT","subMsg":"无权限使用接口"},"sign":"signStr"}',
-    //     });
-    //   });
+      const result = await sdk.exec('alipay.commerce.cityfacilitator.station.query', {
+        bizContent: { cityCode: '440300' },
+      });
+      assert.deepEqual(result, {
+        code: '40004',
+        msg: 'Business Failed',
+        subCode: 'NO_RIGHT',
+        subMsg: '无权限使用接口',
+        traceId: 'mock-trace-id',
+      });
+    });
 
-    //   sdk
-    //     .exec('alipay.commerce.cityfacilitator.station.query', {
-    //       bizContent: { cityCode: '440300' },
-    //     })
-    //     .then(ret => {
-    //       ret.should.eql({
-    //         code: '40004',
-    //         msg: 'Business Failed',
-    //         subCode: 'NO_RIGHT',
-    //         subMsg: '无权限使用接口',
-    //       });
-    //       done();
-    //     }).catch(e => {
-    //       done();
-    //     });
-    // });
+    it('should execute with options.needEncrypt = true', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, JSON.stringify({
+        alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
+        sign: 'abcde=',
+      }), {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
+      const bizContent = {
+        merchantAppId: '2021001170662064',
+      };
 
-    // it('execute needEncrypt', function(done) {
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: JSON.stringify({
-    //         alipay_open_auth_app_aes_set_response: '4AOYHE0rpPnRnghunsGo+mY02DzANFLwNJJCiHfrNh2oaB2pn33PwOEOvH8mjhkE3Wh/jR+3jHM9nvoFvOsY/SqZbZzamRg9Eh3VkRqOhSM=',
-    //         sign: 'abcde=',
-    //       }),
-    //     });
-    //   });
+      const result = await sdk.exec('alipay.open.auth.app.aes.set', {
+        bizContent,
+        needEncrypt: true,
+      });
+      assert.deepEqual(result, {
+        code: '10000',
+        msg: 'Success',
+        aesKey: 'cW8mcZgoMGUVp5g7uv7bHw==',
+        traceId: 'mock-trace-id',
+      });
+    });
 
-    //   const bizContent = {
-    //     merchantAppId: '2021001170662064',
-    //   };
+    it('should return error_response', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
+      const result = await sdk.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        },
+        publicArgs: {},
+      });
+      assert.deepEqual(result, {
+        code: '40002',
+        msg: 'Invalid Arguments',
+        subCode: 'isv.code-invalid',
+        subMsg: '授权码code无效',
+        traceId: 'mock-trace-id',
+      });
+    });
 
-    //   sdk
-    //     .exec('alipay.open.auth.app.aes.set', {
-    //       bizContent,
-    //       needEncrypt: true,
-    //     })
-    //     .then(ret => {
-    //       ret.should.eql({
-    //         code: '10000',
-    //         msg: 'Success',
-    //         aesKey: 'cW8mcZgoMGUVp5g7uv7bHw==',
-    //       });
+    it('证书校验模式 formatUrl 和加签', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"alipay_open_mock_response":{"msg":"Success","result":"","code":"10000"},"alipay_cert_sn":"4538e7d736df316c15435d5f9d3a8a1f","sign":"IGMZhrPRYzaOGkmibUXF34o262YUaotyi6VzJ6EOsp+MOAg7ywRJI7UN11Xs1i5jI48Borv/i4tH6yiqXJshDRJh6cGyj6wcoZHgiYfwstqtn/6TEVbWxeyLimGG3CX0C76yKAmn/ZMlI+RtOYSz0KCTaGDvlZf6Esp1KnUKfLbzQhZ1sX5o1Tva6L7c8TXOFgK42kkjGvRfGzXKEg4B1CyG2hQZqL6mICgcOIkwAwojmD7UWSwC2a3G6XG9Q5oqi+05ZWldBk+psha2j7FTvYQikAYb7zmvDSE3bNBBh8ekDwrUVGESM4pgUXqMWUlVroiCAC85Zei3A6krREg7Zw=="}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
 
-    //       done();
-    //     }).catch(error => {
-    //       error.should.eql(false);
-    //       done();
-    //     });
-    // });
-
-    // it('error log enable', function(done) {
-    //   const infoLog = [];
-    //   const errorLog = [];
-    //   const log = {
-    //     info(...args) { infoLog.push(args.join('')); },
-    //     error(...args) { errorLog.push(args.join('')); },
-    //   };
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return new Promise(() => {
-    //       throw Error('custom error.');
-    //     });
-    //   });
-
-    //   sdk
-    //     .exec('alipay.security.risk.content.analyze', {
-    //       bizContent: {
-    //         appName: 'cmsmng',
-    //         appScene: 'papilio-alipay',
-    //         publishDate: YYYYMMDDHHmmss(),
-    //         accountId: 'hanwen.sah',
-    //         accountType: '0',
-    //         appMainScene: 'papilio-alipay',
-    //         appMainSceneId: '12345678',
-    //         appSceneDataId: 'activity159571',
-    //         text: '重要告知12313：1. ，，报备文件编号为众安备-家财【2014】主8号，由众安在线财产保险股份有限公司（即“本公司”）承保，本公司业务流程全程在线，叶1良辰12313, 好好学习。',
-    //         linkUrls: [],
-    //         pictureUrls: [
-    //           'http://alipay-rmsdeploy-dev-image.oss-cn-hangzhou-zmf.aliyuncs.com/rmsportal/UvfTktYfmcBCshhCdeycbPqlXNRcZvKR.jpg',
-    //         ],
-    //       },
-    //     }, { log })
-    //     .then(() => {
-    //       done();
-    //     }).catch(() => {
-    //       (infoLog[0].indexOf('[AlipaySdk]start exec, url: %s') > -1).should.eql(true);
-    //       (errorLog[0].indexOf('[AlipaySdk]exec error') > -1).should.eql(true);
-    //       done();
-    //     });
-    // });
-
-    // it('error response', function(done) {
-    //   sandbox.stub(urllib, 'request', () => {
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
-    //     });
-    //   });
-    //   sandbox.stub(sdk, 'checkResponseSign', () => { return true; });
-
-    //   sdk.exec('alipay.security.risk.content.analyze', {
-    //     bizContent: {
-    //       account_type: 'MOBILE_NO',
-    //       account: '13812345678',
-    //       version: '2.0',
-    //     },
-    //     publicArgs: {},
-    //   }, { validateSign: true }).then(function(data) {
-    //     done();
-    //   }).catch(e => {
-    //     e.should.eql({
-    //       serverResult: {
-    //         status: 200,
-    //         data: '{"error_response":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}',
-    //       },
-    //       errorMessage: '[AlipaySdk]HTTP 请求错误',
-    //       traceId: undefined,
-    //     });
-    //     done();
-    //   });
-    // });
-
-    // it('证书校验模式 formatUrl和加签', function(done) {
-    //   sandbox.stub(urllib, 'request', function(url) {
-    //     const urlKeyPart = 'app_cert_sn=866efef280dec9137a87d047ac446315&alipay_root_cert_sn=687b59193f3f462dd5336e5abf83c5d8_02941eef3187dddf3d3b83462e1dfcf6&method=alipay.open.mock&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2';
-    //     (url.indexOf(urlKeyPart) > 0).should.be.true();
-    //     return Promise.resolve({
-    //       status: 200,
-    //       data: '{"alipay_open_mock_response":{"msg":"Success","result":"","code":"10000"},"alipay_cert_sn":"4538e7d736df316c15435d5f9d3a8a1f","sign":"IGMZhrPRYzaOGkmibUXF34o262YUaotyi6VzJ6EOsp+MOAg7ywRJI7UN11Xs1i5jI48Borv/i4tH6yiqXJshDRJh6cGyj6wcoZHgiYfwstqtn/6TEVbWxeyLimGG3CX0C76yKAmn/ZMlI+RtOYSz0KCTaGDvlZf6Esp1KnUKfLbzQhZ1sX5o1Tva6L7c8TXOFgK42kkjGvRfGzXKEg4B1CyG2hQZqL6mICgcOIkwAwojmD7UWSwC2a3G6XG9Q5oqi+05ZWldBk+psha2j7FTvYQikAYb7zmvDSE3bNBBh8ekDwrUVGESM4pgUXqMWUlVroiCAC85Zei3A6krREg7Zw=="}',
-    //     });
-    //   });
-    //   sandbox.stub(sdk, 'checkResponseSign', () => { return true; });
-
-    //   const sdkWithCert = new AlipaySdk(Object.assign({}, sdkBaseConfig, {
-    //     alipayRootCertPath,
-    //     alipayPublicCertPath,
-    //     appCertPath,
-    //   }));
-    //   sdkWithCert.exec('alipay.open.mock', {
-    //     bizContent: {
-    //       foo: 'bar',
-    //     },
-    //   }, { validateSign: false }).then(function(data) {
-    //     done();
-    //   });
-    // });
+      const sdkWithCert = new AlipaySdk(Object.assign({}, sdkBaseConfig, {
+        alipayRootCertPath,
+        alipayPublicCertPath,
+        appCertPath,
+      }));
+      const result = await sdkWithCert.exec('alipay.open.mock', {
+        bizContent: {
+          foo: 'bar',
+        },
+      }, { validateSign: false });
+      assert.deepEqual(result, {
+        code: '10000',
+        msg: 'Success',
+        result: '',
+        traceId: 'mock-trace-id',
+      });
+    });
   });
 
   // describe('multipartExec', () => {
