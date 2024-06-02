@@ -282,6 +282,21 @@ const queryObj = {
 const signResult = sdk.checkNotifySign(queryObj);
 ```
 
+如果遇到验签失败，请尝试使用 `checkNotifySignV2()` 方法代替，它默认不会对 value 进行 decode
+如 https://github.com/alipay/alipay-sdk-nodejs-all/issues/45 场景问题。
+
+```ts
+const postData = {
+  sign_type: 'RSA2',
+  sign: 'QfTb8tqE1BMhS5qAn.....',
+  gmt_create: '2019-08-15 15:56:22',
+  other_biz_field: '....',
+}
+
+// true | false
+const signResult = sdk.checkNotifySignV2(postData);
+```
+
 ## alipay-sdk v3 到 v4 的升级说明
 
 从 v3 到 v4 有以下不兼容变更，请参考示例代码进行更新
@@ -436,6 +451,16 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | --- | --- | --- | --- |
 | bizContent | 业务请求参数 | `object` | 否 |
 | needEncrypt | 自动 AES 加解密 | `boolean` | 否 |
+
+### alipaySdk.checkNotifySignV2(postData)
+
+通知验签，默认不会对 value 进行 decode
+
+**Returns**: `Boolean` - 是否验签成功
+
+| Param | Type | Description |
+| --- | --- | --- |
+| postData | `JSON` | 服务端的消息内容 |
 
 ### alipaySdk.checkNotifySign(postData, raw)
 

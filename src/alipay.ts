@@ -785,6 +785,17 @@ export class AlipaySdk {
   }
 
   /**
+   * 通知验签，不对 value 进行 decode
+   * @param {JSON} postData 服务端的消息内容
+   * @return { Boolean } 验签是否成功
+   */
+  public checkNotifySignV2(postData: any) {
+    // 修复常见问题 https://github.com/alipay/alipay-sdk-nodejs-all/issues/45
+    // 由于要保持 checkNotifySign 方法兼容性，所以新增一个 checkNotifySignV2 代替
+    return this.checkNotifySign(postData, true);
+  }
+
+  /**
    * 通知验签
    * @param {JSON} postData 服务端的消息内容
    * @param {Boolean} raw 是否使用 raw 内容而非 decode 内容验签

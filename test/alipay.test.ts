@@ -735,7 +735,7 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  describe('checkNotifySign', () => {
+  describe('checkNotifySign(), checkNotifySignV2()', () => {
     let sdk: AlipaySdk;
     beforeEach(() => {
       sdk = new AlipaySdk({
@@ -835,6 +835,7 @@ describe('test/alipay.test.ts', () => {
           point_amount: '0.00',
         };
         assert.equal(sdk.checkNotifySign(postData), true);
+        assert.equal(sdk.checkNotifySignV2(postData), true);
       });
 
       it('verify fail', () => {
