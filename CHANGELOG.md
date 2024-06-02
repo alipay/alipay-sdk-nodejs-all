@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.0.0...v4.1.0) (2024-06-02)
+
+
+### Features
+
+* 新增 checkNotifySignV2 ([#124](https://github.com/alipay/alipay-sdk-nodejs-all/issues/124)) ([323bc3d](https://github.com/alipay/alipay-sdk-nodejs-all/commit/323bc3d11db3a5a096a2826c0440048004b1dbed))
+
 ## [4.0.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.6.1...v4.0.0) (2024-06-02)
 
 
