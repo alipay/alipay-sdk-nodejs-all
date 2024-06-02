@@ -1,9 +1,8 @@
 import { strict as assert } from 'node:assert';
-import fs from 'node:fs';
 import { sign } from '../src/util.js';
-import { getFixturesFile } from './helper.js';
+import { readFixturesFile } from './helper.js';
 
-const privateKey = fs.readFileSync(getFixturesFile('app-private-key.pem'));
+const privateKey = readFixturesFile('app-private-key.pem');
 
 describe('test/util.test.ts', () => {
   describe('sign()', () => {
