@@ -2,7 +2,7 @@
   "name": "alipay-sdk",
   "version": "4.0.0-beta.5",
   "publishConfig": {
-    "tag": "next",
+    "tag": "latest",
     "access": "public"
   },
   "description": "支付宝开放平台 Node.js SDK / Alipay OpenAPI SDK for Node.js",
@@ -11,8 +11,7 @@
     "test": "npm run lint -- --fix && egg-bin test",
     "cov": "egg-bin cov",
     "ci": "npm run lint && npm run cov && npm run prepublishOnly",
-    "prepublishOnly": "tshy && tshy-after",
-    "contributor": "git-contributor"
+    "prepublishOnly": "tshy && tshy-after"
   },
   "author": "fengmk2",
   "homepage": "https://github.com/alipay/alipay-sdk-nodejs-all",

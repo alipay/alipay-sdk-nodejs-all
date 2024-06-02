@@ -451,15 +451,3 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 ## License
 
 [MIT](LICENSE.txt)
-
-<!-- GITCONTRIBUTOR_START -->
-
-## 贡献者
-
-|[<img src="https://avatars.githubusercontent.com/u/1134658?v=4" width="100px;"/><br/><sub><b>tudou527</b></sub>](https://github.com/tudou527)<br/>|[<img src="https://avatars.githubusercontent.com/u/4983042?v=4" width="100px;"/><br/><sub><b>hubcarl</b></sub>](https://github.com/hubcarl)<br/>|[<img src="https://avatars.githubusercontent.com/u/35091020?v=4" width="100px;"/><br/><sub><b>zzh948498</b></sub>](https://github.com/zzh948498)<br/>|[<img src="https://avatars.githubusercontent.com/u/8800150?v=4" width="100px;"/><br/><sub><b>troyeagle</b></sub>](https://github.com/troyeagle)<br/>|
-| :---: | :---: | :---: | :---: |
-
-
-[git-contributor 说明](https://github.com/xudafeng/git-contributor)，自动生成时间：`Sun Jun 02 2024 15:03:34 GMT+0800`。
-
-<!-- GITCONTRIBUTOR_END -->
