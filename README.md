@@ -283,7 +283,7 @@ const signResult = sdk.checkNotifySign(queryObj);
 ```
 
 如果遇到验签失败，请尝试使用 `checkNotifySignV2()` 方法代替，它默认不会对 value 进行 decode
-如 https://github.com/alipay/alipay-sdk-nodejs-all/issues/45 场景问题。
+如 https://github.com/alipay/alipay-sdk-nodejs-all/issues/45 提到的常见问题。
 
 ```ts
 const postData = {
