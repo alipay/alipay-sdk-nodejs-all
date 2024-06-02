@@ -136,6 +136,8 @@ describe('test/alipay.test.ts', () => {
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
       form.addField('biz_code', 'openpt_appstore');
+      form.addField('foo', '{"bar":"bar value"}');
+      form.addField('foo-array', '[{"bar":"bar value"}]');
       form.addFile('file_content', '图片.jpg', filePath);
 
       const uploadResult = await sdkStable.curl<{
@@ -185,6 +187,44 @@ describe('test/alipay.test.ts', () => {
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
+    });
+
+    it('GET 文件上传抛异常提示', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addField('foo', '{"bar":"bar value"}');
+      form.addField('foo-array', '[{"bar":"bar value"}]');
+      form.addFile('file_content', '图片.jpg', filePath);
+
+      await assert.rejects(async () => {
+        await sdkStable.curl<{
+          file_id: string;
+        }>('GET', '/v3/alipay/open/file/upload', { form });
+      }, /GET \/ HEAD 请求不允许提交 body 或 form 数据/);
+    });
+
+    it('form 不是正确类型', async () => {
+      await assert.rejects(async () => {
+        await sdkStable.curl<{
+          file_id: string;
+        }>('POST', '/v3/alipay/open/file/upload', { form: {} as any });
+      }, /options\.form 必须是 AlipayFormData 或者 AlipayFormStream 类型/);
+    });
+
+    it('mock urllib request error', async () => {
+      mm.error(urllib, 'request');
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addField('foo', '{"bar":"bar value"}');
+      form.addField('foo-array', '[{"bar":"bar value"}]');
+      form.addFile('file_content', '图片.jpg', filePath);
+      await assert.rejects(async () => {
+        await sdkStable.curl<{
+          file_id: string;
+        }>('POST', '/v3/alipay/open/file/upload', { form });
+      }, /HttpClient Request error, mm mock error/);
     });
 
     it.skip('POST /v3/alipay/open/app/qrcode/create', async () => {
@@ -493,6 +533,27 @@ describe('test/alipay.test.ts', () => {
         console.log('item %o', item.toString());
       }
     });
+
+    it('curlStream response status >= 400', async () => {
+      const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generateNotFound';
+      await assert.rejects(async () => {
+        await sdk.curlStream('POST', url, {
+          body: {
+            session_id: randomUUID(),
+            agent_id: '202405AP00045923',
+            outer_user_id: '2088002032947123',
+            query: '你好',
+            request_id: randomUUID(),
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.code, 'invalid-method');
+        assert.equal(err.responseHttpStatus, 400);
+        assert.match(err.message, /不存在的方法名 \(traceId: \w+\)/);
+        return true;
+      });
+    });
   });
 
   describe('exec()', () => {
@@ -510,6 +571,59 @@ describe('test/alipay.test.ts', () => {
       assert.equal(result.needQuery, 'no_need');
       assert.equal(result.resultAction, 'PASSED');
       assert(result.traceId);
+    });
+
+    it('bizContent 和 biz_content 不能同时设置', async () => {
+      await assert.rejects(async () => {
+        await sdkStable.exec('alipay.security.risk.content.analyze', {
+          bizContent: {
+            account_type: 'MOBILE_NO',
+            account: '13812345678',
+            version: '2.0',
+          },
+          biz_content: {},
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'TypeError');
+        assert.equal(err.message, '不能同时设置 bizContent 和 biz_content');
+        return true;
+      });
+    });
+
+    it('needEncrypt = true 但是 encryptKey 没有设置', async () => {
+      mm(sdkStable.config, 'encryptKey', '');
+      await assert.rejects(async () => {
+        await sdkStable.exec('alipay.security.risk.content.analyze', {
+          bizContent: {
+            account_type: 'MOBILE_NO',
+            account: '13812345678',
+            version: '2.0',
+          },
+          needEncrypt: true,
+        });
+      }, (err: any) => {
+        console.log(err);
+        assert.equal(err.name, 'TypeError');
+        assert.equal(err.message, '请设置 encryptKey 参数');
+        return true;
+      });
+    });
+
+    it('needEncrypt = true 但是服务端解密失败', async () => {
+      // {"alipay_security_risk_content_analyze_response":{"code":"40003","msg":"Insufficient Conditions","sub_code":"isv.decryption-error-unknown","sub_msg":"解密出错, 未知错误"},"sign":"fpPCfGS+MLqJzK0Q/W61pNMXMLBogtCxyl0ZiEtOzTKWZBC7hiXe9AGOML0hoXQkJshlRgz8dUPvQNapuZff5TNu16/Va/4bnwLW1V1Og7KaAYlD9jbQPFLJv+YFM3SAXmylLVMatKMbEy2Cb3vn6FVpDrqTspUjhcPH7ACUirIcriFR+FhT9yGypLeOm2wYto0t59H5k5FlcsepdUReBcXP0UbglwjUOHh9TX3/VNQk3s6zoxhUC4ep570gmycEHwg4H1lSJky8M/FADUBr3gd8rynz3S+CbfPaOJoGKraeSzR2iA1bIu1fUN7GjI1wZjR8PfiQI2joNn+Z9OxUgw=="}
+      const result = await sdkStable.exec('alipay.security.risk.content.analyze', {
+        bizContent: {
+          account_type: 'MOBILE_NO',
+          account: '13812345678',
+          version: '2.0',
+        },
+        needEncrypt: true,
+      });
+      assert.equal(result.code, '40003');
+      assert.equal(result.msg, 'Insufficient Conditions');
+      assert.equal(result.subCode, 'isv.decryption-error-unknown');
+      assert.equal(result.subMsg, '解密出错, 未知错误');
+      // console.log(result);
     });
 
     it('mock request error', async () => {
@@ -788,6 +902,32 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
+    it('should return invalid response format', async () => {
+      const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
+      mockPool.intercept({
+        path: /\/gateway\.do/,
+        method: 'POST',
+      }).reply(200, '{"error_response2":{"code":"40002","msg":"Invalid Arguments","sub_code":"isv.code-invalid","sub_msg":"授权码code无效"}}', {
+        headers: {
+          trace_id: 'mock-trace-id',
+        },
+      });
+      await assert.rejects(async () => {
+        await sdk.exec('alipay.security.risk.content.analyze', {
+          bizContent: {
+            account_type: 'MOBILE_NO',
+            account: '13812345678',
+            version: '2.0',
+          },
+          publicArgs: {},
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, 'Response 格式错误，返回值 alipay_security_risk_content_analyze_response 找不到 (traceId: mock-trace-id)');
+        return true;
+      });
+    });
+
     it('证书校验模式 formatUrl 和加签', async () => {
       const mockPool = mockAgent.get('https://openapi-sandbox.dl.alipaydev.com');
       mockPool.intercept({
@@ -869,6 +1009,21 @@ describe('test/alipay.test.ts', () => {
       assert(result.traceId!.length >= 29);
       assert(result.fileId);
       // console.log(result);
+    });
+
+    it('should handle urllib request error', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', filePath);
+
+      mm.error(urllib, 'request');
+      await assert.rejects(async () => {
+        await sdk.exec('alipay.open.file.upload', {}, {
+          formData: form,
+          validateSign: true,
+        });
+      }, /mm mock error/);
     });
 
     it('multipart should serialize object field and validateSign = true', async () => {

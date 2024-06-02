@@ -390,7 +390,7 @@ export class AlipaySdk {
       });
     }
     const traceId = httpResponse.headers['alipay-trace-id'] as string ?? requestId;
-    debug('exec response status: %s, headers: %j, raw body: %o, traceId: %s',
+    debug('curl response status: %s, headers: %j, raw body: %o, traceId: %s',
       httpResponse.status, httpResponse.headers, httpResponse.data, traceId);
     // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
     if (httpResponse.status >= 400) {
@@ -728,7 +728,12 @@ export class AlipaySdk {
     let data = alipayResponse[responseKey] ?? alipayResponse.error_response;
     if (data) {
       if (options?.needEncrypt) {
-        data = aesDecrypt(data, this.config.encryptKey);
+        if (typeof data === 'string') {
+          data = aesDecrypt(data, this.config.encryptKey);
+        } else {
+          // 服务端解密错误，"sub_msg":"解密出错, 未知错误"
+          // ignore
+        }
       }
 
       // 按字符串验签

@@ -36,16 +36,10 @@ function aesEncrypt(data: any, aesKey: string) {
 }
 
 // 解密
-export function aesDecrypt(data: any, aesKey: string) {
-  const {
-    iv,
-    key,
-  } = parseKey(aesKey);
-  const bytes = CryptoJS.AES.decrypt(data, key, {
-    iv,
-  });
+export function aesDecrypt(data: string, aesKey: string) {
+  const { iv, key } = parseKey(aesKey);
+  const bytes = CryptoJS.AES.decrypt(data, key, { iv });
   const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-
   return decryptedData;
 }
 
@@ -122,6 +116,22 @@ export function sign(method: string, params: Record<string, any>, config: Requir
   return decamelizeParams;
 }
 
+export function createRequestId() {
+  return randomUUID().replaceAll('-', '');
+}
+
+export async function readableToBytes(stream: Readable | ReadableStream) {
+  const chunks: Buffer[] = [];
+  let chunk: Buffer;
+  let totalLength = 0;
+  for await (chunk of stream) {
+    chunks.push(chunk);
+    totalLength += chunk.length;
+  }
+  return Buffer.concat(chunks, totalLength);
+}
+
+/* c8 ignore start */
 // forked from https://github.com/sindresorhus/decamelize/blob/main/index.js
 export function decamelize(text: string) {
   const separator = '_';
@@ -177,18 +187,4 @@ function handlePreserveConsecutiveUppercase(decamelized: string, separator: stri
     (_, $1, $2) => $1 + separator + $2.toLowerCase(),
   );
 }
-
-export function createRequestId() {
-  return randomUUID().replaceAll('-', '');
-}
-
-export async function readableToBytes(stream: Readable | ReadableStream) {
-  const chunks: Buffer[] = [];
-  let chunk: Buffer;
-  let totalLength = 0;
-  for await (chunk of stream) {
-    chunks.push(chunk);
-    totalLength += chunk.length;
-  }
-  return Buffer.concat(chunks, totalLength);
-}
+/* c8 ignore stop */

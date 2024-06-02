@@ -9,7 +9,8 @@
   "scripts": {
     "lint": "eslint src test --ext ts",
     "test": "npm run lint -- --fix && egg-bin test",
-    "ci": "npm run lint && egg-bin cov && npm run prepublishOnly",
+    "cov": "egg-bin cov",
+    "ci": "npm run lint && npm run cov && npm run prepublishOnly",
     "prepublishOnly": "tshy && tshy-after",
     "contributor": "git-contributor"
   },
