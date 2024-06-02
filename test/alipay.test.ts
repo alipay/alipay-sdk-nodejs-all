@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import { randomUUID, Verify } from 'node:crypto';
 import { strict as assert } from 'node:assert';
 import urllib, { MockAgent, setGlobalDispatcher } from 'urllib';
-// import { YYYYMMDDHHmmss } from 'utility';
 import mm from 'mm';
 import {
   readFixturesFile, getFixturesFile,
@@ -162,7 +161,7 @@ describe('test/alipay.test.ts', () => {
           biz_code: 'openpt_appstore',
         },
       });
-      // console.log(uploadResult);
+      console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
@@ -186,6 +185,130 @@ describe('test/alipay.test.ts', () => {
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
+    });
+
+    it.skip('POST /v3/alipay/open/app/qrcode/create', async () => {
+      // https://opendocs.alipay.com/open-v3/76c2627e_alipay.open.app.qrcode.create?scene=common&pathHash=b9d6d275
+      const result = await sdkStable.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/app/qrcode/create', {
+        body: {
+          url_param: 'page/component/component-pages/view/view',
+          query_param: 'x=1',
+          describe: '二维码描述',
+        },
+      });
+      console.log(result);
+    });
+
+    it('POST /v3/alipay/user/deloauth/detail/query', async () => {
+      // https://opendocs.alipay.com/open-v3/668cd27c_alipay.user.deloauth.detail.query?pathHash=3ab93168
+      const result = await sdkStable.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+        body: {
+          date: '20230102',
+          offset: 20,
+          limit: 1,
+        },
+      });
+      console.log(result);
+      assert.equal(result.responseHttpStatus, 200);
+    });
+
+    it.skip('POST /v3/alipay/trade/pay', async () => {
+      // https://opendocs.alipay.com/open-v3/08c7f9f8_alipay.trade.pay?scene=32&pathHash=8bf49b74
+      const result = await sdkStable.curl('POST', '/v3/alipay/trade/pay', {
+        body: {
+          time_expire: '2021-12-31 10:05:00',
+          extend_params: {
+            sys_service_provider_id: '2088511833207846',
+            tc_installment_order_id: '2015042321001004720200028594',
+            industry_reflux_info: '{\\"scene_code\\":\\"metro_tradeorder\\",\\"channel\\":\\"xxxx\\",\\"scene_data\\":{\\"asset_name\\":\\"ALIPAY\\"}}',
+            specified_seller_name: 'XXX的跨境小铺',
+            royalty_freeze: 'true',
+            card_type: 'S0JP0000',
+            trade_component_order_id: '2023060801502300000008810000005657',
+          },
+          query_options: [
+            'fund_bill_list',
+            'voucher_detail_list',
+            'discount_goods_detail',
+          ],
+          settle_info: {
+            settle_period_time: '7d',
+            settle_detail_infos: [
+              {
+                amount: '0.1',
+                trans_in: 'A0001',
+                settle_entity_type: 'SecondMerchant',
+                summary_dimension: 'A0001',
+                actual_amount: '0.1',
+                settle_entity_id: '2088xxxxx;ST_0001',
+                trans_in_type: 'cardAliasNo',
+              },
+            ],
+          },
+          subject: 'Iphone6 16G',
+          is_async_pay: false,
+          operator_id: 'yx_001',
+          product_code: 'FACE_TO_FACE_PAYMENT',
+          buyer_id: '2088202954065786',
+          body: 'Iphone6 16G',
+          buyer_open_id: '074a1CcTG1LelxKe4xQC0zgNdId0nxi95b5lsNpazWYoCo5',
+          auth_no: '2016110310002001760201905725',
+          scene: 'bar_code',
+          sub_merchant: {
+            merchant_id: '2088000603999128',
+            merchant_type: 'alipay',
+          },
+          auth_confirm_mode: 'COMPLETE',
+          timeout_express: '90m',
+          bkagent_req_info: {
+            merch_code: '123412341234',
+            acq_code: '12345678901234',
+            device_type: '02',
+            location: '+37.28/-121.268',
+            serial_num: '123123123123',
+          },
+          seller_id: '2088102146225135',
+          terminal_id: 'NJ_T_001',
+          store_id: 'NJ_001',
+          pay_params: {
+            async_type: 'NORMAL_ASYNC',
+            retry_type: 'NONE',
+          },
+          agreement_params: {
+            deduct_permission: '2021571176714791277815457854545',
+            agreement_no: '20170322450983769228',
+            apply_token: 'MDEDUCT0068292ca377d1d44b65fa24ec9cd89132f',
+            auth_confirm_no: '423979',
+          },
+          goods_detail: [
+            {
+              out_sku_id: 'outSku_01',
+              goods_name: 'ipad',
+              quantity: 1,
+              price: '2000',
+              out_item_id: 'outItem_01',
+              goods_id: 'apple-01',
+              goods_category: '34543238',
+              categories_tree: '124868003|126232002|126252004',
+              show_url: 'http://www.alipay.com/xxx.jpg',
+            },
+          ],
+          auth_code: '28763443825664394',
+          discountable_amount: '80.00',
+          out_trade_no: '20150320010101001',
+          advance_payment_type: 'ENJOY_PAY_V2',
+          total_amount: '88.88',
+          request_org_pid: '2088201916734621',
+          undiscountable_amount: '8.88',
+          promo_params: {
+            actual_order_time: '2018-09-25 22:47:33',
+          },
+        },
+      });
+      console.log(result);
+      assert.equal(result.responseHttpStatus, 200);
     });
 
     it('GET 验证调用成功', async () => {
@@ -711,7 +834,7 @@ describe('test/alipay.test.ts', () => {
         await sdk.exec('alipay.trade.page.pay', {}, { formData });
       }, (err: any) => {
         assert.equal(err.name, 'TypeError');
-        assert.equal(err.message, 'formData 参数不包含文件，你可能是希望获取 POST 表单 HTML，请调用 pageExec 接口代替');
+        assert.equal(err.message, 'formData 参数不包含文件，你可能是希望获取 POST 表单 HTML，请调用 pageExec() 方法代替');
         return true;
       });
     });

@@ -6,7 +6,7 @@ export interface AlipaySdkConfig {
   appId: string;
   /** 应用私钥字符串。RSA签名验签工具：https://docs.open.alipay.com/291/106097）*/
   privateKey: string;
-  /** 签名种类 */
+  /** 签名种类，默认是 RSA2 */
   signType?: 'RSA2' | 'RSA';
   /** 支付宝公钥（需要对返回值做验签时候必填） */
   alipayPublicKey?: string;
@@ -16,7 +16,7 @@ export interface AlipaySdkConfig {
   endpoint?: string;
   /** 网关超时时间（单位毫秒，默认 5000） */
   timeout?: number;
-  /** 是否把网关返回的下划线 key 转换为驼峰写法 */
+  /** 是否把网关返回的下划线 key 转换为驼峰写法，默认 true */
   camelcase?: boolean;
   /** 编码（只支持 utf-8） */
   charset?: 'utf-8';

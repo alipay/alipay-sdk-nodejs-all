@@ -230,24 +230,24 @@ export class AlipaySdk {
    * Alipay OpenAPI V3 with JSON Response
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
-    return await this.#curl<T>(method, pathUrl, options, 'json') as AlipayCommonResult<T>;
+  public async curl<T = any>(httpMethod: HttpMethod, path: string, options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
+    return await this.#curl<T>(httpMethod, path, options, 'json') as AlipayCommonResult<T>;
   }
 
   /**
    * Alipay OpenAPI V3 with Stream Response
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async curlStream<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions): Promise<AlipayCommonResultStream> {
-    return await this.#curl<T>(method, pathUrl, options, 'stream') as AlipayCommonResultStream;
+  public async curlStream<T = any>(httpMethod: HttpMethod, path: string, options?: AlipayCURLOptions): Promise<AlipayCommonResultStream> {
+    return await this.#curl<T>(httpMethod, path, options, 'stream') as AlipayCommonResultStream;
   }
 
   /**
    * Alipay OpenAPI V3 with SSE Response
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async* sse(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions) {
-    const { stream } = await this.curlStream(method, pathUrl, options);
+  public async* sse(httpMethod: HttpMethod, path: string, options?: AlipayCURLOptions) {
+    const { stream } = await this.curlStream(httpMethod, path, options);
     const parsedStream = SSEStream.fromReadableStream<string>(stream as any, undefined, {
       disableJSONParse: true,
     });
@@ -293,16 +293,16 @@ export class AlipaySdk {
     }
   }
 
-  async #curl<T = any>(method: HttpMethod, pathUrl: string, options?: AlipayCURLOptions,
+  async #curl<T = any>(httpMethod: HttpMethod | Lowercase<HttpMethod>, path: string, options?: AlipayCURLOptions,
       dataType: 'json' | 'stream' = 'json'): Promise<AlipayCommonResult<T> | AlipayCommonResultStream> {
-    const httpMethod = method.toUpperCase();
-    let url = `${this.config.endpoint}${pathUrl}`;
+    httpMethod = httpMethod.toUpperCase() as HttpMethod;
+    let url = `${this.config.endpoint}${path}`;
     // TODO: 需要支持 app_cert_sn
     const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
-    let httpRequestUrl = pathUrl;
+    let httpRequestUrl = path;
     let httpRequestBody = '';
     const requestOptions: RequestOptions = {
-      method,
+      method: httpMethod,
       dataType,
       timeout: this.config.timeout,
     };
@@ -378,7 +378,7 @@ export class AlipaySdk {
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
     debug('[%s] curl %s %s, with body: %s, headers: %j, dataType: %s',
-      Date(), method, url, httpRequestBody, requestOptions.headers, dataType);
+      Date(), httpMethod, url, httpRequestBody, requestOptions.headers, dataType);
     let httpResponse: HttpClientResponse<any>;
     try {
       httpResponse = await urllib.request(url, requestOptions);
@@ -474,7 +474,7 @@ export class AlipaySdk {
         cause: err,
       });
     }
-    return this.#formatHttpResponse(method, httpResponse, {
+    return this.#formatExecHttpResponse(method, httpResponse, {
       validateSign: options.validateSign,
     });
   }
@@ -638,7 +638,7 @@ export class AlipaySdk {
        * fromData 中不包含文件时，认为是 page 类接口（返回 form 表单）
        * 比如 PC 端支付接口 alipay.trade.page.pay
        */
-      throw new TypeError('formData 参数不包含文件，你可能是希望获取 POST 表单 HTML，请调用 pageExec 接口代替');
+      throw new TypeError('formData 参数不包含文件，你可能是希望获取 POST 表单 HTML，请调用 pageExec() 方法代替');
     }
 
     const config = this.config;
@@ -672,13 +672,13 @@ export class AlipaySdk {
       });
     }
 
-    return this.#formatHttpResponse(method, httpResponse, {
+    return this.#formatExecHttpResponse(method, httpResponse, {
       needEncrypt: params.needEncrypt,
       validateSign: options.validateSign,
     });
   }
 
-  #formatHttpResponse(method: string, httpResponse: HttpClientResponse<string>, options: {
+  #formatExecHttpResponse(method: string, httpResponse: HttpClientResponse<string>, options: {
     needEncrypt?: boolean;
     validateSign?: boolean;
   }) {
