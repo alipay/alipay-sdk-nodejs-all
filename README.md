@@ -451,3 +451,11 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 ## License
 
 [MIT](LICENSE.txt)
+
+## Contributors
+
+<a href="https://github.com/alipay/alipay-sdk-nodejs-all/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=alipay/alipay-sdk-nodejs-all" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
