@@ -10,7 +10,8 @@
     "lint": "eslint src test --ext ts",
     "test": "npm run lint -- --fix && egg-bin test",
     "ci": "npm run lint && egg-bin cov && npm run prepublishOnly",
-    "prepublishOnly": "tshy && tshy-after"
+    "prepublishOnly": "tshy && tshy-after",
+    "contributor": "git-contributor"
   },
   "author": "fengmk2",
   "homepage": "https://github.com/alipay/alipay-sdk-nodejs-all",

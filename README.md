@@ -130,10 +130,6 @@ console.log(result);
 //  ...
 ```
 
-**⚠️⚠️⚠️ 注意**：部分接口的请求参数不在 `bizContent` 中，
-如 [`alipay.system.oauth.token`](https://opendocs.alipay.com/open/05nai1)，
-具体可参考官网各接口定义。
-
 ### 使用 `AlipayFormData` 表单上传文件
 
 部分接口需要上传文件。
@@ -451,3 +447,19 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | --- | --- | --- |
 | postData | `JSON` | 服务端的消息内容 |
 | raw | `Boolean` | 是否使用 raw 内容而非 decode 内容验签 |
+
+## License
+
+[MIT](LICENSE.txt)
+
+<!-- GITCONTRIBUTOR_START -->
+
+## 贡献者
+
+|[<img src="https://avatars.githubusercontent.com/u/1134658?v=4" width="100px;"/><br/><sub><b>tudou527</b></sub>](https://github.com/tudou527)<br/>|[<img src="https://avatars.githubusercontent.com/u/4983042?v=4" width="100px;"/><br/><sub><b>hubcarl</b></sub>](https://github.com/hubcarl)<br/>|[<img src="https://avatars.githubusercontent.com/u/35091020?v=4" width="100px;"/><br/><sub><b>zzh948498</b></sub>](https://github.com/zzh948498)<br/>|[<img src="https://avatars.githubusercontent.com/u/8800150?v=4" width="100px;"/><br/><sub><b>troyeagle</b></sub>](https://github.com/troyeagle)<br/>|
+| :---: | :---: | :---: | :---: |
+
+
+[git-contributor 说明](https://github.com/xudafeng/git-contributor)，自动生成时间：`Sun Jun 02 2024 15:03:34 GMT+0800`。
+
+<!-- GITCONTRIBUTOR_END -->
