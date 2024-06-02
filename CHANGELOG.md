@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.0.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.6.1...v4.0.0) (2024-06-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop Node.js < 18 support
+
+closes https://github.com/alipay/alipay-sdk-nodejs-all/issues/120
+
+### Features
+
+* 使用支付宝 API v3 接口规范重构 ([#121](https://github.com/alipay/alipay-sdk-nodejs-all/issues/121)) ([46e22d5](https://github.com/alipay/alipay-sdk-nodejs-all/commit/46e22d54c2142860ed6057c4ecd8c262216becb3))
+
 ## [3.6.1](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v3.6.0...v3.6.1) (2023-09-21)
 
 

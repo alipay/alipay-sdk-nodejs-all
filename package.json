@@ -1,6 +1,6 @@
 {
   "name": "alipay-sdk",
-  "version": "4.0.0-beta.5",
+  "version": "4.0.0",
   "publishConfig": {
     "tag": "latest",
     "access": "public"
