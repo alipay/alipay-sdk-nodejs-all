@@ -84,11 +84,16 @@ export interface AlipaySSEItem {
 }
 
 export interface AlipaySdkCommonResult {
-  /** 响应码。10000 表示成功，其余详见 https://opendocs.alipay.com/common/02km9f */
+  /**
+   * 响应码。10000 表示成功，其余详见 https://opendocs.alipay.com/common/02km9f
+   */
   code: string;
   /** 响应讯息。Success 表示成功。 */
   msg: string;
-  /** 错误代号 */
+  /**
+   * 明细错误码
+   * @see https://opendocs.alipay.com/common/02km9f
+   */
   sub_code?: string;
   /** 错误辅助信息 */
   sub_msg?: string;
@@ -135,7 +140,7 @@ export interface AlipayCURLOptions {
  * Alipay OpenAPI SDK for Node.js
  */
 export class AlipaySdk {
-  private sdkVersion = 'alipay-sdk-nodejs-4.0.0';
+  public readonly version = 'alipay-sdk-nodejs-4.0.0';
   public config: Required<AlipaySdkConfig>;
 
   /**
@@ -307,7 +312,7 @@ export class AlipaySdk {
     }
     const requestId = options?.requestId ?? createRequestId();
     requestOptions.headers = {
-      'user-agent': this.sdkVersion,
+      'user-agent': this.version,
       'alipay-request-id': requestId,
       accept: 'application/json',
       // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
@@ -458,7 +463,7 @@ export class AlipaySdk {
     try {
       httpResponse = await urllib.request(url, {
         timeout: config.timeout,
-        headers: { 'user-agent': this.sdkVersion },
+        headers: { 'user-agent': this.version },
         files: formFiles,
         data: formData,
         dataType: 'text',
@@ -511,7 +516,7 @@ export class AlipaySdk {
 
   // page 类接口，兼容原来的 formData 格式
   private _pageExec(method: string, option: IRequestOption = {}): string {
-    let signParams = { alipaySdk: this.sdkVersion } as Record<string, string>;
+    let signParams = { alipaySdk: this.version } as Record<string, string>;
     const config = this.config;
     option.formData!.getFields().forEach(field => {
       signParams[field.name] = field.value as string;
@@ -652,12 +657,12 @@ export class AlipaySdk {
         dataType: 'text',
         timeout: config.timeout,
         headers: {
-          'user-agent': this.sdkVersion,
+          'user-agent': this.version,
           'alipay-request-id': options.traceId ?? createRequestId(),
           // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
           // 加密请求和文件上传 API 除外。
           // 'content-type': 'application/json',
-          // accept: 'application/json',
+          accept: 'application/json',
         },
       });
     } catch (err: any) {
@@ -729,7 +734,7 @@ export class AlipaySdk {
       // 按字符串验签
       if (options?.validateSign) {
         const serverSign = alipayResponse.sign;
-        this.#checkResponseSign(httpResponse.data, responseKey, serverSign, traceId);
+        this.checkResponseSign(httpResponse.data, responseKey, serverSign, traceId);
       }
       const result: AlipaySdkCommonResult = this.config.camelcase ? camelcaseKeys(data, { deep: true }) : data;
       if (result && traceId) {
@@ -745,7 +750,7 @@ export class AlipaySdk {
   }
 
   // 结果验签
-  #checkResponseSign(responseDataRaw: string, responseKey: string, serverSign: string, traceId: string) {
+  checkResponseSign(responseDataRaw: string, responseKey: string, serverSign: string, traceId: string) {
     if (!this.config.alipayPublicKey) {
       console.warn('[alipay-sdk] config.alipayPublicKey is empty, skip validateSign');
       // 支付宝公钥不存在时不做验签

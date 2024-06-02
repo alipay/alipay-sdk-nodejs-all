@@ -15,7 +15,7 @@ import {
 
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
-// const notifyAlipayPublicKeyV2 = fs.readFileSync(getFixturesFile('alipay-notify-sign-public-key-v2.pem'), 'ascii');
+const notifyAlipayPublicKeyV2 = readFixturesFile('alipay-notify-sign-public-key-v2.pem', 'ascii');
 const alipayRootCertPath = getFixturesFile('alipayRootCert.crt');
 const alipayPublicCertPath = getFixturesFile('alipayCertPublicKey_RSA2.crt');
 const appCertPath = getFixturesFile('appCertPublicKey_2021001161683774.crt');
@@ -142,7 +142,7 @@ describe('test/alipay.test.ts', () => {
       const uploadResult = await sdkStable.curl<{
         file_id: string;
       }>('POST', '/v3/alipay/open/file/upload', { form });
-      console.log(uploadResult);
+      // console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
@@ -162,7 +162,7 @@ describe('test/alipay.test.ts', () => {
           biz_code: 'openpt_appstore',
         },
       });
-      console.log(uploadResult);
+      // console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
@@ -182,7 +182,7 @@ describe('test/alipay.test.ts', () => {
           biz_code: 'openpt_appstore',
         },
       });
-      console.log(uploadResult);
+      // console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);
@@ -484,8 +484,6 @@ describe('test/alipay.test.ts', () => {
           trace_id: 'mock-trace-id',
         },
       });
-      mm(sdk, 'checkResponseSign', () => { return false; });
-
       await assert.rejects(async () => {
         await sdk.exec('alipay.security.risk.content.analyze', {
           bizContent: {
@@ -499,7 +497,7 @@ describe('test/alipay.test.ts', () => {
         });
       }, (err: any) => {
         assert.equal(err.name, 'AlipayRequestError');
-        assert.equal(err.message, '验签失败 (traceId: mock-trace-id)');
+        assert.equal(err.message, '验签失败，服务端返回的 sign: \'signStr\' 无效, validateStr: \'{"a":1,"b":2},"sign":"signStr"}\' (traceId: mock-trace-id)');
         assert.equal(err.traceId, 'mock-trace-id');
         assert.equal(err.responseDataRaw, '{"alipay_security_risk_content_analyze_response":{"a":1,"b":2},"sign":"signStr"}');
         return true;
@@ -695,9 +693,31 @@ describe('test/alipay.test.ts', () => {
         traceId: 'mock-trace-id',
       });
     });
+
+    it('exec 传递没有文件的 formData 会抛异常提示', async () => {
+      const bizContent = {
+        out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+        product_code: 'FAST_INSTANT_TRADE_PAY',
+        subject: 'abc',
+        body: '234',
+        // timeout_express: "90m",
+        total_amount: '0.01',
+      };
+      const formData = new AlipayFormData();
+      formData.addField('returnUrl', 'https://www.taobao.com');
+      formData.addField('bizContent', bizContent);
+
+      await assert.rejects(async () => {
+        await sdk.exec('alipay.trade.page.pay', {}, { formData });
+      }, (err: any) => {
+        assert.equal(err.name, 'TypeError');
+        assert.equal(err.message, 'formData 参数不包含文件，你可能是希望获取 POST 表单 HTML，请调用 pageExec 接口代替');
+        return true;
+      });
+    });
   });
 
-  describe('exec with multipart', () => {
+  describe('exec() with multipart', () => {
     let sdk: AlipaySdk;
     before(() => {
       sdk = new AlipaySdk({
@@ -838,646 +858,463 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  // describe('pageExec', () => {
-  //   let sdk;
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('post', async () => {
-  //     const result = await sdk.pageExec('alipay.trade.page.pay', {
-  //       method: 'POST',
-  //       bizContent: {
-  //         out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //         product_code: 'FAST_INSTANT_TRADE_PAY',
-  //         subject: 'abc',
-  //         body: '234',
-  //         // timeout_express: "90m",
-  //         total_amount: '0.01',
-  //       },
-  //       returnUrl: 'https://www.taobao.com',
-  //     });
-  //     (result.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
-  //     (result.indexOf('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;') > -1).should.eql(true);
-  //     (result.indexOf(sdkVersion) > -1).should.eql(true);
-  //   });
-
-  //   it('get', async () => {
-  //     const result = await sdk.pageExec('alipay.trade.page.pay', {
-  //       method: 'GET',
-  //       bizContent: {
-  //         out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //         product_code: 'FAST_INSTANT_TRADE_PAY',
-  //         subject: 'abc',
-  //         body: '234',
-  //         // timeout_express: "90m",
-  //         total_amount: '0.01',
-  //       },
-  //       returnUrl: 'https://www.taobao.com',
-  //     });
-  //     const url = decodeURIComponent(result);
-  //     (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
-  //     (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
-  //     (url.indexOf(sdkVersion) > -1).should.eql(true);
-  //   });
-  // });
-
-  // describe('pageExec - legacy form data', () => {
-  //   let sdk;
-
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('post', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const bizContent = {
-  //       out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //       product_code: 'FAST_INSTANT_TRADE_PAY',
-  //       subject: 'abc',
-  //       body: '234',
-  //       // timeout_express: "90m",
-  //       total_amount: '0.01',
-  //     };
-  //     const formData = new AlipayFormData();
-  //     formData.addField('returnUrl', 'https://www.taobao.com');
-  //     formData.addField('bizContent', bizContent);
-
-  //     sdk
-  //       .exec('alipay.trade.page.pay', {
-  //       }, { log, formData })
-  //       .then(ret => {
-  //         (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
-  //         errorLog.length.should.eql(0);
-  //         (ret.indexOf('method=alipay.trade.page.pay') > -1).should.eql(true);
-  //         (ret.indexOf('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;') > -1).should.eql(true);
-  //         (ret.indexOf(sdkVersion) > -1).should.eql(true);
-  //         done();
-  //       }).catch(done);
-  //   });
-
-  //   it('get', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-  //     const bizContent = {
-  //       out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //       product_code: 'FAST_INSTANT_TRADE_PAY',
-  //       subject: 'abc',
-  //       body: '234',
-  //       // timeout_express: "90m",
-  //       total_amount: '0.01',
-  //     };
-  //     const formData = new AlipayFormData();
-  //     formData.setMethod('get');
-  //     formData.addField('returnUrl', 'https://www.taobao.com');
-  //     formData.addField('bizContent', JSON.stringify(bizContent));
-
-  //     sdk
-  //       .exec('alipay.trade.page.pay', {
-  //       }, { log, formData })
-  //       .then(ret => {
-  //         const url = decodeURIComponent(ret);
-  //         (infoLog[0].indexOf('[AlipaySdk]start exec url') > -1).should.eql(true);
-  //         errorLog.length.should.eql(0);
-
-  //         (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
-  //         (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
-  //         (url.indexOf(sdkVersion) > -1).should.eql(true);
-  //         done();
-  //       }).catch(done);
-  //   });
-
-  //   it('get - bizContent stringify is optional', async () => {
-  //     const bizContent = {
-  //       out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //       product_code: 'FAST_INSTANT_TRADE_PAY',
-  //       subject: 'abc',
-  //       body: '234',
-  //       total_amount: '0.01',
-  //     };
-
-  //     const stringified = JSON.stringify(bizContent);
-
-  //     // 第一次执行，stringified
-  //     const formData = new AlipayFormData();
-  //     formData.setMethod('get');
-  //     formData.addField('returnUrl', 'https://www.taobao.com');
-  //     formData.addField('bizContent', stringified);
-
-
-  //     const result1 = await sdk.exec('alipay.trade.page.pay', {
-  //     }, { formData });
-  //     const url1 = decodeURIComponent(result1);
-  //     const index1 = url1.indexOf(stringified);
-
-  //     // 第二次执行，传源对象
-  //     const form2 = new AlipayFormData();
-  //     form2.setMethod('get');
-  //     form2.addField('returnUrl', 'https://www.taobao.com');
-  //     form2.addField('bizContent', bizContent);
-
-  //     const result2 = await sdk.exec('alipay.trade.page.pay', {
-  //     }, { formData: form2 });
-
-
-  //     const url2 = decodeURIComponent(result2);
-
-  //     const index2 = url2.indexOf(stringified);
-
-  //     // 两者的效果应该一样，都被 stringified，由于签名不同，判断位置相等即可。
-  //     index1.should.eql(index2);
-  //     url1.should.eql(url2);
-  //     (index1 > -1).should.eql(true);
-
-  //   });
-
-  //   it('disable log', function(done) {
-  //     const bizContent = {
-  //       out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //       product_code: 'FAST_INSTANT_TRADE_PAY',
-  //       subject: 'abc',
-  //       body: '234',
-  //       // timeout_express: "90m",
-  //       total_amount: '0.01',
-  //     };
-  //     const formData = new FormData();
-  //     formData.setMethod('get');
-  //     formData.addField('returnUrl', 'https://www.taobao.com');
-  //     formData.addField('bizContent', JSON.stringify(bizContent));
-
-  //     sdk
-  //       .exec('alipay.trade.page.pay', {
-  //       }, { formData })
-  //       .then(ret => {
-  //         const url = decodeURIComponent(ret);
-  //         (url.indexOf('method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=') > -1).should.eql(true);
-  //         (url.indexOf('{"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}') > -1).should.eql(true);
-  //         (url.indexOf(sdkVersion) > -1).should.eql(true);
-  //         done();
-  //       }).catch(done);
-  //   });
-  // });
-
-  // describe('sdkExec', () => {
-  //   let sdk;
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('normal', async () => {
-  //     const result = await sdk.sdkExec('alipay.trade.app.pay', {
-  //       bizContent: {
-  //         out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
-  //         product_code: 'FAST_INSTANT_TRADE_PAY',
-  //         subject: 'abc',
-  //         body: '234',
-  //         // timeout_express: "90m",
-  //         total_amount: '0.01',
-  //       },
-  //       returnUrl: 'https://www.taobao.com',
-  //     });
-
-  //     const urlDecodedStr = decodeURIComponent(result);
-  //     urlDecodedStr.indexOf('method=alipay.trade.app.pay').should.be.above(-1);
-  //     urlDecodedStr.indexOf('biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}').should.be.above(-1);
-  //   });
-  // });
-
-  // describe('getSignStr', () => {
-  //   let sdk;
-
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('normal', () => {
-  //     const originStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},"sign":"P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}';
-
-  //     const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
-
-  //     signStr.should.eql('{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
-  //   });
-
-  //   it('include \\r\\n\\s', () => {
-  //     const originStr = `{"alipay_offline_material_image_upload_response"
-  //       :
-  //       {"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
-
-  //         "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
-
-  //     const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
-
-  //     signStr.should.eql('{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
-  //   });
-
-  //   it('include sign key in data', () => {
-  //     const originStr = `{"alipay_offline_material_image_upload_response"
-  //       :
-  //       {"code":"10000","sign":"xxx","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
-
-  //         "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
-
-  //     const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
-
-  //     signStr.should.eql('{"code":"10000","sign":"xxx","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
-  //   });
-  // });
-
-  // describe('checkResponseSign', () => {
-  //   let sdk;
-
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('alipayPublicKey is null', function(done) {
-  //     const newSdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       alipayPublicKey,
-  //     });
-  //     delete newSdk.config.alipayPublicKey;
-  //     const signStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"1ni-WScMQcWsJRE2AYCo9AAAACMAAQED","image_url":"http:\/\/oalipay-dl-django.alicdn.com\/rest\/1.0\/image?fileIds=1ni-WScMQcWsJRE2AYCo9AAAACMAAQED&zoom=original"},"sign":"K7s88WHQO91LPY+QGbdRtr3rXQWUxDEKvPrVsLfy+r9R4CSK1qbvHkrJ9DXwzm0pdTQPP8xbLl6rSsOiq33f32ZOhX/XzMbOfiC3OLnHHVaH7+rneNopUj1sZQDvz+dUoIMYSQHFLEECKADiJ66S8i5gXD1Hne7aj0b/1LYGPhtxbJdkT8OTDjxd/X/HmVy5xjZShOnM3WcwxUVNyqdOE2BEZbS8Q8P4W20PP/EhZ31N4mOIsCuUNiikhU0tnwjH2pHcv/fh7wzqkEhn1gIHc13o9O7xi4w1hHdQV811bn+n8d+98o+ETClebBQieqA+irBQaXvYTmZi3H+8RJiGwA=="}';
-
-  //     const result = newSdk.checkResponseSign(signStr, 'alipay_offline_material_image_upload_response');
-  //     result.should.eql(true);
-  //     done();
-  //   });
-
-  //   it('alipayPublicKey is empty', function(done) {
-  //     const newSdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       alipayPublicKey,
-  //     });
-  //     newSdk.config.alipayPublicKey = '';
-  //     const signStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"1ni-WScMQcWsJRE2AYCo9AAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=1ni-WScMQcWsJRE2AYCo9AAAACMAAQED&zoom=original"},"sign":"K7s88WHQO91LPY+QGbdRtr3rXQWUxDEKvPrVsLfy+r9R4CSK1qbvHkrJ9DXwzm0pdTQPP8xbLl6rSsOiq33f32ZOhX/XzMbOfiC3OLnHHVaH7+rneNopUj1sZQDvz+dUoIMYSQHFLEECKADiJ66S8i5gXD1Hne7aj0b/1LYGPhtxbJdkT8OTDjxd/X/HmVy5xjZShOnM3WcwxUVNyqdOE2BEZbS8Q8P4W20PP/EhZ31N4mOIsCuUNiikhU0tnwjH2pHcv/fh7wzqkEhn1gIHc13o9O7xi4w1hHdQV811bn+n8d+98o+ETClebBQieqA+irBQaXvYTmZi3H+8RJiGwA=="}';
-
-  //     const result = newSdk.checkResponseSign(signStr, 'alipay_offline_material_image_upload_response');
-  //     result.should.eql(true);
-  //     done();
-  //   });
-
-  //   it('signStr is null', function(done) {
-  //     const result = sdk.checkResponseSign(null, 'alipay_offline_material_image_upload_response');
-  //     result.should.eql(false);
-  //     done();
-  //   });
-
-  //   it('normal', function(done) {
-  //     // 从实测中获取，公钥修改后需要变更
-  //     const signStr = '{"alipay_open_file_upload_response":{"code":"10000","msg":"Success","file_id":"CAxAToWB1JsAAAAAAAAAAAAADgSLAQBr"},"sign":"F+LDzpTNiavn7xVZPGuPCSSVRSmWzJGgtuji6tVELGEaqMaNj0jRKXUEr5nloZJBBmwEnddOyCjjepMmrTKTvoOqQ0Efxpr/R1iEeHTHVbb/Q8TTh6Up5gHJDkILdaWS2q1cWeQ6VT+HQY9P3WRXS7uhILHuDODIhpAyCu5KhWGt0rMCIG+Im6NODJP2oohtSCtmTFXg58HH587Z2y2bdbjzOxLvzD9IrU1imghXQ2S/Q+wMIvRk9on6cWnBLkrNvJKapA2ReNGWOwyuASvB9zDVzhMPbR+3mfRGkVDxsq5HYLjBKGskJMXHw0HuugZij6ScRuaLPODhmHwr/pJ9yw=="}';
-  //     const result = sdk.checkResponseSign(signStr, 'alipay_open_file_upload_response');
-  //     result.should.eql(true);
-  //     done();
-  //   });
-  // });
-
-  // describe('checkNotifySign', () => {
-  //   let sdk;
-
-  //   beforeEach(() => {
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       alipayPublicKey: notifyAlipayPublicKeyV2,
-  //       camelcase: true,
-  //     });
-  //   });
-
-  //   it('alipayPublicKey is null', () => {
-  //     const sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey,
-  //       camelcase: true,
-  //     });
-
-  //     sdk.checkNotifySign({}).should.eql(false);
-  //   });
-
-  //   it('postData.sign is null', () => {
-  //     sdk.checkNotifySign({}).should.eql(false);
-  //   });
-
-  //   describe('verify sign should delete sign_type', () => {
-  //     beforeEach(() => {
-  //       const notifyAlipayPublicKeyV1 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqObrdC7hrgAVM98tK0nv3hSQRGGKT4lBsQjHiGjeYZjOPIPHR5knm2jnnz/YGIXIofVHkA/tAlBAd5DrY7YpvI4tP5EONLtZKC2ghBMx7McI2wRD0xiqzxOQr1FuhZGJ8/AUokBzJrzY+aGX2xcOrxFYRlFilvVLTXg4LWjR1tdPkO6+i7wQZAIVMClPkwVRZEbaERRHlKqTzv2gGv5rDU8gRoe1LeaN+6BlbTqHWkQcNCUNrA8C6l17XAXGKDsm/9TFWwO8EPHHHCaQdjtV5/FdcWIt+L8SR1ss7EXTjYDFtxcKVv9rEoY1lX8T4mX+GbXfZHraG5NCF1+XioL5JwIDAQAB';
-  //       sdk = new AlipaySdk({
-  //         gateway: GATE_WAY,
-  //         appId: APP_ID,
-  //         privateKey,
-  //         alipayPublicKey: notifyAlipayPublicKeyV1,
-  //         camelcase: true,
-  //       });
-  //     });
-
-  //     it('with sign_type arguments verify success', () => {
-  //       const postData = {
-  //         gmt_create: '2019-08-15 15:56:22',
-  //         charset: 'utf-8',
-  //         seller_email: 'z97-yuquerevenue@service.aliyun.com',
-  //         subject: '语雀空间 500人规模',
-  //         sign:
-  //          'QfTb8tqE1BMhS5qAnXtvsF3/jBkEvu9q9en0pdbBUDDjvKycZhQb7h8GDs4FKfi049PynaNuatxSgLb/nLWZpXyyh0LEWdK2S6Ri7nPwrVgOs08zugLO20vOQz44y3ti2Ncm8/wZts1Fr2gZ7pShnVX3d1B50hbsXnObT1r/U8ONNQjWXd0HIul4TG+Q3fm3svmSvFEy0WnzuhcyHPX5Gm4ELNctL6Qd5YniGJFNcc7kopHYtI/XD9YCKCH6Ct02rzUs9i11C9CsadtZn+WhxF26Dqt9sGEFajkJ8cxUTLi8+VCpLHsgPE8P0y095uQcDdK0YjCh4x7wVSov+lrmOQ==',
-  //         buyer_id: '2088102534368455',
-  //         invoice_amount: '0.10',
-  //         notify_id: '2019081500222155624068450559358070',
-  //         fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
-  //         notify_type: 'trade_status_sync',
-  //         trade_status: 'TRADE_SUCCESS',
-  //         receipt_amount: '0.10',
-  //         buyer_pay_amount: '0.10',
-  //         sign_type: 'RSA2',
-  //         app_id: '2019073166072302',
-  //         seller_id: '2088531891668739',
-  //         gmt_payment: '2019-08-15 15:56:24',
-  //         notify_time: '2019-08-15 15:56:25',
-  //         version: '1.0',
-  //         out_trade_no: '20190815155618536-564-57',
-  //         total_amount: '0.10',
-  //         trade_no: '2019081522001468450512505578',
-  //         auth_app_id: '2019073166072302',
-  //         buyer_logon_id: 'xud***@126.com',
-  //         point_amount: '0.00' };
-
-  //       sdk.checkNotifySign(postData).should.eql(true);
-  //     });
-
-  //     it('without sign_type arguments verify success', () => {
-  //       const postData = {
-  //         gmt_create: '2019-08-15 15:56:22',
-  //         charset: 'utf-8',
-  //         seller_email: 'z97-yuquerevenue@service.aliyun.com',
-  //         subject: '语雀空间 500人规模',
-  //         sign:
-  //          'QfTb8tqE1BMhS5qAnXtvsF3/jBkEvu9q9en0pdbBUDDjvKycZhQb7h8GDs4FKfi049PynaNuatxSgLb/nLWZpXyyh0LEWdK2S6Ri7nPwrVgOs08zugLO20vOQz44y3ti2Ncm8/wZts1Fr2gZ7pShnVX3d1B50hbsXnObT1r/U8ONNQjWXd0HIul4TG+Q3fm3svmSvFEy0WnzuhcyHPX5Gm4ELNctL6Qd5YniGJFNcc7kopHYtI/XD9YCKCH6Ct02rzUs9i11C9CsadtZn+WhxF26Dqt9sGEFajkJ8cxUTLi8+VCpLHsgPE8P0y095uQcDdK0YjCh4x7wVSov+lrmOQ==',
-  //         buyer_id: '2088102534368455',
-  //         invoice_amount: '0.10',
-  //         notify_id: '2019081500222155624068450559358070',
-  //         fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
-  //         notify_type: 'trade_status_sync',
-  //         trade_status: 'TRADE_SUCCESS',
-  //         receipt_amount: '0.10',
-  //         buyer_pay_amount: '0.10',
-  //         app_id: '2019073166072302',
-  //         seller_id: '2088531891668739',
-  //         gmt_payment: '2019-08-15 15:56:24',
-  //         notify_time: '2019-08-15 15:56:25',
-  //         version: '1.0',
-  //         out_trade_no: '20190815155618536-564-57',
-  //         total_amount: '0.10',
-  //         trade_no: '2019081522001468450512505578',
-  //         auth_app_id: '2019073166072302',
-  //         buyer_logon_id: 'xud***@126.com',
-  //         point_amount: '0.00' };
-
-  //       sdk.checkNotifySign(postData).should.eql(true);
-  //     });
-
-  //     it('verify fail', () => {
-  //       const postData = {
-  //         app_id: '2018121762595097',
-  //         auth_app_id: '2018121762595097',
-  //         buyer_id: '2088512613526436',
-  //         buyer_logon_id: '152****6706',
-  //         buyer_pay_amount: '0.01',
-  //         charset: 'utf-8',
-  //         fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
-  //         gmt_create: '2019-05-23 14:13:56',
-  //         gmt_payment: '2019-05-23 14:17:13',
-  //         invoice_amount: '0.01',
-  //         notify_id: '2019052300222141714026431019971405',
-  //         notify_time: '2019-05-23 14:17:14',
-  //         notify_type: 'trade_status_sync',
-  //         out_trade_no: 'tpxy23962362669658',
-  //         point_amount: '0.00',
-  //         receipt_amount: '0.01',
-  //         seller_email: 'myapp@alitest.com',
-  //         seller_id: '2088331578818800',
-  //         sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
-  //         sign_type: 'RSA2',
-  //         subject: 'tpxy2222896485',
-  //         total_amount: '0.01',
-  //         trade_no: '111111112019052322001426431037869358',
-  //         trade_status: 'TRADE_SUCCESS',
-  //         version: '1.0',
-  //       };
-
-  //       sdk.checkNotifySign(postData).should.eql(false);
-  //     });
-
-  //     it('verify with decode', () => {
-  //       try {
-  //         sdk.checkNotifySign({
-  //           bizContent: '{"key":"value % has special charactar"}',
-  //           sign: 'test',
-  //         });
-  //       } catch (e) {
-  //         e.message.includes('URI malformed').should.eql(true);
-  //       }
-  //     });
-
-  //     it('verify without decode', () => {
-  //       let hasError = false;
-  //       try {
-  //         sdk.checkNotifySign({
-  //           bizContent: '{"key":"value % has special charactar"}',
-  //           sign: 'test',
-  //         }, true);
-  //       } catch (e) {
-  //         hasError = true;
-  //       }
-  //       hasError.should.eql(false);
-  //     });
-  //   });
-
-  //   describe('verify sign should not delete sign_type', () => {
-  //     it('with sign_type arguments verify success', () => {
-  //       const postData = {
-  //         app_id: '2017122801303261',
-  //         charset: 'UTF-8',
-  //         commodity_order_id: '2019030800000018079639',
-  //         contactor: '技术支持测试的公司',
-  //         merchant_pid: '2088721996721370',
-  //         method: 'alipay.open.servicemarket.order.notify',
-  //         name: '技术支持测试的公司',
-  //         notify_id: '2019030800222102023008121054923345',
-  //         notify_time: '2019-03-08 10:20:23',
-  //         notify_type: 'servicemarket_order_notify',
-  //         order_item_num: '1',
-  //         order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
-  //         order_time: '2019-03-08 10:20:08',
-  //         phone: '17826894615',
-  //         service_code: '58621634',
-  //         sign:
-  //          'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
-  //         sign_type: 'RSA2',
-  //         timestamp: '2019-03-08 10:20:23',
-  //         title: '麦禾商城模版',
-  //         total_price: '0.00',
-  //         version: '1.0',
-  //       };
-
-  //       sdk.checkNotifySign(postData).should.eql(true);
-  //     });
-
-  //     it('without sign_type arguments verify success', () => {
-  //       const postData = {
-  //         app_id: '2017122801303261',
-  //         charset: 'UTF-8',
-  //         commodity_order_id: '2019030800000018079639',
-  //         contactor: '技术支持测试的公司',
-  //         merchant_pid: '2088721996721370',
-  //         method: 'alipay.open.servicemarket.order.notify',
-  //         name: '技术支持测试的公司',
-  //         notify_id: '2019030800222102023008121054923345',
-  //         notify_time: '2019-03-08 10:20:23',
-  //         notify_type: 'servicemarket_order_notify',
-  //         order_item_num: '1',
-  //         order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
-  //         order_time: '2019-03-08 10:20:08',
-  //         phone: '17826894615',
-  //         service_code: '58621634',
-  //         sign:
-  //          'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
-  //         timestamp: '2019-03-08 10:20:23',
-  //         title: '麦禾商城模版',
-  //         total_price: '0.00',
-  //         version: '1.0',
-  //       };
-
-  //       sdk.checkNotifySign(postData).should.eql(true);
-  //     });
-
-  //     it('verify fail', () => {
-  //       const postData = {
-  //         app_id: '2017122801303261',
-  //         charset: 'UTF-8',
-  //         commodity_order_id: '2019030800000018079639',
-  //         contactor: '技术支持测试的公司',
-  //         merchant_pid: '2088721996721370',
-  //         method: 'alipay.open.servicemarket.order.notify',
-  //         name: '技术支持测试的公司',
-  //         notify_id: '2019030800222102023008121054923345',
-  //         notify_time: '2019-03-08 10:20:23',
-  //         notify_type: 'servicemarket_order_notify',
-  //         order_item_num: '1',
-  //         order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
-  //         order_time: '2019-03-08 10:20:08',
-  //         phone: '17826894615',
-  //         service_code: '58621634111',
-  //         sign:
-  //          'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
-  //         sign_type: 'RSA2',
-  //         timestamp: '2019-03-08 10:20:23',
-  //         title: '麦禾商城模版',
-  //         total_price: '0.00',
-  //         version: '1.0',
-  //       };
-
-  //       sdk.checkNotifySign(postData).should.eql(false);
-  //     });
-  //   });
-
-  // });
-
-  // describe('execute, pkcs8', () => {
-  //   let sdk;
-
-  //   beforeEach(() => {
-  //     const pkcs8PrivateKey = fs.readFileSync(__dirname + '/fixtures/app-private-key-pkcs8.pem', 'ascii');
-  //     sdk = new AlipaySdk({
-  //       gateway: GATE_WAY,
-  //       appId: APP_ID,
-  //       privateKey: pkcs8PrivateKey,
-  //       signType: 'RSA2',
-  //       alipayPublicKey,
-  //       camelcase: true,
-  //       timeout: 10000,
-  //       keyType: 'PKCS8',
-  //     });
-  //   });
-
-  //   // 沙箱网关环境可能不稳定，仅当成功返回时校验。
-  //   it('execute with validateSign is true', function(done) {
-  //     const infoLog = [];
-  //     const errorLog = [];
-  //     const log = {
-  //       info(...args) { infoLog.push(args.join('')); },
-  //       error(...args) { errorLog.push(args.join('')); },
-  //     };
-
-  //     this.timeout(20000);
-
-  //     sdk
-  //       .exec('alipay.offline.market.shop.category.query', {
-  //         bizContent: {},
-  //       }, { log })
-  //       .then(ret => {
-  //         if (ret.code === '10000') {
-  //           (ret.shopCategoryConfigInfos.length > 0).should.eql(true);
-
-  //           ret.shopCategoryConfigInfos[0].should.have.property('id');
-  //           ret.shopCategoryConfigInfos[0].should.have.property('level');
-  //           ret.shopCategoryConfigInfos[0].should.have.property('link');
-  //           ret.shopCategoryConfigInfos[0].should.have.property('isLeaf');
-  //           ret.shopCategoryConfigInfos[0].should.have.property('nm');
-
-  //           infoLog.length.should.eql(2);
-  //           (infoLog[0].indexOf('[AlipaySdk]start exec') > -1).should.eql(true);
-  //           (infoLog[1].indexOf('[AlipaySdk]exec response') > -1).should.eql(true);
-  //           errorLog.should.eql([]);
-  //         }
-
-  //         done();
-  //       }).catch(done);
-  //   });
-  // });
+  describe('pageExec()', () => {
+    let sdk: AlipaySdk;
+    before(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+      });
+    });
+
+    it('post return form html', async () => {
+      const html = sdk.pageExec('alipay.trade.page.pay', {
+        method: 'POST',
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      assert(html.trim().startsWith('<form action="https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      assert(html.includes('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;:&quot;ALIPfdf1211sdfsd12gfddsgs3&quot;,&quot;product_code&quot;:&quot;FAST_INSTANT_TRADE_PAY&quot;,&quot;subject&quot;:&quot;abc&quot;,&quot;body&quot;:&quot;234&quot;,&quot;total_amount&quot;:&quot;0.01&quot;}" />'),
+        'should includes biz_content');
+      assert(html.includes(`<input type="hidden" name="alipay_sdk" value="${sdk.version}" />`),
+        'should includes sdk version');
+      assert(html.includes('<script>document.forms["alipaySDKSubmit'));
+    });
+
+    it('get return http url', async () => {
+      const result = sdk.pageExec('alipay.trade.page.pay', {
+        method: 'GET',
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      assert(result.startsWith('https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      const url = decodeURIComponent(result);
+      assert(url.includes('&biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}'));
+      assert(url.includes(`&alipay_sdk=${sdk.version}&`));
+    });
+  });
+
+  describe('sdkExec()', () => {
+    let sdk: AlipaySdk;
+    before(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+      });
+    });
+
+    it('should work', async () => {
+      const result = sdk.sdkExec('alipay.trade.app.pay', {
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+
+      assert(result.startsWith('method=alipay.trade.app.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      const urlDecodedStr = decodeURIComponent(result);
+      assert(urlDecodedStr.startsWith('method=alipay.trade.app.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      assert(urlDecodedStr.includes('&return_url=https://www.taobao.com&biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}&sign='));
+    });
+  });
+
+  describe('getSignStr()', () => {
+    let sdk: AlipaySdk;
+    before(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+      });
+    });
+
+    it('normal', () => {
+      const originStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},"sign":"P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}';
+
+      const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
+      assert.equal(signStr, '{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
+    });
+
+    it('include \\r\\n\\s', () => {
+      const originStr = `{"alipay_offline_material_image_upload_response"
+        :
+        {"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
+
+          "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
+
+      const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
+      assert.equal(signStr, '{"code":"10000","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
+    });
+
+    it('include sign key in data', () => {
+      const originStr = `{"alipay_offline_material_image_upload_response"
+        :
+        {"code":"10000","sign":"xxx","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"},
+
+          "sign"  :  "P8xrBWqZCUv11UrEBjhQ4Sk3hyj4607qehO2VbKIS0hWa4U+NeLlOftqTyhGv+x1lzfqN590Y/8CaNIzEEg06FiNWJlUFM/uEFJLzSKGse4MjHbblpiSzI3eCV5RzxH26wZbEd9wyVYYi0pHFBf35UrBva47g7b5EuKCHfoVA95/zin9fAyb3xhhiHhmfGaWIDV/1LmE2vtqtOHQnISbY/deC71U614ySZ3YB97ws8npCcCJ+tgZvhHPkMRGvmyYPCRDB/aIN/sKDSLtfPp0u8DxE8pHLvCHm3wR84MQxqNbKgpd8NTKNvH+obELsbCrqPhjW7qI48634qx6enDupw=="}`;
+
+      const signStr = sdk.getSignStr(originStr, 'alipay_offline_material_image_upload_response');
+      assert.equal(signStr, '{"code":"10000","sign":"xxx","msg":"Success","image_id":"Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=Zp1Nm6FDTZaEuSSniGd5awAAACMAAQED&zoom=original"}');
+    });
+  });
+
+  describe('checkResponseSign', () => {
+    let sdk: AlipaySdk;
+    beforeEach(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        alipayPublicKey,
+        camelcase: true,
+      });
+    });
+
+    it('should ignore check when alipayPublicKey is null', () => {
+      mm(sdk.config, 'alipayPublicKey', null);
+      const signStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"1ni-WScMQcWsJRE2AYCo9AAAACMAAQED","image_url":"http:\/\/oalipay-dl-django.alicdn.com\/rest\/1.0\/image?fileIds=1ni-WScMQcWsJRE2AYCo9AAAACMAAQED&zoom=original"},"sign":"K7s88WHQO91LPY+QGbdRtr3rXQWUxDEKvPrVsLfy+r9R4CSK1qbvHkrJ9DXwzm0pdTQPP8xbLl6rSsOiq33f32ZOhX/XzMbOfiC3OLnHHVaH7+rneNopUj1sZQDvz+dUoIMYSQHFLEECKADiJ66S8i5gXD1Hne7aj0b/1LYGPhtxbJdkT8OTDjxd/X/HmVy5xjZShOnM3WcwxUVNyqdOE2BEZbS8Q8P4W20PP/EhZ31N4mOIsCuUNiikhU0tnwjH2pHcv/fh7wzqkEhn1gIHc13o9O7xi4w1hHdQV811bn+n8d+98o+ETClebBQieqA+irBQaXvYTmZi3H+8RJiGwA=="}';
+
+      sdk.checkResponseSign(signStr, 'alipay_offline_material_image_upload_response', '', '');
+    });
+
+    it('should ignore check when alipayPublicKey is empty string', () => {
+      mm(sdk.config, 'alipayPublicKey', '');
+      const signStr = '{"alipay_offline_material_image_upload_response":{"code":"10000","msg":"Success","image_id":"1ni-WScMQcWsJRE2AYCo9AAAACMAAQED","image_url":"http:\\/\\/oalipay-dl-django.alicdn.com\\/rest\\/1.0\\/image?fileIds=1ni-WScMQcWsJRE2AYCo9AAAACMAAQED&zoom=original"},"sign":"K7s88WHQO91LPY+QGbdRtr3rXQWUxDEKvPrVsLfy+r9R4CSK1qbvHkrJ9DXwzm0pdTQPP8xbLl6rSsOiq33f32ZOhX/XzMbOfiC3OLnHHVaH7+rneNopUj1sZQDvz+dUoIMYSQHFLEECKADiJ66S8i5gXD1Hne7aj0b/1LYGPhtxbJdkT8OTDjxd/X/HmVy5xjZShOnM3WcwxUVNyqdOE2BEZbS8Q8P4W20PP/EhZ31N4mOIsCuUNiikhU0tnwjH2pHcv/fh7wzqkEhn1gIHc13o9O7xi4w1hHdQV811bn+n8d+98o+ETClebBQieqA+irBQaXvYTmZi3H+8RJiGwA=="}';
+      sdk.checkResponseSign(signStr, 'alipay_offline_material_image_upload_response', '', '');
+    });
+
+    it('should error when responseDataRaw is empty', () => {
+      assert.throws(() => {
+        sdk.checkResponseSign('', 'alipay_offline_material_image_upload_response', '', '');
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, '验签失败，服务端返回值为空无法进行验签');
+        return true;
+      });
+    });
+
+    it('should throw error when sign not match', () => {
+      // 从实测中获取，公钥修改后需要变更
+      const responseDataRaw = '{"alipay_open_file_upload_response":{"code":"10000","msg":"Success","file_id":"CAxAToWB1JsAAAAAAAAAAAAADgSLAQBr"},"sign":"F+LDzpTNiavn7xVZPGuPCSSVRSmWzJGgtuji6tVELGEaqMaNj0jRKXUEr5nloZJBBmwEnddOyCjjepMmrTKTvoOqQ0Efxpr/R1iEeHTHVbb/Q8TTh6Up5gHJDkILdaWS2q1cWeQ6VT+HQY9P3WRXS7uhILHuDODIhpAyCu5KhWGt0rMCIG+Im6NODJP2oohtSCtmTFXg58HH587Z2y2bdbjzOxLvzD9IrU1imghXQ2S/Q+wMIvRk9on6cWnBLkrNvJKapA2ReNGWOwyuASvB9zDVzhMPbR+3mfRGkVDxsq5HYLjBKGskJMXHw0HuugZij6ScRuaLPODhmHwr/pJ9yw=="}';
+      const serverSign = 'wrong-sing';
+      assert.throws(() => {
+        sdk.checkResponseSign(responseDataRaw, 'alipay_open_file_upload_response', serverSign, '');
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, '验签失败，服务端返回的 sign: \'wrong-sing\' 无效, validateStr: \'{"code":"10000","msg":"Success","file_id":"CAxAToWB1JsAAAAAAAAAAAAADgSLAQBr"}\'');
+        return true;
+      });
+    });
+
+    it('should work', () => {
+      // 从实测中获取，公钥修改后需要变更
+      const responseDataRaw = '{"alipay_open_file_upload_response":{"code":"10000","msg":"Success","file_id":"CAxAToWB1JsAAAAAAAAAAAAADgSLAQBr"},"sign":"F+LDzpTNiavn7xVZPGuPCSSVRSmWzJGgtuji6tVELGEaqMaNj0jRKXUEr5nloZJBBmwEnddOyCjjepMmrTKTvoOqQ0Efxpr/R1iEeHTHVbb/Q8TTh6Up5gHJDkILdaWS2q1cWeQ6VT+HQY9P3WRXS7uhILHuDODIhpAyCu5KhWGt0rMCIG+Im6NODJP2oohtSCtmTFXg58HH587Z2y2bdbjzOxLvzD9IrU1imghXQ2S/Q+wMIvRk9on6cWnBLkrNvJKapA2ReNGWOwyuASvB9zDVzhMPbR+3mfRGkVDxsq5HYLjBKGskJMXHw0HuugZij6ScRuaLPODhmHwr/pJ9yw=="}';
+      const serverSign = 'F+LDzpTNiavn7xVZPGuPCSSVRSmWzJGgtuji6tVELGEaqMaNj0jRKXUEr5nloZJBBmwEnddOyCjjepMmrTKTvoOqQ0Efxpr/R1iEeHTHVbb/Q8TTh6Up5gHJDkILdaWS2q1cWeQ6VT+HQY9P3WRXS7uhILHuDODIhpAyCu5KhWGt0rMCIG+Im6NODJP2oohtSCtmTFXg58HH587Z2y2bdbjzOxLvzD9IrU1imghXQ2S/Q+wMIvRk9on6cWnBLkrNvJKapA2ReNGWOwyuASvB9zDVzhMPbR+3mfRGkVDxsq5HYLjBKGskJMXHw0HuugZij6ScRuaLPODhmHwr/pJ9yw==';
+      sdk.checkResponseSign(responseDataRaw, 'alipay_open_file_upload_response', serverSign, '');
+    });
+  });
+
+  describe('checkNotifySign', () => {
+    let sdk: AlipaySdk;
+    beforeEach(() => {
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        alipayPublicKey: notifyAlipayPublicKeyV2,
+        camelcase: true,
+      });
+    });
+
+    it('should return false when alipayPublicKey is null', () => {
+      const sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey,
+        camelcase: true,
+      });
+      assert.equal(sdk.checkNotifySign({}), false);
+    });
+
+    it('should return false when postData.sign is null', () => {
+      assert.equal(sdk.checkNotifySign({}), false);
+    });
+
+    describe('verify sign should delete sign_type', () => {
+      beforeEach(() => {
+        const notifyAlipayPublicKeyV1 = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqObrdC7hrgAVM98tK0nv3hSQRGGKT4lBsQjHiGjeYZjOPIPHR5knm2jnnz/YGIXIofVHkA/tAlBAd5DrY7YpvI4tP5EONLtZKC2ghBMx7McI2wRD0xiqzxOQr1FuhZGJ8/AUokBzJrzY+aGX2xcOrxFYRlFilvVLTXg4LWjR1tdPkO6+i7wQZAIVMClPkwVRZEbaERRHlKqTzv2gGv5rDU8gRoe1LeaN+6BlbTqHWkQcNCUNrA8C6l17XAXGKDsm/9TFWwO8EPHHHCaQdjtV5/FdcWIt+L8SR1ss7EXTjYDFtxcKVv9rEoY1lX8T4mX+GbXfZHraG5NCF1+XioL5JwIDAQAB';
+        sdk = new AlipaySdk({
+          gateway: GATE_WAY,
+          appId: APP_ID,
+          privateKey,
+          alipayPublicKey: notifyAlipayPublicKeyV1,
+          camelcase: true,
+        });
+      });
+
+      it('with sign_type arguments verify success', () => {
+        const postData = {
+          gmt_create: '2019-08-15 15:56:22',
+          charset: 'utf-8',
+          seller_email: 'z97-yuquerevenue@service.aliyun.com',
+          subject: '语雀空间 500人规模',
+          sign:
+           'QfTb8tqE1BMhS5qAnXtvsF3/jBkEvu9q9en0pdbBUDDjvKycZhQb7h8GDs4FKfi049PynaNuatxSgLb/nLWZpXyyh0LEWdK2S6Ri7nPwrVgOs08zugLO20vOQz44y3ti2Ncm8/wZts1Fr2gZ7pShnVX3d1B50hbsXnObT1r/U8ONNQjWXd0HIul4TG+Q3fm3svmSvFEy0WnzuhcyHPX5Gm4ELNctL6Qd5YniGJFNcc7kopHYtI/XD9YCKCH6Ct02rzUs9i11C9CsadtZn+WhxF26Dqt9sGEFajkJ8cxUTLi8+VCpLHsgPE8P0y095uQcDdK0YjCh4x7wVSov+lrmOQ==',
+          buyer_id: '2088102534368455',
+          invoice_amount: '0.10',
+          notify_id: '2019081500222155624068450559358070',
+          fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
+          notify_type: 'trade_status_sync',
+          trade_status: 'TRADE_SUCCESS',
+          receipt_amount: '0.10',
+          buyer_pay_amount: '0.10',
+          sign_type: 'RSA2',
+          app_id: '2019073166072302',
+          seller_id: '2088531891668739',
+          gmt_payment: '2019-08-15 15:56:24',
+          notify_time: '2019-08-15 15:56:25',
+          version: '1.0',
+          out_trade_no: '20190815155618536-564-57',
+          total_amount: '0.10',
+          trade_no: '2019081522001468450512505578',
+          auth_app_id: '2019073166072302',
+          buyer_logon_id: 'xud***@126.com',
+          point_amount: '0.00',
+        };
+
+        assert.equal(sdk.checkNotifySign(postData), true);
+      });
+
+      it('without sign_type arguments verify success', () => {
+        const postData = {
+          gmt_create: '2019-08-15 15:56:22',
+          charset: 'utf-8',
+          seller_email: 'z97-yuquerevenue@service.aliyun.com',
+          subject: '语雀空间 500人规模',
+          sign:
+           'QfTb8tqE1BMhS5qAnXtvsF3/jBkEvu9q9en0pdbBUDDjvKycZhQb7h8GDs4FKfi049PynaNuatxSgLb/nLWZpXyyh0LEWdK2S6Ri7nPwrVgOs08zugLO20vOQz44y3ti2Ncm8/wZts1Fr2gZ7pShnVX3d1B50hbsXnObT1r/U8ONNQjWXd0HIul4TG+Q3fm3svmSvFEy0WnzuhcyHPX5Gm4ELNctL6Qd5YniGJFNcc7kopHYtI/XD9YCKCH6Ct02rzUs9i11C9CsadtZn+WhxF26Dqt9sGEFajkJ8cxUTLi8+VCpLHsgPE8P0y095uQcDdK0YjCh4x7wVSov+lrmOQ==',
+          buyer_id: '2088102534368455',
+          invoice_amount: '0.10',
+          notify_id: '2019081500222155624068450559358070',
+          fund_bill_list: [{ amount: '0.10', fundChannel: 'ALIPAYACCOUNT' }],
+          notify_type: 'trade_status_sync',
+          trade_status: 'TRADE_SUCCESS',
+          receipt_amount: '0.10',
+          buyer_pay_amount: '0.10',
+          app_id: '2019073166072302',
+          seller_id: '2088531891668739',
+          gmt_payment: '2019-08-15 15:56:24',
+          notify_time: '2019-08-15 15:56:25',
+          version: '1.0',
+          out_trade_no: '20190815155618536-564-57',
+          total_amount: '0.10',
+          trade_no: '2019081522001468450512505578',
+          auth_app_id: '2019073166072302',
+          buyer_logon_id: 'xud***@126.com',
+          point_amount: '0.00',
+        };
+        assert.equal(sdk.checkNotifySign(postData), true);
+      });
+
+      it('verify fail', () => {
+        const postData = {
+          app_id: '2018121762595097',
+          auth_app_id: '2018121762595097',
+          buyer_id: '2088512613526436',
+          buyer_logon_id: '152****6706',
+          buyer_pay_amount: '0.01',
+          charset: 'utf-8',
+          fund_bill_list: [{ amount: '0.01', fundChannel: 'PCREDIT' }],
+          gmt_create: '2019-05-23 14:13:56',
+          gmt_payment: '2019-05-23 14:17:13',
+          invoice_amount: '0.01',
+          notify_id: '2019052300222141714026431019971405',
+          notify_time: '2019-05-23 14:17:14',
+          notify_type: 'trade_status_sync',
+          out_trade_no: 'tpxy23962362669658',
+          point_amount: '0.00',
+          receipt_amount: '0.01',
+          seller_email: 'myapp@alitest.com',
+          seller_id: '2088331578818800',
+          sign: 'T946S2qyNFAXLhAaRgNMmatxH6SO3MyWYFnTamQOgW1iAcheL/Zz+VoizwvEc6mTEwYewvvKS1wNkMQ1oEajMUHv9+cXQ9IFvU/qKS9Ktvw5xHvCaK0fj7LsVcQ7VxfyT3kSvXUDfKDP4cHSPuSZKwM2ybkzr53bIH9OUTpTQd2d3J0rbdf76OoUt+XF9vwqj7OVE7AGjH2HPWp842DgL/YVy4qeA9N2uFKRevT3YUskjaRxuI/E66reNjTMFhbjEqGLKvMcDD4BaQXnibq9ojAj60589fBwzKk3yWsVQmqGfksMQoheVMtZ3lAw4o2ty3TFngbVFFLwgx8FDpBZ9Q==',
+          sign_type: 'RSA2',
+          subject: 'tpxy2222896485',
+          total_amount: '0.01',
+          trade_no: '111111112019052322001426431037869358',
+          trade_status: 'TRADE_SUCCESS',
+          version: '1.0',
+        };
+
+        assert.equal(sdk.checkNotifySign(postData), false);
+      });
+
+      it('verify with decode', () => {
+        assert.throws(() => {
+          sdk.checkNotifySign({
+            bizContent: '{"key":"value % has special charactar"}',
+            sign: 'test',
+          });
+        }, (err: any) => {
+          assert.equal(err.message, 'URI malformed');
+          return true;
+        });
+      });
+
+      it('verify without decode', () => {
+        const result = sdk.checkNotifySign({
+          bizContent: '{"key":"value % has special charactar"}',
+          sign: 'test',
+        }, true);
+        assert.equal(result, false);
+      });
+    });
+
+    describe('verify sign should not delete sign_type', () => {
+      it('with sign_type arguments verify success', () => {
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          sign_type: 'RSA2',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+
+        assert.equal(sdk.checkNotifySign(postData), true);
+      });
+
+      it('without sign_type arguments verify success', () => {
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+
+        assert.equal(sdk.checkNotifySign(postData), true);
+      });
+
+      it('verify fail', () => {
+        const postData = {
+          app_id: '2017122801303261',
+          charset: 'UTF-8',
+          commodity_order_id: '2019030800000018079639',
+          contactor: '技术支持测试的公司',
+          merchant_pid: '2088721996721370',
+          method: 'alipay.open.servicemarket.order.notify',
+          name: '技术支持测试的公司',
+          notify_id: '2019030800222102023008121054923345',
+          notify_time: '2019-03-08 10:20:23',
+          notify_type: 'servicemarket_order_notify',
+          order_item_num: '1',
+          order_ticket: '29b1c37d99ab48c5bd5bdaeaeaefbB37',
+          order_time: '2019-03-08 10:20:08',
+          phone: '17826894615',
+          service_code: '58621634111',
+          sign:
+           'MsK5SCw8oqLw4f0hiNSd5OVGXxBY3wnQeT8vn5PklJSZFWSZbK4hQbNvkp4ZezeXQH514cEv0ul6Qow8yh6e6yM06LfEL+EZjcpZ0nxzFGRNQ5qq2AUc1OaXQdk92AGvxh+Iq4NGpPQFBd4D8EBJa3NJd8+czMfQskceosOQFqUtLQMYa5DPs+VpN7VM5BdXjaVIuKn5d9Wm2B9dI9ObIM+YRySDkZZPv14DVmUvcrcqJfOR8aHvtSd7B4l92wUQPQgQKNcOQho7xOHS/Bk+Y74AZL2y7TkNmdDoq9OGsThuF5tDW9rI9nVwXxOtsuB+bstra+W7aw9x9DvkKgdSRw==',
+          sign_type: 'RSA2',
+          timestamp: '2019-03-08 10:20:23',
+          title: '麦禾商城模版',
+          total_price: '0.00',
+          version: '1.0',
+        };
+
+        assert.equal(sdk.checkNotifySign(postData), false);
+      });
+    });
+  });
+
+  describe('exec() with pkcs8', () => {
+    let sdk: AlipaySdk;
+
+    beforeEach(() => {
+      const pkcs8PrivateKey = readFixturesFile('app-private-key-pkcs8.pem', 'ascii');
+      sdk = new AlipaySdk({
+        gateway: GATE_WAY,
+        appId: APP_ID,
+        privateKey: pkcs8PrivateKey,
+        signType: 'RSA2',
+        alipayPublicKey,
+        camelcase: true,
+        timeout: 10000,
+        keyType: 'PKCS8',
+      });
+    });
+
+    // 沙箱网关环境可能不稳定，仅当成功返回时校验。
+    it('execute with validateSign is true', async () => {
+      const result = await sdk.exec('alipay.offline.market.shop.category.query', {
+        bizContent: {},
+      });
+      console.log(result);
+      if (result.code === '10000') {
+        assert(result.shopCategoryConfigInfos);
+        assert(result.shopCategoryConfigInfos[0]);
+      }
+    });
+  });
 });

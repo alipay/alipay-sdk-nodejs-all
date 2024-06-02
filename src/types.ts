@@ -22,9 +22,15 @@ export interface AlipaySdkConfig {
   charset?: 'utf-8';
   /** api 版本 */
   version?: '1.0';
-  /** 指定 urllib 库 */
-  urllib?: any;
-  /** 指定private key类型, 默认： PKCS1, PKCS8: PRIVATE KEY, PKCS1: RSA PRIVATE KEY */
+  /**
+   * @deprecated 此参数无废弃，会被忽略
+   */
+  urllib?: unknown;
+  /**
+   * 指定p rivate key 类型, 默认：PKCS1
+   * - PKCS8: PRIVATE KEY
+   * - PKCS1: RSA PRIVATE KEY
+   */
   keyType?: 'PKCS1' | 'PKCS8';
   /** 应用公钥证书文件路径 */
   appCertPath?: string;
