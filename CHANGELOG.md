@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.1.0...v4.2.0) (2024-06-03)
+
+
+### Features
+
+* curl 支持 AES 加密请求 ([#127](https://github.com/alipay/alipay-sdk-nodejs-all/issues/127)) ([722a4a7](https://github.com/alipay/alipay-sdk-nodejs-all/commit/722a4a77099cf62020496fe9259b8db79228feee))
+
 ## [4.1.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.0.0...v4.1.0) (2024-06-02)
 
 
