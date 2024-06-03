@@ -50,7 +50,7 @@ export interface AlipaySdkConfig {
   alipayPublicCertContent?: string | Buffer;
   /** 支付宝公钥证书sn */
   alipayCertSn?: string;
-  /** AES密钥，调用AES加解密相关接口时需要 */
+  /** AES 密钥，调用 AES 加解密相关接口时需要 */
   encryptKey?: string;
   /** 服务器地址 */
   wsServiceUrl?: string;

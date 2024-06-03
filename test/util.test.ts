@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { sign } from '../src/util.js';
+import { sign, aesDecryptText, aesEncryptText } from '../src/util.js';
 import { readFixturesFile } from './helper.js';
 
 const privateKey = readFixturesFile('app-private-key.pem');
@@ -39,6 +39,18 @@ describe('test/util.test.ts', () => {
       } as any);
       assert.equal(data2.biz_content, '{"a_b":1,"a_bc":"Ab"}');
       assert.equal(data.sign, data2.sign);
+    });
+  });
+
+  describe('aesDecryptText(), aesEncryptText()', () => {
+    it('should work', () => {
+      const aesKey = 'aYA0GP8JEW+D7/UFaskCWA==';
+      for (let i = 0; i < 10000; i++) {
+        const plainText = `{"foo": "bar   很长很长", "now": ${Date()}}`;
+        const encryptedText = aesEncryptText(plainText, aesKey);
+        assert(encryptedText.length > plainText.length);
+        assert.equal(aesDecryptText(encryptedText, aesKey), plainText);
+      }
     });
   });
 });

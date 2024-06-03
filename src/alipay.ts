@@ -10,7 +10,11 @@ import FormStream from 'formstream';
 import { Stream as SSEStream } from 'sse-decoder';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
-import { sign, ALIPAY_ALGORITHM_MAPPING, aesDecrypt, decamelize, createRequestId, readableToBytes } from './util.js';
+import {
+  sign, ALIPAY_ALGORITHM_MAPPING, decamelize, createRequestId, readableToBytes,
+  aesDecrypt, aesEncryptText,
+  aesDecryptText,
+} from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
 
 export const AlipayFormStream = FormStream;
@@ -30,6 +34,7 @@ export interface AlipayRequestErrorSupportLink {
 }
 
 export interface AlipayRequestErrorOptions extends ErrorOptions {
+  /** 错误码 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1 */
   code?: string;
   traceId?: string;
   responseHttpStatus?: number;
@@ -107,7 +112,7 @@ export interface IRequestParams {
   [key: string]: any;
   /** 业务请求参数 */
   bizContent?: Record<string, any>;
-  /** 自动AES加解密 */
+  /** 自动 AES 加解密 */
   needEncrypt?: boolean;
 }
 
@@ -134,6 +139,11 @@ export interface AlipayCURLOptions {
   form?: AlipayFormData | FormStream;
   /** 调用方的 requestId，用于定位一次请求，需要每次请求保持唯一 */
   requestId?: string;
+  /**
+   * 请求内容加密，目前只支持 AES
+   * 注意：只支持 body 参数加密，如果同时设置 form 和 needEncrypt，会抛 TypeError 异常
+   */
+  needEncrypt?: boolean;
 }
 
 /**
@@ -201,7 +211,8 @@ export class AlipaySdk {
   }
 
   // 格式化请求 url（按规范把某些固定的参数放入 url）
-  private formatUrl(url: string, params: Record<string, string>): { execParams: Record<string, string>, url: string } {
+  private formatUrl(url: string, params: Record<string, string>):
+  { execParams: Record<string, string>, url: string } {
     const requestUrl = new URL(url);
     // 需要放在 url 中的参数列表
     const urlArgs = [
@@ -230,7 +241,8 @@ export class AlipaySdk {
    * Alipay OpenAPI V3 with JSON Response
    * @see https://opendocs.alipay.com/open-v3/054kaq?pathHash=b3eb94e6
    */
-  public async curl<T = any>(httpMethod: HttpMethod, path: string, options?: AlipayCURLOptions): Promise<AlipayCommonResult<T>> {
+  public async curl<T = any>(httpMethod: HttpMethod, path: string, options?: AlipayCURLOptions):
+  Promise<AlipayCommonResult<T>> {
     return await this.#curl<T>(httpMethod, path, options, 'json') as AlipayCommonResult<T>;
   }
 
@@ -297,13 +309,11 @@ export class AlipaySdk {
       dataType: 'json' | 'stream' = 'json'): Promise<AlipayCommonResult<T> | AlipayCommonResultStream> {
     httpMethod = httpMethod.toUpperCase() as HttpMethod;
     let url = `${this.config.endpoint}${path}`;
-    // TODO: 需要支持 app_cert_sn
-    const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
     let httpRequestUrl = path;
     let httpRequestBody = '';
     const requestOptions: RequestOptions = {
       method: httpMethod,
-      dataType,
+      dataType: dataType === 'stream' ? 'stream' : 'text',
       timeout: this.config.timeout,
     };
     if (dataType === 'stream') {
@@ -311,13 +321,11 @@ export class AlipaySdk {
       requestOptions.dispatcher = http2Agent;
     }
     const requestId = options?.requestId ?? createRequestId();
+
     requestOptions.headers = {
       'user-agent': this.version,
       'alipay-request-id': requestId,
       accept: 'application/json',
-      // 请求须设置 HTTP 头部： Content-Type: application/json, Accept: application/json
-      // 加密请求和文件上传 API 除外。
-      'content-type': 'application/json',
     };
     if (options?.query) {
       const urlObject = new URL(url);
@@ -333,6 +341,9 @@ export class AlipaySdk {
       }
     } else {
       if (options?.form) {
+        if (options.needEncrypt) {
+          throw new TypeError('提交 form 数据不支持加密内容');
+        }
         // 文件上传，走 multipart/form-data
         let form: FormStream;
         if (options.form instanceof AlipayFormData) {
@@ -364,12 +375,27 @@ export class AlipaySdk {
         requestOptions.content = form as any;
         Object.assign(requestOptions.headers, form.headers());
       } else {
-        // 普通模式，走 application/json
+        // 普通请求
+        let contentType = 'application/json';
         httpRequestBody = options?.body ? JSON.stringify(options.body) : '';
+        if (options?.needEncrypt) {
+          if (!this.config.encryptKey) {
+            throw new TypeError('请配置 config.encryptKey 才能通过 needEncrypt = true 进行请求内容加密调用');
+          }
+          // 加密请求
+          contentType = 'text/plain';
+          // 目前只支持 AES
+          requestOptions.headers['alipay-encryption-algm'] = 'AES';
+          requestOptions.headers['alipay-encrypt-type'] = 'AES';
+          httpRequestBody = aesEncryptText(httpRequestBody, this.config.encryptKey);
+        }
+        requestOptions.headers['content-type'] = contentType;
         requestOptions.content = httpRequestBody;
       }
     }
-    // TODO: 需要支撑 appAuthToken
+    // TODO: 需要支持 app_cert_sn
+    const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
+    // TODO: 需要支持 appAuthToken
     const signString = `${authString}\n${httpMethod}\n${httpRequestUrl}\n${httpRequestBody}\n`;
     const signature = createSign('RSA-SHA256')
       .update(signString, 'utf-8')
@@ -377,20 +403,21 @@ export class AlipaySdk {
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
     debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
-    debug('[%s] curl %s %s, with body: %s, headers: %j, dataType: %s',
-      Date(), httpMethod, url, httpRequestBody, requestOptions.headers, dataType);
+    debug('curl %s %s, with body: %s, headers: %j, dataType: %s',
+      httpMethod, url, httpRequestBody, requestOptions.headers, dataType);
     let httpResponse: HttpClientResponse<any>;
     try {
       httpResponse = await urllib.request(url, requestOptions);
     } catch (err: any) {
-      debug('HttpClient Request error: %s', err);
+      debug('HttpClient Request error: %s', err.message);
+      debug(err);
       throw new AlipayRequestError(`HttpClient Request error, ${err.message}`, {
         cause: err,
         traceId: requestId,
       });
     }
     const traceId = httpResponse.headers['alipay-trace-id'] as string ?? requestId;
-    debug('curl response status: %s, headers: %j, raw body: %o, traceId: %s',
+    debug('curl response status: %s, headers: %j, raw text body: %s, traceId: %s',
       httpResponse.status, httpResponse.headers, httpResponse.data, traceId);
     // 错误码封装 https://opendocs.alipay.com/open-v3/054fcv?pathHash=7bdeefa1
     if (httpResponse.status >= 400) {
@@ -405,7 +432,7 @@ export class AlipaySdk {
         errorData = JSON.parse(bytes.toString());
         debug('stream to errorData: %j', errorData);
       } else {
-        errorData = httpResponse.data;
+        errorData = JSON.parse(httpResponse.data);
       }
       throw new AlipayRequestError(errorData.message, {
         code: errorData.code,
@@ -415,14 +442,27 @@ export class AlipaySdk {
       });
     }
     if (dataType === 'stream') {
+      // 流式响应 OpenAI 不会加密，不需要处理
       return {
         stream: httpResponse.res,
         responseHttpStatus: httpResponse.status,
         traceId,
       } satisfies AlipayCommonResultStream;
     }
+    let responseDataText = httpResponse.data as string;
+    if (options?.needEncrypt) {
+      responseDataText = aesDecryptText(responseDataText, this.config.encryptKey);
+      if (!responseDataText) {
+        throw new AlipayRequestError('解密失败，请确认 config.encryptKey 设置正确', {
+          code: 'decrypt-error',
+          responseDataRaw: httpResponse.data,
+          responseHttpStatus: httpResponse.status,
+          traceId,
+        });
+      }
+    }
     return {
-      data: httpResponse.data,
+      data: JSON.parse(responseDataText),
       responseHttpStatus: httpResponse.status,
       traceId,
     } satisfies AlipayCommonResult<T>;

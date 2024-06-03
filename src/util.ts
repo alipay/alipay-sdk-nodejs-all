@@ -14,32 +14,41 @@ export const ALIPAY_ALGORITHM_MAPPING = {
   RSA2: 'RSA-SHA256',
 };
 
+// https://opendocs.alipay.com/common/02mse3#NodeJS%20%E8%A7%A3%E5%AF%86%E7%A4%BA%E4%BE%8B
+// 初始向量的方法, 全部为0. 这里的写法适合于其它算法,针对AES算法的话,IV值一定是128位的(16字节)
+// https://opendocs.alipay.com/open-v3/054l3e?pathHash=5d1dc939#%E8%AF%B7%E6%B1%82%E6%8A%A5%E6%96%87%E5%8A%A0%E5%AF%86
+const IV = CryptoJS.enc.Hex.parse('00000000000000000000000000000000');
+
 function parseKey(aesKey: string) {
   return {
-    // padEnd('', 32, '0'): 00000000000000000000000000000000
-    iv: CryptoJS.enc.Hex.parse('00000000000000000000000000000000'),
+    iv: IV,
     key: CryptoJS.enc.Base64.parse(aesKey),
   };
 }
 
-// 先加密后加签
-function aesEncrypt(data: any, aesKey: string) {
-  const {
-    iv,
-    key,
-  } = parseKey(aesKey);
-  const cipherText = CryptoJS.AES.encrypt(JSON.stringify(data), key, {
-    iv,
-  }).toString();
+export function aesEncryptText(plainText: string, aesKey: string) {
+  const { iv, key } = parseKey(aesKey);
+  const encryptedText = CryptoJS.AES.encrypt(plainText, key, { iv }).toString();
+  return encryptedText;
+}
 
-  return cipherText;
+export function aesDecryptText(encryptedText: string, aesKey: string) {
+  const { iv, key } = parseKey(aesKey);
+  const bytes = CryptoJS.AES.decrypt(encryptedText, key, { iv });
+  const plainText = bytes.toString(CryptoJS.enc.Utf8);
+  return plainText;
+}
+
+// 先加密后加签，aesKey 是支付宝开放平台返回的 base64 格式加密 key
+export function aesEncrypt(data: object, aesKey: string) {
+  const plainText = JSON.stringify(data);
+  return aesEncryptText(plainText, aesKey);
 }
 
 // 解密
-export function aesDecrypt(data: string, aesKey: string) {
-  const { iv, key } = parseKey(aesKey);
-  const bytes = CryptoJS.AES.decrypt(data, key, { iv });
-  const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+export function aesDecrypt(encryptedText: string, aesKey: string): object {
+  const plainText = aesDecryptText(encryptedText, aesKey);
+  const decryptedData = JSON.parse(plainText);
   return decryptedData;
 }
 

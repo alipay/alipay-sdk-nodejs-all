@@ -408,7 +408,7 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  describe('sse(), curlStream()', () => {
+  describe('sse(), curlStream(), curl() with needEncrypt = true', () => {
     if (!process.env.TEST_ALIPAY_APP_ID) {
       return;
     }
@@ -416,9 +416,9 @@ describe('test/alipay.test.ts', () => {
     const sdk = new AlipaySdk({
       appId: process.env.TEST_ALIPAY_APP_ID,
       privateKey: process.env.TEST_ALIPAY_APP_PRIVATE_KEY!,
-      signType: 'RSA2',
       alipayPublicKey: process.env.TEST_ALIPAY_PUBLIC_KEY,
       timeout: 10000,
+      encryptKey: process.env.TEST_ALIPAY_APP_ENCRYPT_KEY,
     });
 
     it('SSE 请求成功', async () => {
@@ -447,24 +447,24 @@ describe('test/alipay.test.ts', () => {
       }
       assert(count >= 2);
 
-      // const iterator2 = sdk.sse('POST', url, {
-      //   body: {
-      //     agent_id: agentId,
-      //     outer_user_id: agentId,
-      //     query: 'hello world',
-      //     request_id: randomUUID(),
-      //   },
-      // });
-      // count = 0;
-      // for await (const item of iterator2) {
-      //   console.log(item);
-      //   assert(item.event);
-      //   assert(item.data);
-      //   assert.equal(typeof item.data, 'string');
-      //   count++;
-      // }
-      // assert(count >= 2);
-
+      const iterator2 = sdk.sse('POST', url, {
+        body: {
+          agent_id: agentId,
+          outer_user_id: agentId,
+          query: '你是谁',
+          request_id: randomUUID(),
+        },
+        needEncrypt: true,
+      });
+      count = 0;
+      for await (const item of iterator2) {
+        console.log(item);
+        assert(item.event);
+        assert(item.data);
+        assert.equal(typeof item.data, 'string');
+        count++;
+      }
+      assert(count >= 2);
       // 并发
       // await Promise.all([
       //   (async () => {
@@ -544,6 +544,67 @@ describe('test/alipay.test.ts', () => {
         assert.equal(err.code, 'invalid-method');
         assert.equal(err.responseHttpStatus, 400);
         assert.match(err.message, /不存在的方法名 \(traceId: \w+\)/);
+        return true;
+      });
+    });
+
+    it('POST /v3/alipay/user/deloauth/detail/query with needEncrypt = true', async () => {
+      // https://opendocs.alipay.com/open-v3/668cd27c_alipay.user.deloauth.detail.query?pathHash=3ab93168
+      const result = await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+        body: {
+          date: '20230102',
+          offset: 20,
+          limit: 1,
+        },
+        needEncrypt: true,
+      });
+      // console.log(result);
+      assert.deepEqual(result.data, {});
+      assert.equal(result.responseHttpStatus, 200);
+    });
+
+    it('模拟解密失败，需要处理空字符串', async () => {
+      const mockPool = mockAgent.get('https://openapi.alipay.com');
+      mockPool.intercept({
+        path: '/v3/alipay/user/deloauth/detail/query',
+        method: 'POST',
+      }).reply(200, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW', {
+        headers: {
+          'alipay-trace-id': 'mock-trace-id',
+        },
+      });
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+          needEncrypt: true,
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.equal(err.message, '解密失败，请确认 config.encryptKey 设置正确 (traceId: mock-trace-id)');
+        assert.equal(err.code, 'decrypt-error');
+        assert.equal(err.responseDataRaw, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW');
+        return true;
+      });
+    });
+
+    it('POST /v3/alipay/user/deloauth/detail/query-404 with needEncrypt = true', async () => {
+      // mock api not exists
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query-404', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+          needEncrypt: true,
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.match(err.message, /不存在的方法名/);
         return true;
       });
     });
