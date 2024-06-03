@@ -342,7 +342,7 @@ export class AlipaySdk {
     } else {
       if (options?.form) {
         if (options.needEncrypt) {
-          throw new TypeError('提交 form 数据不支持加密内容');
+          throw new TypeError('提交 form 数据不支持内容加密');
         }
         // 文件上传，走 multipart/form-data
         let form: FormStream;

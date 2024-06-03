@@ -591,6 +591,43 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
+    it('encryptKey 没有配置', async () => {
+      mm(sdk.config, 'encryptKey', '');
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+          needEncrypt: true,
+        });
+      }, (err: any) => {
+        console.log(err);
+        assert.equal(err.name, 'TypeError');
+        assert.equal(err.message, '请配置 config.encryptKey 才能通过 needEncrypt = true 进行请求内容加密调用');
+        return true;
+      });
+    });
+
+    it('form 不支持加密', async () => {
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          form: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          } as any,
+          needEncrypt: true,
+        });
+      }, (err: any) => {
+        console.log(err);
+        assert.equal(err.name, 'TypeError');
+        assert.equal(err.message, '提交 form 数据不支持内容加密');
+        return true;
+      });
+    });
+
     it('POST /v3/alipay/user/deloauth/detail/query-404 with needEncrypt = true', async () => {
       // mock api not exists
       await assert.rejects(async () => {
