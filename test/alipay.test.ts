@@ -136,7 +136,10 @@ describe('test/alipay.test.ts', () => {
 
       const uploadResult = await sdkStable.curl<{
         file_id: string;
-      }>('POST', '/v3/alipay/open/file/upload', { form });
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        requestTimeout: 10000,
+      });
       // console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);

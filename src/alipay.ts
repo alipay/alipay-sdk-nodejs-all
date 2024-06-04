@@ -154,6 +154,8 @@ export interface AlipayCURLOptions {
    * 应用授权令牌，代商家调用支付宝开放接口必填
    */
   appAuthToken?: string;
+  /** 请求超时时间，默认使用 config.timeout */
+  requestTimeout?: number;
 }
 
 /**
@@ -324,7 +326,7 @@ export class AlipaySdk {
     const requestOptions: RequestOptions = {
       method: httpMethod,
       dataType: dataType === 'stream' ? 'stream' : 'text',
-      timeout: this.config.timeout,
+      timeout: options?.requestTimeout ?? this.config.timeout,
     };
     if (dataType === 'stream') {
       // 使用 HTTP/2 请求才支持流式响应
