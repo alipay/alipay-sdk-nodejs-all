@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.4.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.3.0...v4.4.0) (2024-06-04)
+
+
+### Features
+
+* 新增 pageExecute 和 sdkExecute 别名 ([#129](https://github.com/alipay/alipay-sdk-nodejs-all/issues/129)) ([c9caa6d](https://github.com/alipay/alipay-sdk-nodejs-all/commit/c9caa6dbc33b2fe306a004f6837be3581e17e5e2))
+
 ## [4.3.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.2.0...v4.3.0) (2024-06-04)
 
 
