@@ -36,19 +36,19 @@ export interface AlipaySdkConfig {
   appCertPath?: string;
   /** 应用公钥证书文件内容 */
   appCertContent?: string | Buffer;
-  /** 应用公钥证书sn */
+  /** 应用公钥证书sn，不需要手动设置，会根据 appCertPath 自动计算出来 */
   appCertSn?: string;
   /** 支付宝根证书文件路径 */
   alipayRootCertPath?: string;
   /** 支付宝根证书文件内容 */
   alipayRootCertContent?: string | Buffer;
-  /** 支付宝根证书sn */
+  /** 支付宝根证书sn，不需要手动设置，会根据 alipayRootCertPath 自动计算出来 */
   alipayRootCertSn?: string;
   /** 支付宝公钥证书文件路径 */
   alipayPublicCertPath?: string;
   /** 支付宝公钥证书文件内容 */
   alipayPublicCertContent?: string | Buffer;
-  /** 支付宝公钥证书sn */
+  /** 支付宝公钥证书sn，不需要手动设置，会根据 alipayPublicCertPath 自动计算出来 */
   alipayCertSn?: string;
   /** AES 密钥，调用 AES 加解密相关接口时需要 */
   encryptKey?: string;

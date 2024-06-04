@@ -56,9 +56,9 @@ const alipaySdk = new AlipaySdk({
   // 设置应用 ID
   appId: 'your-APPID',
   // 设置应用私钥
-  privateKey: fs.readFileSync('private-key.pem', 'ascii'),
+  privateKey: fs.readFileSync('/path/to/private-key.pem', 'ascii'),
   // 设置支付宝公钥
-  alipayPublicKey: fs.readFileSync('alipay-public-key.pem', 'ascii'),
+  alipayPublicKey: fs.readFileSync('/path/to/alipay-public-key.pem', 'ascii'),
   // 密钥类型，请与生成的密钥格式保持一致，参考平台配置一节
   // keyType: 'PKCS1',
   // 设置网关地址，默认是 https://openapi.alipay.com
@@ -73,11 +73,11 @@ import { AlipaySdk } from 'alipay-sdk';
 
 const alipaySdk = new AlipaySdk({
   appId: '2016123456789012',
-  privateKey: fs.readFileSync('private-key.pem', 'ascii'),
+  privateKey: fs.readFileSync('/path/to/private-key.pem', 'ascii'),
   // 传入支付宝根证书、支付宝公钥证书和应用公钥证书。
-  alipayRootCertPath: path.join(__dirname, 'alipayRootCert.crt'),
-  alipayPublicCertPath: path.join(__dirname, 'alipayCertPublicKey_RSA2.crt'),
-  appCertPath: path.join(__dirname, 'appCertPublicKey.crt'),
+  alipayRootCertPath: '/path/to/alipayRootCert.crt',
+  alipayPublicCertPath: '/path/to/alipayCertPublicKey_RSA2.crt',
+  appCertPath: '/path/to/appCertPublicKey.crt',
 });
 ```
 
@@ -388,6 +388,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | options.requestId | `string` | 调用方的 requestId，不填会默认生成 uuid v4 | 否 |
 | options.needEncrypt | `boolean` | 自动 AES 加解密，默认值是 `false` | 否 |
 | options.appAuthToken | `string` | [应用授权令牌](https://opendocs.alipay.com/isv/10467/xldcyq?pathHash=abce531a)，代商家调用支付宝开放接口必填 | 否 |
+| options.requestTimeout | `number` | 请求超时时间，默认使用 `config.timeout` | 否 |
 
 #### `AlipayCommonResult<T>`
 

@@ -154,6 +154,8 @@ export interface AlipayCURLOptions {
    * 应用授权令牌，代商家调用支付宝开放接口必填
    */
   appAuthToken?: string;
+  /** 请求超时时间，默认使用 config.timeout */
+  requestTimeout?: number;
 }
 
 /**
@@ -324,7 +326,7 @@ export class AlipaySdk {
     const requestOptions: RequestOptions = {
       method: httpMethod,
       dataType: dataType === 'stream' ? 'stream' : 'text',
-      timeout: this.config.timeout,
+      timeout: options?.requestTimeout ?? this.config.timeout,
     };
     if (dataType === 'stream') {
       // 使用 HTTP/2 请求才支持流式响应
@@ -403,7 +405,20 @@ export class AlipaySdk {
         requestOptions.content = httpRequestBody;
       }
     }
+    if (this.config.alipayRootCertSn) {
+      requestOptions.headers['alipay-root-cert-sn'] = this.config.alipayRootCertSn;
+    }
     // 签名规则 https://opendocs.alipay.com/open-v3/054q58?pathHash=474929ac#%E6%99%AE%E9%80%9A%E8%AF%B7%E6%B1%82
+    // authString 拼接格式：
+    //
+    // ```txt
+    // app_id=${app_id},app_cert_sn=${app_cert_sn},nonce=${nonce},timestamp=${timestamp}
+    // ```
+    let authString = `app_id=${this.config.appId}`;
+    if (this.config.appCertSn) {
+      authString += `,app_cert_sn=${this.config.appCertSn}`;
+    }
+    authString += `,nonce=${randomUUID()},timestamp=${Date.now()}`;
     // 签名字符串拼接格式：
     //
     // ```txt
@@ -413,9 +428,6 @@ export class AlipaySdk {
     // ${httpRequestBody}\n
     // ${appAuthToken}\n
     // ```
-    //
-    // TODO: 需要支持 app_cert_sn
-    const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
     let signString = `${authString}\n${httpMethod}\n${httpRequestUrl}\n${httpRequestBody}\n`;
     if (options?.appAuthToken) {
       requestOptions.headers['alipay-app-auth-token'] = options.appAuthToken;
