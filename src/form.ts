@@ -29,7 +29,7 @@ export interface IField {
 }
 
 export class AlipayFormData {
-  private method: 'get' | 'post';
+  private method: string;
   public files: IFile[];
   public fields: IField[];
 
@@ -47,8 +47,8 @@ export class AlipayFormData {
    * 设置 method
    * post、get 的区别在于 post 会返回 form 表单，get 返回 url
    */
-  setMethod(method: 'get' | 'post') {
-    this.method = method;
+  setMethod(method: string) {
+    this.method = method.toLowerCase();
   }
 
   /**
