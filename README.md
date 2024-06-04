@@ -112,13 +112,13 @@ console.log(result);
 
 ## 快速使用
 
-### curl 示例接口
+### curl 示例代码
 
 用于向支付宝服务器发起请求，与具体接口相关的业务参数。
 下面以 [统一收单交易支付接口](https://opendocs.alipay.com/open-v3/08c7f9f8_alipay.trade.pay?scene=32&pathHash=8bf49b74) 为示例
 
 ```ts
-const result = await alipay.curl('POST', '/v3/alipay/trade/pay', {
+const result = await alipaySdk.curl('POST', '/v3/alipay/trade/pay', {
   body: {
     notify_url: 'http://www.your-notify.com/notify', // 通知回调地址
     out_trade_no: '商家的交易码，需保持唯一性',
@@ -149,7 +149,7 @@ import { AlipayFormData } from 'alipay-sdk';
 const form = new AlipayFormData();
 form.addFile('file_content', '图片.jpg', path.join(__dirname, './test.jpg'));
 
-const uploadResult = await sdkStable.curl<{
+const uploadResult = await alipaySdk.curl<{
   file_id: string;
 }>('POST', '/v3/alipay/open/file/upload', {
   form,
@@ -166,9 +166,9 @@ console.log(uploadResult);
 // }
 ```
 
-### pageExec 示例接口
+### pageExecute 示例代码
 
-`pageExec` 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，
+`pageExecute` 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，
 如电脑网站支付 [alipay.trade.page.pay](https://opendocs.alipay.com/open/028r8t?scene=22) 等接口。
 
 表单示例：
@@ -183,8 +183,7 @@ const bizContent = {
 };
 
 // 支付页面接口，返回 HTML 代码片段，内容为 Form 表单
-const html = sdk.pageExec('alipay.trade.page.pay', {
-  method: 'POST',
+const html = alipaySdk.pageExecute('alipay.trade.page.pay', 'POST', {
   bizContent,
   returnUrl: 'https://www.taobao.com'
 });
@@ -202,8 +201,7 @@ const html = sdk.pageExec('alipay.trade.page.pay', {
 
 ```ts
 // 支付页面接口，返回支付链接，交由用户打开，会跳转至支付宝网站
-const url = sdk.pageExec('alipay.trade.page.pay', {
-  method: 'GET',
+const url = sdk.pageExecute('alipay.trade.page.pay', 'GET', {
   bizContent,
   returnUrl: 'https://www.taobao.com'
 });
@@ -211,14 +209,14 @@ const url = sdk.pageExec('alipay.trade.page.pay', {
 // 返回示例：https://openapi.alipay.com/gateway.do?method=alipay.trade.app.pay&app_id=2021002182632749&charset=utf-8&version=1.0&sign_type=RSA2&timestamp=2023-02-28%2011%3A46%3A35&app_auth_token=202302BBbcfaf3bbfa99e8a6913F10&sign=TPi33NcaKLRBLJDofon84D8itMoBkVAdJsfmIiQDScEw4NHAklXvcvn148A2t47YxDSK0urBnhS0%2BEV%2BVR6h6aKgp931%2FfFbG1I3SAguMjMbr23gnbS68d4spcQ%3D%3D&alipay_sdk=alipay-sdk-nodejs-3.3.0&biz_content=blabla
 ```
 
-### sdkExec 示例接口
+### sdkExecute 示例代码
 
-`sdkExec` 方法主要是服务端生成请求字符串使用的，不会直接支付扣款，需传值到客户端进行调用收银台输入密码完成支付，
+`sdkExecute` 方法主要是服务端生成请求字符串使用的，不会直接支付扣款，需传值到客户端进行调用收银台输入密码完成支付，
 如 App 支付接口 [alipay.trade.app.pay](https://opendocs.alipay.com/apis/api_1/alipay.trade.app.pay)。
 
 ```ts
 // App 支付接口，生成请求字符串，
-const orderStr = sdk.sdkExec('alipay.trade.app.pay', {
+const orderStr = sdk.sdkExecute('alipay.trade.app.pay', {
   bizContent: {
     out_trade_no: "ALIPfdf1211sdfsd12gfddsgs3",
     product_code: "FAST_INSTANT_TRADE_PAY",
@@ -250,7 +248,7 @@ my.tradePay({
 });
 ```
 
-### exec 示例接口（已废弃，请使用 curl 代替）
+### exec 示例代码（已废弃，请使用 curl 代替）
 
 用于向支付宝服务器发起请求。与具体接口相关的业务参数，需要放在 `bizContent` 中。
 
@@ -400,7 +398,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | responseHttpStatus | HTTP 接口响应状态码 | `number` | 是 |
 | traceId | HTTP 接口响应 trace id | `string` | 是 |
 
-### alipaySdk.sdkExec(method, params) ⇒ `string`
+### alipaySdk.sdkExecute(method, params) ⇒ `string`
 
 生成请求字符串，用于客户端进行调用
 
@@ -412,7 +410,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | params | `IRequestParams` | 请求参数 |
 | params.bizContent | `object` | 业务请求参数 |
 
-### alipaySdk.pageExec(method, params) ⇒ `string`
+### alipaySdk.pageExecute(method, params) ⇒ `string`
 
 生成网站接口请求链接 URL 或 POST 表单 HTML
 
