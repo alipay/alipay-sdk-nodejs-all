@@ -144,6 +144,10 @@ export interface AlipayCURLOptions {
    * 注意：只支持 body 参数加密，如果同时设置 form 和 needEncrypt，会抛 TypeError 异常
    */
   needEncrypt?: boolean;
+  /**
+   * 应用授权令牌，代商家调用支付宝开放接口必填
+   */
+  appAuthToken?: string;
 }
 
 /**
@@ -393,10 +397,24 @@ export class AlipaySdk {
         requestOptions.content = httpRequestBody;
       }
     }
+    // 签名规则 https://opendocs.alipay.com/open-v3/054q58?pathHash=474929ac#%E6%99%AE%E9%80%9A%E8%AF%B7%E6%B1%82
+    // 签名字符串拼接格式：
+    //
+    // ```txt
+    // ${authString}\n
+    // ${httpMethod}\n
+    // ${httpRequestUrl}\n
+    // ${httpRequestBody}\n
+    // ${appAuthToken}\n
+    // ```
+    //
     // TODO: 需要支持 app_cert_sn
     const authString = `app_id=${this.config.appId},nonce=${randomUUID()},timestamp=${Date.now()}`;
-    // TODO: 需要支持 appAuthToken
-    const signString = `${authString}\n${httpMethod}\n${httpRequestUrl}\n${httpRequestBody}\n`;
+    let signString = `${authString}\n${httpMethod}\n${httpRequestUrl}\n${httpRequestBody}\n`;
+    if (options?.appAuthToken) {
+      requestOptions.headers['alipay-app-auth-token'] = options.appAuthToken;
+      signString += `${options.appAuthToken}\n`;
+    }
     const signature = createSign('RSA-SHA256')
       .update(signString, 'utf-8')
       .sign(this.config.privateKey, 'base64');
