@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.4.0...v4.5.0) (2024-06-04)
+
+
+### Features
+
+* 支持证书签名模式 ([#132](https://github.com/alipay/alipay-sdk-nodejs-all/issues/132)) ([6886bb7](https://github.com/alipay/alipay-sdk-nodejs-all/commit/6886bb7c287ca6b9c427175280dda5f24e2bfd39))
+
 ## [4.4.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.3.0...v4.4.0) (2024-06-04)
 
 
