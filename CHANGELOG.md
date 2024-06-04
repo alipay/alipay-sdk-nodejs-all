@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.2.0...v4.3.0) (2024-06-04)
+
+
+### Features
+
+* 支持 appAuthToken 代调用模式 ([#128](https://github.com/alipay/alipay-sdk-nodejs-all/issues/128)) ([9630916](https://github.com/alipay/alipay-sdk-nodejs-all/commit/9630916df8f2daf7bfba1cb9c9f4af77c436bd78))
+
 ## [4.2.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.1.0...v4.2.0) (2024-06-03)
 
 
