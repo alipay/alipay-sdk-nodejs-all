@@ -342,7 +342,7 @@ NODE_DEBUG=alipay-sdk* node your-script.js
 ### new AlipaySdk(config)
 
 | Param | Type | Description |
-| --- | --- | --- |
+| ---   | ---  | ---         |
 | config | `AlipaySdkConfig` | 初始化 SDK 配置 |
 
 ### AlipaySdkConfig
@@ -398,7 +398,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | responseHttpStatus | HTTP 接口响应状态码 | `number` | 是 |
 | traceId | HTTP 接口响应 trace id | `string` | 是 |
 
-### alipaySdk.sdkExecute(method, params) ⇒ `string`
+### alipaySdk.sdkExecute(method, bizParams) ⇒ `string`
 
 生成请求字符串，用于客户端进行调用
 
@@ -407,10 +407,10 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | Param | Type | Description |
 | --- | --- | --- |
 | method | `string` | 方法名 |
-| params | `IRequestParams` | 请求参数 |
-| params.bizContent | `object` | 业务请求参数 |
+| bizParams | `IRequestParams` | 请求参数 |
+| bizParams.bizContent | `object` | 业务请求参数 |
 
-### alipaySdk.pageExecute(method, params) ⇒ `string`
+### alipaySdk.pageExecute(method, httpMethod, bizParams) ⇒ `string`
 
 生成网站接口请求链接 URL 或 POST 表单 HTML
 
@@ -419,26 +419,27 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | Param | Type | Description |
 | --- | --- | --- |
 | method | `string` | 方法名 |
-| params | `IRequestParams` | 请求参数 |
-| params.bizContent | `object` | 业务请求参数 |
-| params.method | `string` | 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 html |
+| httpMethod | `string` | 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 HTML |
+| bizParams | `IRequestParams` | 请求参数 |
+| bizParams.bizContent | `object` | 业务请求参数 |
 
-### `deprecated` alipaySdk.exec(method, params, option) ⇒ `Promise<AlipaySdkCommonResult>`
+### `deprecated` alipaySdk.exec(method, bizParams, options) ⇒ `Promise<AlipaySdkCommonResult>`
 
 执行请求，调用支付宝 [API v2 协议](https://opendocs.alipay.com/open-v3/054fcx)接口
 
-注意：此方法是为了让 `alipay-sdk@3` 尽量平滑升级到 `alipay-sdk@4` 保留，请尽快使用 `alipaySdk.curl()` 代替，走 API v3 协议。
+注意：此方法是为了让 `alipay-sdk@3` 尽量平滑升级到 `alipay-sdk@4` 保留，
+请尽快使用 `alipaySdk.curl()` 代替，走 API v3 协议。
 
 **Returns**: `Promise<AlipaySdkCommonResult>` - 请求执行结果
 
 | Param | Type | Description |
 | --- | --- | --- |
-| method | `string` | 调用接口方法名，比如 alipay.ebpp.bill.add |
-| params | `IRequestParams` | 请求参数 |
-| params.bizContent | `object` | 业务请求参数 |
-| option | `IRequestOption` | 选项 |
-| option.validateSign | `Boolean` | 是否验签 |
-| args.log | `object` | 可选日志记录对象 |
+| method | `string` | 调用接口方法名，比如 `alipay.ebpp.bill.add` |
+| bizParams | `IRequestParams` | 请求参数 |
+| bizParams.bizContent | `object` | 业务请求参数 |
+| options | `IRequestOption` | 选项 |
+| options.validateSign | `Boolean` | 是否验签 |
+| options.log | `object` | 可选日志记录对象 |
 
 #### AlipaySdkCommonResult
 
