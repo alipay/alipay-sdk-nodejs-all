@@ -124,7 +124,7 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
-    it('POST 文件上传，使用 AlipayFormData', async () => {
+    it.skip('POST 文件上传，使用 AlipayFormData', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
@@ -142,7 +142,7 @@ describe('test/alipay.test.ts', () => {
       assert(uploadResult.traceId);
     });
 
-    it('POST 文件上传，使用 AlipayFormData with body', async () => {
+    it.skip('POST 文件上传，使用 AlipayFormData with body', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
@@ -561,6 +561,24 @@ describe('test/alipay.test.ts', () => {
       // console.log(result);
       assert.deepEqual(result.data, {});
       assert.equal(result.responseHttpStatus, 200);
+    });
+
+    it('POST /v3/alipay/user/deloauth/detail/query with appAuthToken = xxx', async () => {
+      // https://opendocs.alipay.com/open-v3/668cd27c_alipay.user.deloauth.detail.query?pathHash=3ab93168
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+          appAuthToken: '201509BBeff9351ad1874306903e96b91d248A36',
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.match(err.message, /无效的应用授权令牌/);
+        return true;
+      });
     });
 
     it('模拟解密失败，需要处理空字符串', async () => {

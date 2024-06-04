@@ -380,6 +380,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | options.form | `AlipayFormData \| AlipayFormStream` | 表单方式提交数据 | 否 |
 | options.requestId | `string` | 调用方的 requestId，不填会默认生成 uuid v4 | 否 |
 | options.needEncrypt | `boolean` | 自动 AES 加解密，默认值是 `false` | 否 |
+| options.appAuthToken | `string` | [应用授权令牌](https://opendocs.alipay.com/isv/10467/xldcyq?pathHash=abce531a)，代商家调用支付宝开放接口必填 | 否 |
 
 #### `AlipayCommonResult<T>`
 
