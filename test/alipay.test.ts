@@ -665,7 +665,7 @@ describe('test/alipay.test.ts', () => {
     });
   });
 
-  describe('pageExec()', () => {
+  describe('pageExecute(), pageExec()', () => {
     let sdk: AlipaySdk;
     before(() => {
       sdk = new AlipaySdk({
@@ -697,6 +697,53 @@ describe('test/alipay.test.ts', () => {
       assert(html.includes(`<input type="hidden" name="alipay_sdk" value="${sdk.version}" />`),
         'should includes sdk version');
       assert(html.includes('<script>document.forms["alipaySDKSubmit'));
+
+      const html2 = sdk.pageExecute('alipay.trade.page.pay', {
+        method: 'POST',
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      assert(html2.trim().startsWith('<form action="https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+    });
+
+    it('对齐 Java 入参类型 pageExecute(method, httpMethod, bizParams)', async () => {
+      const html = sdk.pageExecute('alipay.trade.page.pay', 'POST', {
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      assert(html.trim().startsWith('<form action="https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      assert(html.includes('<input type="hidden" name="biz_content" value="{&quot;out_trade_no&quot;:&quot;ALIPfdf1211sdfsd12gfddsgs3&quot;,&quot;product_code&quot;:&quot;FAST_INSTANT_TRADE_PAY&quot;,&quot;subject&quot;:&quot;abc&quot;,&quot;body&quot;:&quot;234&quot;,&quot;total_amount&quot;:&quot;0.01&quot;}" />'),
+        'should includes biz_content');
+      assert(html.includes(`<input type="hidden" name="alipay_sdk" value="${sdk.version}" />`),
+        'should includes sdk version');
+      assert(html.includes('<script>document.forms["alipaySDKSubmit'));
+
+      const html2 = sdk.pageExec('alipay.trade.page.pay', 'POST', {
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      assert(html2.trim().startsWith('<form action="https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
     });
 
     it('get return http url', async () => {
@@ -712,14 +759,29 @@ describe('test/alipay.test.ts', () => {
         },
         returnUrl: 'https://www.taobao.com',
       });
+      // console.log(result);
       assert(result.startsWith('https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
       const url = decodeURIComponent(result);
       assert(url.includes('&biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}'));
       assert(url.includes(`&alipay_sdk=${sdk.version}&`));
+
+      const result2 = sdk.pageExecute('alipay.trade.page.pay', 'GET', {
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+      // console.log(result);
+      assert(result2.startsWith('https://openapi-sandbox.dl.alipaydev.com/gateway.do?method=alipay.trade.page.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
     });
   });
 
-  describe('sdkExec()', () => {
+  describe('sdkExecute(), sdkExec()', () => {
     let sdk: AlipaySdk;
     before(() => {
       sdk = new AlipaySdk({
@@ -749,6 +811,20 @@ describe('test/alipay.test.ts', () => {
       const urlDecodedStr = decodeURIComponent(result);
       assert(urlDecodedStr.startsWith('method=alipay.trade.app.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
       assert(urlDecodedStr.includes('&return_url=https://www.taobao.com&biz_content={"out_trade_no":"ALIPfdf1211sdfsd12gfddsgs3","product_code":"FAST_INSTANT_TRADE_PAY","subject":"abc","body":"234","total_amount":"0.01"}&sign='));
+
+      const result2 = sdk.sdkExecute('alipay.trade.app.pay', {
+        bizContent: {
+          out_trade_no: 'ALIPfdf1211sdfsd12gfddsgs3',
+          product_code: 'FAST_INSTANT_TRADE_PAY',
+          subject: 'abc',
+          body: '234',
+          // timeout_express: "90m",
+          total_amount: '0.01',
+        },
+        returnUrl: 'https://www.taobao.com',
+      });
+
+      assert(result2.startsWith('method=alipay.trade.app.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
     });
   });
 

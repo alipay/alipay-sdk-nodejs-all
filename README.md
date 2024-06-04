@@ -51,11 +51,18 @@ npm install alipay-sdk --save
 ```typescript
 import { AlipaySdk } from 'alipay-sdk';
 
+// 实例化客户端
 const alipaySdk = new AlipaySdk({
-  appId: '2016123456789012',
-  // keyType: 'PKCS1', // 默认值。请与生成的密钥格式保持一致，参考平台配置一节
+  // 设置应用 ID
+  appId: 'your-APPID',
+  // 设置应用私钥
   privateKey: fs.readFileSync('private-key.pem', 'ascii'),
+  // 设置支付宝公钥
   alipayPublicKey: fs.readFileSync('alipay-public-key.pem', 'ascii'),
+  // 密钥类型，请与生成的密钥格式保持一致，参考平台配置一节
+  // keyType: 'PKCS1',
+  // 设置网关地址，默认是 https://openapi.alipay.com
+  // endpoint: 'https://openapi.alipay.com',
 });
 ```
 
@@ -279,7 +286,7 @@ const queryObj = {
 }
 
 // true | false
-const signResult = sdk.checkNotifySign(queryObj);
+const success = sdk.checkNotifySign(queryObj);
 ```
 
 如果遇到验签失败，请尝试使用 `checkNotifySignV2()` 方法代替，它默认不会对 value 进行 decode
@@ -291,10 +298,10 @@ const postData = {
   sign: 'QfTb8tqE1BMhS5qAn.....',
   gmt_create: '2019-08-15 15:56:22',
   other_biz_field: '....',
-}
+};
 
 // true | false
-const signResult = sdk.checkNotifySignV2(postData);
+const success = sdk.checkNotifySignV2(postData);
 ```
 
 ## alipay-sdk v3 到 v4 的升级说明

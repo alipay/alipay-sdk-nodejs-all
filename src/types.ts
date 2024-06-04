@@ -27,7 +27,7 @@ export interface AlipaySdkConfig {
    */
   urllib?: unknown;
   /**
-   * 指定p rivate key 类型, 默认：PKCS1
+   * 指定 private key 类型, 默认：PKCS1
    * - PKCS8: PRIVATE KEY
    * - PKCS1: RSA PRIVATE KEY
    */

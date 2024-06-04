@@ -116,6 +116,12 @@ export interface IRequestParams {
   needEncrypt?: boolean;
 }
 
+export type IPageExecuteMethod = 'GET' | 'POST';
+
+export interface IPageExecuteParams extends IRequestParams {
+  method?: IPageExecuteMethod;
+}
+
 export interface IRequestOption {
   validateSign?: boolean;
   log?: {
@@ -540,12 +546,12 @@ export class AlipaySdk {
   /**
    * 生成请求字符串，用于客户端进行调用
    * @param {string} method 方法名
-   * @param {IRequestParams} params 请求参数
-   * @param {object} params.bizContent 业务请求参数
+   * @param {IRequestParams} bizParams 请求参数
+   * @param {object} bizParams.bizContent 业务请求参数
    * @return {string} 请求字符串
    */
-  public sdkExec(method: string, params: IRequestParams): string {
-    const data = sign(method, camelcaseKeys(params, { deep: true }), this.config);
+  public sdkExecute(method: string, bizParams: IRequestParams): string {
+    const data = sign(method, camelcaseKeys(bizParams, { deep: true }), this.config);
     const sdkStr = Object.keys(data).map(key => {
       return `${key}=${encodeURIComponent(data[key])}`;
     }).join('&');
@@ -553,27 +559,59 @@ export class AlipaySdk {
   }
 
   /**
+   * @alias sdkExecute
+   */
+  public sdkExec(method: string, bizParams: IRequestParams): string {
+    return this.sdkExecute(method, bizParams);
+  }
+
+  /**
    * 生成网站接口请求链接或 POST 表单 Form HTML
    * @param {string} method 方法名
-   * @param {IRequestParams} params 请求参数
-   * @param {object} params.bizContent 业务请求参数
-   * @param {string} params.method 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 Form HTML
+   * @param {IPageExecuteMethod} httpMethod 后续进行请求的方法。如为 GET，即返回 http 链接；如为 POST，则生成表单 Form HTML
+   * @param {IPageExecuteParams} bizParams 请求参数
+   * @param {object} bizParams.bizContent 业务请求参数
    * @return {string} GET 请求链接或 POST 表单 Form HTML
    */
-  public pageExec(method: string, params: IRequestParams & { method?: 'GET' | 'POST' }): string {
+  public pageExecute(method: string, bizParams: IPageExecuteParams): string;
+  public pageExecute(method: string, httpMethod: IPageExecuteMethod, bizParams: IPageExecuteParams): string;
+  public pageExecute(method: string, httpMethodOrParams: IPageExecuteMethod | IPageExecuteParams,
+    bizParams?: IPageExecuteParams): string {
     const formData = new AlipayFormData();
-    Object.entries(params).forEach(([ k, v ]) => {
-      if (k === 'method') {
-        formData.setMethod(v.toLowerCase());
-      } else {
-        formData.addField(k, v);
-      }
-    });
-    return this._pageExec(method, { formData });
+    let httpMethod = '';
+    if (typeof httpMethodOrParams === 'string') {
+      httpMethod = httpMethodOrParams;
+    } else if (typeof httpMethodOrParams === 'object') {
+      bizParams = httpMethodOrParams;
+    }
+    if (!httpMethod && bizParams?.method) {
+      httpMethod = bizParams.method;
+    }
+    for (const k in bizParams) {
+      if (k === 'method') continue;
+      formData.addField(k, bizParams[k]);
+    }
+    if (httpMethod) {
+      formData.setMethod(httpMethod);
+    }
+    return this.#pageExec(method, { formData });
+  }
+
+  /**
+   * @alias pageExecute
+   */
+  public pageExec(method: string, bizParams: IPageExecuteParams): string;
+  public pageExec(method: string, httpMethod: IPageExecuteMethod, bizParams: IPageExecuteParams): string;
+  public pageExec(method: string, httpMethodOrParams: IPageExecuteMethod | IPageExecuteParams,
+    bizParams?: IPageExecuteParams): string {
+    if (bizParams) {
+      return this.pageExecute(method, httpMethodOrParams as IPageExecuteMethod, bizParams);
+    }
+    return this.pageExecute(method, httpMethodOrParams as IPageExecuteParams);
   }
 
   // page 类接口，兼容原来的 formData 格式
-  private _pageExec(method: string, option: IRequestOption = {}): string {
+  #pageExec(method: string, option: IRequestOption = {}): string {
     let signParams = { alipaySdk: this.version } as Record<string, string>;
     const config = this.config;
     option.formData!.getFields().forEach(field => {
