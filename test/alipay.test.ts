@@ -11,6 +11,7 @@ import {
 import {
   AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, AlipaySdkConfig,
 } from '../src/index.js';
+import { aesDecryptText } from '../src/util.js';
 
 const privateKey = readFixturesFile('app-private-key.pem', 'ascii');
 const alipayPublicKey = readFixturesFile('alipay-public-key.pem', 'ascii');
@@ -403,6 +404,129 @@ describe('test/alipay.test.ts', () => {
         // assert.equal(err.code, 'INVALID_PARAMETER');
         assert(err.traceId);
         assert.equal(err.responseHttpStatus, 400);
+        return true;
+      });
+    });
+
+    it('转账接口强制要求证书签名调用', async () => {
+      // https://opendocs.alipay.com/open-v3/08e7ef12_alipay.fund.trans.uni.transfer?scene=ca56bca529e64125a2786703c6192d41&pathHash=52e2898b
+      await assert.rejects(async () => {
+        await sdkStable.curl('POST', '/v3/alipay/fund/trans/uni/transfer', {
+          body: {
+            order_title: '201905代发',
+            biz_scene: 'DIRECT_TRANSFER',
+            sign_data: {
+              ori_sign: 'EqHFP0z4a9iaQ1ep==',
+              partner_id: '签名被授权方支付宝账号ID',
+              ori_app_id: '2021000185629012',
+              ori_out_biz_no: '商户订单号',
+              ori_sign_type: 'RSA2',
+              ori_char_set: 'UTF-8',
+            },
+            business_params: '{"payer_show_name_use_alias":"true"}',
+            remark: '201905代发',
+            out_biz_no: '201806300001',
+            trans_amount: '23.00',
+            product_code: 'TRANS_ACCOUNT_NO_PWD',
+            payee_info: {
+              identity: '2088123412341234',
+              name: '黄龙国际有限公司',
+              identity_type: 'ALIPAY_USER_ID',
+            },
+            original_order_id: '20190620110075000006640000063056',
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.code, 'INVALID_PARAMETER');
+        assert.match(err.message, /参数有误未开启验签，不允许传入sign_data签名参数/);
+        return true;
+      });
+    });
+  });
+
+  describe('curl() + 证书签名模式', () => {
+    if (!process.env.TEST_ALIPAY_APP_ENCRYPT_KEY_ENCRYPTION) {
+      return;
+    }
+    // 测试密钥维护找@苏千，https://u.alipay.cn/_25tzRNHiQZU
+    const encryptKey = process.env.TEST_ALIPAY_APP_ENCRYPT_KEY_ENCRYPTION;
+    const sdk = new AlipaySdk({
+      appId: process.env.TEST_ALIPAY_APP_ID_ENCRYPTION!,
+      privateKey: process.env.TEST_ALIPAY_APP_PRIVATE_KEY_ENCRYPTION!,
+      timeout: 10000,
+      encryptKey,
+      appCertContent:
+        aesDecryptText(readFixturesFile('test_appCertPublicKey_aesEncryptText.crt'), encryptKey),
+      alipayRootCertContent:
+        aesDecryptText(readFixturesFile('test_alipayRootCert_aesEncryptText.crt'), encryptKey),
+      alipayPublicCertContent:
+        aesDecryptText(readFixturesFile('test_alipayCertPublicKey_RSA2_aesEncryptText.crt'), encryptKey),
+    });
+
+    it.skip('POST 文件上传，使用 AlipayFormStream with body', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormStream();
+      form.file('file_content', filePath, 'demo.jpg');
+
+      const uploadResult = await sdk.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        body: {
+          biz_code: 'openpt_appstore',
+        },
+      });
+      // console.log(uploadResult);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it('POST /v3/alipay/user/deloauth/detail/query', async () => {
+      // https://opendocs.alipay.com/open-v3/668cd27c_alipay.user.deloauth.detail.query?pathHash=3ab93168
+      const result = await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+        body: {
+          date: '20230102',
+          offset: 20,
+          limit: 1,
+        },
+      });
+      console.log(result);
+      assert.equal(result.responseHttpStatus, 200);
+    });
+
+    it('转账接口强制要求证书签名调用', async () => {
+      // https://opendocs.alipay.com/open-v3/08e7ef12_alipay.fund.trans.uni.transfer?scene=ca56bca529e64125a2786703c6192d41&pathHash=52e2898b
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/fund/trans/uni/transfer', {
+          body: {
+            order_title: '201905代发',
+            biz_scene: 'DIRECT_TRANSFER',
+            sign_data: {
+              ori_sign: 'EqHFP0z4a9iaQ1ep==',
+              partner_id: '签名被授权方支付宝账号ID',
+              ori_app_id: '2021000185629012',
+              ori_out_biz_no: '商户订单号',
+              ori_sign_type: 'RSA2',
+              ori_char_set: 'UTF-8',
+            },
+            business_params: '{"payer_show_name_use_alias":"true"}',
+            remark: '201905代发',
+            out_biz_no: '201806300001',
+            trans_amount: '23.00',
+            product_code: 'TRANS_ACCOUNT_NO_PWD',
+            payee_info: {
+              identity: '2088123412341234',
+              name: '黄龙国际有限公司',
+              identity_type: 'ALIPAY_USER_ID',
+            },
+            original_order_id: '20190620110075000006640000063056',
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.code, 'insufficient-isv-permissions');
+        assert.match(err.message, /ISV权限不足，建议在开发者中心检查对应功能是否已经添加/);
         return true;
       });
     });
