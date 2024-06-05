@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5.1](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.5.0...v4.5.1) (2024-06-05)
+
+
+### Bug Fixes
+
+* 修复 form stream 失效问题 ([#133](https://github.com/alipay/alipay-sdk-nodejs-all/issues/133)) ([47120c6](https://github.com/alipay/alipay-sdk-nodejs-all/commit/47120c650c5aacaa7de54cc40f3310cf02449012))
+
 ## [4.5.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.4.0...v4.5.0) (2024-06-04)
 
 
