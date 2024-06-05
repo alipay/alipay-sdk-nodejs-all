@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { strict as assert } from 'node:assert';
 import urllib, { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'urllib';
@@ -501,6 +503,29 @@ describe('test/alipay.test.ts', () => {
         },
       });
       console.log(uploadResult);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it.skip('POST 文件上传大文件', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = path.join(os.homedir(), 'Downloads/foo.key.jpg');
+      const form = new (AlipayFormStream as any)({
+        minChunkSize: 2 * 1024 * 1024,
+      });
+      form.file('file_content', filePath, '图片.jpg');
+
+      const uploadResult = await sdk.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        body: {
+          biz_code: 'openpt_appstore',
+        },
+        requestTimeout: 3000000,
+      });
+      // console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);

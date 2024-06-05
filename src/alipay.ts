@@ -504,7 +504,7 @@ export class AlipaySdk {
   }
 
   // 文件上传
-  async #multipartExec(method: string, options: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
+  async #multipartExec(method: string, options: IRequestOption): Promise<AlipaySdkCommonResult> {
     const config = this.config;
     let signParams = {} as Record<string, string>;
     let formData = {} as { [key: string]: string | object };
