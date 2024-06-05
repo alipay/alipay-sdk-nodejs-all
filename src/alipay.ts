@@ -1,13 +1,14 @@
 import { debuglog } from 'node:util';
 import { createVerify, randomUUID, createSign } from 'node:crypto';
+import { Readable } from 'node:stream';
 import urllib, { Agent } from 'urllib';
 import type {
   HttpClientResponse, HttpMethod, RequestOptions, RawResponseWithMeta,
 } from 'urllib';
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
-import FormStream from 'formstream';
 import { Stream as SSEStream } from 'sse-decoder';
+import { AlipayFormStream } from './AlipayFormStream.js';
 import type { AlipaySdkConfig } from './types.js';
 import { AlipayFormData } from './form.js';
 import {
@@ -16,8 +17,6 @@ import {
   aesDecryptText,
 } from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
-
-export const AlipayFormStream = FormStream;
 
 const debug = debuglog('alipay-sdk');
 const http2Agent = new Agent({
@@ -142,7 +141,7 @@ export interface AlipayCURLOptions {
   /** 参数需在请求 JSON 传参 */
   body?: Record<string, any>;
   /** 表单方式提交数据 */
-  form?: AlipayFormData | FormStream;
+  form?: AlipayFormData | AlipayFormStream;
   /** 调用方的 requestId，用于定位一次请求，需要每次请求保持唯一 */
   requestId?: string;
   /**
@@ -357,9 +356,9 @@ export class AlipaySdk {
           throw new TypeError('提交 form 数据不支持内容加密');
         }
         // 文件上传，走 multipart/form-data
-        let form: FormStream;
+        let form: AlipayFormStream;
         if (options.form instanceof AlipayFormData) {
-          form = new FormStream();
+          form = new AlipayFormStream();
           const dataFieldValue = {} as Record<string, string | object>;
           for (const item of options.form.fields) {
             dataFieldValue[item.name] = item.value;
@@ -372,7 +371,7 @@ export class AlipaySdk {
           form.field('data', httpRequestBody, 'application/json');
           // 文件上传 https://opendocs.alipay.com/open-v3/054oog#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0
           for (const item of options.form.files) {
-            form.file(item.name, item.path, item.fieldName);
+            form.file(item.fieldName, item.path, item.name);
           }
         } else if (options.form instanceof AlipayFormStream) {
           form = options.form;
@@ -384,7 +383,7 @@ export class AlipaySdk {
         } else {
           throw new TypeError('options.form 必须是 AlipayFormData 或者 AlipayFormStream 类型');
         }
-        requestOptions.content = form as any;
+        requestOptions.content = new Readable().wrap(form as any);
         Object.assign(requestOptions.headers, form.headers());
       } else {
         // 普通请求

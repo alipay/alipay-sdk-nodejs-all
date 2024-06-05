@@ -125,7 +125,7 @@ describe('test/alipay.test.ts', () => {
       });
     });
 
-    it.skip('POST 文件上传，使用 AlipayFormData', async () => {
+    it('POST 文件上传，使用 AlipayFormData', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
@@ -146,11 +146,11 @@ describe('test/alipay.test.ts', () => {
       assert(uploadResult.traceId);
     });
 
-    it.skip('POST 文件上传，使用 AlipayFormData with body', async () => {
+    it('POST 文件上传，使用 AlipayFormData with body', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormData();
-      form.addFile('file_content', '图片.jpg', filePath);
+      form.addFile('file_content', 'demo.jpg', filePath);
 
       const uploadResult = await sdkStable.curl<{
         file_id: string;
@@ -466,7 +466,7 @@ describe('test/alipay.test.ts', () => {
         aesDecryptText(readFixturesFile('test_alipayCertPublicKey_RSA2_aesEncryptText.crt'), encryptKey),
     });
 
-    it.skip('POST 文件上传，使用 AlipayFormStream with body', async () => {
+    it('POST 文件上传，使用 AlipayFormStream with body', async () => {
       // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
       const filePath = getFixturesFile('demo.jpg');
       const form = new AlipayFormStream();
@@ -481,6 +481,26 @@ describe('test/alipay.test.ts', () => {
         },
       });
       // console.log(uploadResult);
+      assert(uploadResult.data.file_id);
+      assert.equal(uploadResult.responseHttpStatus, 200);
+      assert(uploadResult.traceId);
+    });
+
+    it('POST 文件上传，使用 AlipayFormData with body', async () => {
+      // https://opendocs.alipay.com/open-v3/5aa91070_alipay.open.file.upload?scene=common&pathHash=c8e11ccc
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addFile('file_content', '图片.jpg', filePath);
+
+      const uploadResult = await sdk.curl<{
+        file_id: string;
+      }>('POST', '/v3/alipay/open/file/upload', {
+        form,
+        body: {
+          biz_code: 'openpt_appstore',
+        },
+      });
+      console.log(uploadResult);
       assert(uploadResult.data.file_id);
       assert.equal(uploadResult.responseHttpStatus, 200);
       assert(uploadResult.traceId);

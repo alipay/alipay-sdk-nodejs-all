@@ -18,8 +18,11 @@ function isJSONString(value: any) {
 }
 
 export interface IFile {
+  /** 文件名 */
   name: string;
+  /** 文件路径 */
   path: string;
+  /** 表单字段名 */
   fieldName: string;
 }
 
