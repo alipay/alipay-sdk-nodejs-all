@@ -166,6 +166,58 @@ console.log(uploadResult);
 // }
 ```
 
+#### 上传文件流
+
+```ts
+import fs from 'node:fs';
+import { AlipayFormData } from 'alipay-sdk';
+
+const form = new AlipayFormData();
+form.addFile('file_content', '图片.jpg', fs.createReadStream('/path/to/test-file'));
+
+const uploadResult = await alipaySdk.curl<{
+  file_id: string;
+}>('POST', '/v3/alipay/open/file/upload', {
+  form,
+  body: {
+    biz_code: 'openpt_appstore',
+  },
+});
+
+console.log(uploadResult);
+// {
+//   data: { file_id: 'A*7Cr9T6IAAC4AAAAAAAAAAAAAATcnAA' },
+//   responseHttpStatus: 200,
+//   traceId: '06033316171731110716358764348'
+// }
+```
+
+#### 上传文件内容
+
+```ts
+import fs from 'node:fs';
+import { AlipayFormData } from 'alipay-sdk';
+
+const form = new AlipayFormData();
+form.addFile('file_content', '图片.jpg', fs.readFileSync('/path/to/test-file'));
+
+const uploadResult = await alipaySdk.curl<{
+  file_id: string;
+}>('POST', '/v3/alipay/open/file/upload', {
+  form,
+  body: {
+    biz_code: 'openpt_appstore',
+  },
+});
+
+console.log(uploadResult);
+// {
+//   data: { file_id: 'A*7Cr9T6IAAC4AAAAAAAAAAAAAATcnAA' },
+//   responseHttpStatus: 200,
+//   traceId: '06033316171731110716358764348'
+// }
+```
+
 ### pageExecute 示例代码
 
 `pageExecute` 方法主要是用于网站支付接口请求链接生成，传入前台访问输入密码完成支付，

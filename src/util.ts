@@ -121,7 +121,7 @@ export function sign(method: string, params: Record<string, any>, config: Requir
   const algorithm = ALIPAY_ALGORITHM_MAPPING[config.signType];
   decamelizeParams.sign = createSign(algorithm)
     .update(signString, 'utf8').sign(config.privateKey, 'base64');
-  debug('algorithm: %s, signString: %o, sign: %o', algorithm, signString, sign);
+  debug('algorithm: %s, signString: %o, sign: %o', algorithm, signString, decamelizeParams.sign);
   return decamelizeParams;
 }
 

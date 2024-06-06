@@ -1,5 +1,6 @@
 import { Verify } from 'node:crypto';
 import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
 import urllib, { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'urllib';
 import mm from 'mm';
 import {
@@ -523,6 +524,40 @@ describe('test/alipay.exec.test.ts', () => {
       assert(result.traceId!.length >= 29);
       assert(result.fileId);
       // console.log(result);
+    });
+
+    it('支持流式上传文件', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', fs.createReadStream(filePath));
+
+      const result = await sdk.exec('alipay.open.file.upload', {}, {
+        formData: form,
+        validateSign: true,
+      });
+      assert.equal(result.code, '10000');
+      assert.equal(result.msg, 'Success');
+      assert(result.traceId!.length >= 29);
+      assert(result.fileId);
+      console.log(result);
+    });
+
+    it('支持 buffer 上传文件', async () => {
+      const filePath = getFixturesFile('demo.jpg');
+      const form = new AlipayFormData();
+      form.addField('biz_code', 'openpt_appstore');
+      form.addFile('file_content', '图片.jpg', fs.readFileSync(filePath));
+
+      const result = await sdk.exec('alipay.open.file.upload', {}, {
+        formData: form,
+        validateSign: true,
+      });
+      assert.equal(result.code, '10000');
+      assert.equal(result.msg, 'Success');
+      assert(result.traceId!.length >= 29);
+      assert(result.fileId);
+      console.log(result);
     });
 
     it('should handle urllib request error', async () => {
