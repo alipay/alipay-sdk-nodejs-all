@@ -371,7 +371,13 @@ export class AlipaySdk {
           form.field('data', httpRequestBody, 'application/json');
           // 文件上传 https://opendocs.alipay.com/open-v3/054oog#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0
           for (const item of options.form.files) {
-            form.file(item.fieldName, item.path, item.name);
+            if (item.path) {
+              form.file(item.fieldName, item.path, item.name);
+            } else if (item.content) {
+              form.buffer(item.fieldName, item.content, item.name);
+            } else if (item.stream) {
+              form.stream(item.fieldName, item.stream, item.name);
+            }
           }
         } else if (options.form instanceof AlipayFormStream) {
           form = options.form;
@@ -504,11 +510,10 @@ export class AlipaySdk {
   }
 
   // 文件上传
-  async #multipartExec(method: string, options: IRequestOption = {}): Promise<AlipaySdkCommonResult> {
+  async #multipartExec(method: string, options: IRequestOption): Promise<AlipaySdkCommonResult> {
     const config = this.config;
     let signParams = {} as Record<string, string>;
-    let formData = {} as { [key: string]: string | object };
-    const formFiles = {} as { [key: string]: string };
+    let formData = {} as Record<string, string>;
     options.formData!.getFields().forEach(field => {
       // formData 的字段类型应为 string。（兼容 null）
       const parsedFieldValue = typeof field.value === 'object' && field.value ?
@@ -521,12 +526,34 @@ export class AlipaySdk {
     // 签名方法中使用的 key 是驼峰
     signParams = camelcaseKeys(signParams, { deep: true });
     formData = snakeCaseKeys(formData);
+
+    const formStream = new AlipayFormStream();
+    for (const k in formData) {
+      formStream.field(k, formData[k]);
+    }
     options.formData!.getFiles().forEach(file => {
       // 文件名需要转换驼峰为下划线
       const fileKey = decamelize(file.fieldName);
       // 单独处理文件类型
-      formFiles[fileKey] = file.path;
+      if (file.path) {
+        formStream.file(fileKey, file.path, file.name);
+      } else if (file.stream) {
+        formStream.stream(fileKey, file.stream, file.name);
+      } else if (file.content) {
+        formStream.buffer(fileKey, file.content, file.name);
+      }
     });
+    const requestOptions: RequestOptions = {
+      method: 'POST',
+      dataType: 'text',
+      timeout: config.timeout,
+      headers: {
+        'user-agent': this.version,
+        accept: 'application/json',
+        ...formStream.headers(),
+      },
+      content: new Readable().wrap(formStream as any),
+    };
     // 计算签名
     const signData = sign(method, signParams, config);
     // 格式化 url
@@ -536,13 +563,7 @@ export class AlipaySdk {
       url, method, signParams);
     let httpResponse: HttpClientResponse<string>;
     try {
-      httpResponse = await urllib.request(url, {
-        timeout: config.timeout,
-        headers: { 'user-agent': this.version },
-        files: formFiles,
-        data: formData,
-        dataType: 'text',
-      });
+      httpResponse = await urllib.request(url, requestOptions);
     } catch (err: any) {
       debug('HttpClient Request error: %s', err);
       throw new AlipayRequestError(`HttpClient Request error: ${err.message}`, {
