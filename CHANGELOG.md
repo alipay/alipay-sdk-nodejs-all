@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.6.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.5.1...v4.6.0) (2024-06-06)
+
+
+### Features
+
+* AlipayFormData 支持文件流和文件内容上传文件 ([#134](https://github.com/alipay/alipay-sdk-nodejs-all/issues/134)) ([046f4e7](https://github.com/alipay/alipay-sdk-nodejs-all/commit/046f4e7491bce97ad7aef47713749db57ff4ef8d))
+
 ## [4.5.1](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.5.0...v4.5.1) (2024-06-05)
 
 
