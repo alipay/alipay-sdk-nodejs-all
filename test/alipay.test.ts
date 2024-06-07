@@ -669,6 +669,37 @@ describe('test/alipay.test.ts', () => {
         return true;
       });
     });
+
+    it('模拟支付宝公钥证书号错误', async () => {
+      const mockPool = mockAgent.get('https://openapi.alipay.com');
+      mockPool.intercept({
+        path: '/v3/alipay/user/deloauth/detail/query',
+        method: 'POST',
+      }).reply(200, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW', {
+        headers: {
+          'alipay-trace-id': 'mock-trace-id',
+          'alipay-sn': '434f1917d274f729a2d46adda224718d-mock',
+          'alipay-nonce': 'mock-4f14052a803e6219a069e9635961a5a5',
+          'alipay-timestamp': '1717756911576',
+          'alipay-signature': 'FYlmMLRkP/8OEK7xDl9vCzaizsJX54W8RfmyBLJp+JPp7AlWzfsc17cIfmYiI7ahEAOjJeLQgWMP45T5skJpyyA4lFBOd5qFoNx53AroH2YAh3F2FkJ0B+czeeGrE7U6tVCP95dUZaV5cLj32E/8etfqbXiesA0ttcirli2SC2h4V0v576vfaub1fs8syNPLd4ryAGhf+BO8McHjgqwjn81f/WwEVkIe+Vq+mDOszuhFnvs7ahP9zoZLyej+hOcLrG9UkivzZHS1lznPZ0olGQLKHXMkR0um1xKYUvUDJJsSZCrTm2q5dML3FyqgormMzLzP6nx7qAaGbZsyEXB/+A==',
+        },
+      });
+      await assert.rejects(async () => {
+        await sdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.match(err.message, /支付宝公钥证书号不匹配，服务端返回的是：434f1917d274f729a2d46adda224718d-mock，SDK 配置的是：434f1917d274f729a2d46adda224718d/);
+        assert.equal(err.code, 'response-alipay-sn-verify-error');
+        assert.equal(err.responseDataRaw, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW');
+        return true;
+      });
+    });
   });
 
   describe('sse(), curlStream(), curl() with needEncrypt = true', () => {

@@ -506,6 +506,16 @@ export class AlipaySdk {
       const headers = httpResponse.headers;
       const responseSignString = `${headers['alipay-timestamp']}\n${headers['alipay-nonce']}\n${httpResponseBody}\n`;
       const expectedSignature = headers['alipay-signature'] as string;
+      const expectedAlipaySN = headers['alipay-sn'] as string;
+      if (expectedAlipaySN && this.config.alipayCertSn && expectedAlipaySN !== this.config.alipayCertSn) {
+        throw new AlipayRequestError(`支付宝公钥证书号不匹配，服务端返回的是：${expectedAlipaySN}，SDK 配置的是：${this.config.alipayCertSn}`, {
+          code: 'response-alipay-sn-verify-error',
+          responseDataRaw: httpResponse.data,
+          responseHttpStatus: httpResponse.status,
+          responseHttpHeaders: httpResponse.headers,
+          traceId,
+        });
+      }
       debug('responseSignString: \n--------\n%s\n--------\nexpectedSignature: %o', responseSignString, expectedSignature);
       if (!verifySignatureV3(responseSignString, expectedSignature, this.config.alipayPublicKey)) {
         throw new AlipayRequestError(`支付宝响应验签失败，请确保支付宝公钥 config.alipayPublicKey 是最新有效版本，签名字符串为：${expectedSignature}，验证字符串为：${JSON.stringify(responseSignString)}`, {
