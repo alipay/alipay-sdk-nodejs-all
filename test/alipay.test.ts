@@ -489,6 +489,37 @@ describe('test/alipay.test.ts', () => {
         return true;
       });
     });
+
+    it('模拟响应验签失败', async () => {
+      const mockPool = mockAgent.get('http://openapi.stable.dl.alipaydev.com');
+      mockPool.intercept({
+        path: '/v3/alipay/user/deloauth/detail/query',
+        method: 'POST',
+      }).reply(200, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW', {
+        headers: {
+          'alipay-trace-id': 'mock-trace-id',
+          'alipay-sn': '434f1917d274f729a2d46adda224718d',
+          'alipay-nonce': 'mock-4f14052a803e6219a069e9635961a5a5',
+          'alipay-timestamp': '1717756911576',
+          'alipay-signature': 'FYlmMLRkP/8OEK7xDl9vCzaizsJX54W8RfmyBLJp+JPp7AlWzfsc17cIfmYiI7ahEAOjJeLQgWMP45T5skJpyyA4lFBOd5qFoNx53AroH2YAh3F2FkJ0B+czeeGrE7U6tVCP95dUZaV5cLj32E/8etfqbXiesA0ttcirli2SC2h4V0v576vfaub1fs8syNPLd4ryAGhf+BO8McHjgqwjn81f/WwEVkIe+Vq+mDOszuhFnvs7ahP9zoZLyej+hOcLrG9UkivzZHS1lznPZ0olGQLKHXMkR0um1xKYUvUDJJsSZCrTm2q5dML3FyqgormMzLzP6nx7qAaGbZsyEXB/+A==',
+        },
+      });
+      await assert.rejects(async () => {
+        await sdkStable.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+          body: {
+            date: '20230102',
+            offset: 20,
+            limit: 1,
+          },
+        });
+      }, (err: any) => {
+        assert.equal(err.name, 'AlipayRequestError');
+        assert.match(err.message, /支付宝响应验签失败，请确保支付宝公钥/);
+        assert.equal(err.code, 'response-signature-verify-error');
+        assert.equal(err.responseDataRaw, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW');
+        return true;
+      });
+    });
   });
 
   describe('curl() + 证书签名模式', () => {
@@ -818,9 +849,12 @@ describe('test/alipay.test.ts', () => {
       mockPool.intercept({
         path: '/v3/alipay/user/deloauth/detail/query',
         method: 'POST',
-      }).reply(200, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW', {
+      }).reply(200, '{}', {
         headers: {
           'alipay-trace-id': 'mock-trace-id',
+          'alipay-nonce': '3c0d6c77f4f773b427eb7e79625cdf4d',
+          'alipay-timestamp': '1717762879833',
+          'alipay-signature': 'I3JaLGZdFEhYqFrBs6Ddi/0vYeoIhGblmYI27Us31v2kya6wwypXhKQp92XsjZ3EhPvF1dLWMob07oViBx8/hV2j3jq3Z5nntONvqWTRFmLhKVwZJOYNkPmLMmPK7M7BrCuBb0BpNjvCN4ruhrc4UJz87PHfaAZJMHd0moKC7mPXqJlZWkmybt1MH+SM/Yw1brV+38HtVszGoUiIXVTZInAP0DpqUUvuWo7qWlYRbSH1h8Y/Wl3U24aBufezXg4jDwECyZndWoBXCQA9kWRKDMZbI7pwtPMi7FOP52fRo4G7bM6TJW8ZoWpDqzVl68JoMXC7I08OUgYFK+X3v80B/A==',
         },
       });
       await assert.rejects(async () => {
@@ -836,7 +870,7 @@ describe('test/alipay.test.ts', () => {
         assert.equal(err.name, 'AlipayRequestError');
         assert.equal(err.message, '解密失败，请确认 config.encryptKey 设置正确 (traceId: mock-trace-id)');
         assert.equal(err.code, 'decrypt-error');
-        assert.equal(err.responseDataRaw, 'aYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEWaYA0GP8JEW');
+        assert.equal(err.responseDataRaw, '{}');
         return true;
       });
     });
