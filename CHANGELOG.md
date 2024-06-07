@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.6.0...v4.7.0) (2024-06-07)
+
+
+### Features
+
+* 实现支付宝响应验签 ([#136](https://github.com/alipay/alipay-sdk-nodejs-all/issues/136)) ([aa6d480](https://github.com/alipay/alipay-sdk-nodejs-all/commit/aa6d4804efc38422529eebefdfbbc4e19b5aaf41))
+
 ## [4.6.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.5.1...v4.6.0) (2024-06-06)
 
 
