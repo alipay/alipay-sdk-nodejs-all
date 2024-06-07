@@ -1,5 +1,5 @@
 import { debuglog } from 'node:util';
-import { createSign, randomUUID } from 'node:crypto';
+import { createSign, createVerify, randomUUID } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { YYYYMMDDHHmmss } from 'utility';
@@ -123,6 +123,20 @@ export function sign(method: string, params: Record<string, any>, config: Requir
     .update(signString, 'utf8').sign(config.privateKey, 'base64');
   debug('algorithm: %s, signString: %o, sign: %o', algorithm, signString, decamelizeParams.sign);
   return decamelizeParams;
+}
+
+/** OpenAPI 3.0 签名，使用应用私钥签名 */
+export function signatureV3(signString: string, appPrivateKey: string) {
+  return createSign('RSA-SHA256')
+    .update(signString, 'utf-8')
+    .sign(appPrivateKey, 'base64');
+}
+
+/** OpenAPI 3.0 验签，使用支付宝公钥验证签名 */
+export function verifySignatureV3(signString: string, expectedSignature: string, alipayPublicKey: string) {
+  return createVerify('RSA-SHA256')
+    .update(signString, 'utf-8')
+    .verify(alipayPublicKey, expectedSignature, 'base64');
 }
 
 export function createRequestId() {

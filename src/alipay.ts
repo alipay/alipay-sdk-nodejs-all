@@ -1,7 +1,7 @@
 import { debuglog } from 'node:util';
-import { createVerify, randomUUID, createSign } from 'node:crypto';
+import { createVerify, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
-import urllib, { Agent } from 'urllib';
+import urllib, { Agent, IncomingHttpHeaders } from 'urllib';
 import type {
   HttpClientResponse, HttpMethod, RequestOptions, RawResponseWithMeta,
 } from 'urllib';
@@ -15,6 +15,7 @@ import {
   sign, ALIPAY_ALGORITHM_MAPPING, decamelize, createRequestId, readableToBytes,
   aesDecrypt, aesEncryptText,
   aesDecryptText,
+  signatureV3, verifySignatureV3,
 } from './util.js';
 import { getSNFromPath, getSN, loadPublicKey, loadPublicKeyFromPath } from './antcertutil.js';
 
@@ -38,6 +39,7 @@ export interface AlipayRequestErrorOptions extends ErrorOptions {
   traceId?: string;
   responseHttpStatus?: number;
   responseDataRaw?: string;
+  responseHttpHeaders?: IncomingHttpHeaders;
   links?: AlipayRequestErrorSupportLink[];
 }
 
@@ -46,6 +48,7 @@ export class AlipayRequestError extends Error {
   traceId?: string;
   responseHttpStatus?: number;
   responseDataRaw?: string;
+  responseHttpHeaders?: IncomingHttpHeaders;
   links?: AlipayRequestErrorSupportLink[];
 
   constructor(message: string, options?: AlipayRequestErrorOptions) {
@@ -56,6 +59,7 @@ export class AlipayRequestError extends Error {
     this.code = options?.code;
     this.traceId = options?.traceId;
     this.responseHttpStatus = options?.responseHttpStatus;
+    this.responseHttpHeaders = options?.responseHttpHeaders;
     this.responseDataRaw = options?.responseDataRaw;
     this.links = options?.links;
     this.name = this.constructor.name;
@@ -327,12 +331,18 @@ export class AlipaySdk {
       dataType: dataType === 'stream' ? 'stream' : 'text',
       timeout: options?.requestTimeout ?? this.config.timeout,
     };
+    // 默认需要对响应做验签，确保响应是由支付宝返回的
+    let validateResponseSignature = true;
     if (dataType === 'stream') {
       // 使用 HTTP/2 请求才支持流式响应
       requestOptions.dispatcher = http2Agent;
+      // 流式响应不需要对响应做验签
+      validateResponseSignature = false;
+    }
+    if (validateResponseSignature && !this.config.alipayPublicKey) {
+      throw new TypeError('请确保支付宝公钥 config.alipayPublicKey 已经配置，需要使用它对响应进行验签');
     }
     const requestId = options?.requestId ?? createRequestId();
-
     requestOptions.headers = {
       'user-agent': this.version,
       'alipay-request-id': requestId,
@@ -438,11 +448,9 @@ export class AlipaySdk {
       requestOptions.headers['alipay-app-auth-token'] = options.appAuthToken;
       signString += `${options.appAuthToken}\n`;
     }
-    const signature = createSign('RSA-SHA256')
-      .update(signString, 'utf-8')
-      .sign(this.config.privateKey, 'base64');
+    const signature = signatureV3(signString, this.config.privateKey);
     const authorization = `ALIPAY-SHA256withRSA ${authString},sign=${signature}`;
-    debug('signString: \n--------\n%s\n--------\n, authorization: %o', signString, authorization);
+    debug('signString: \n--------\n%s\n--------\nauthorization: %o', signString, authorization);
     requestOptions.headers.authorization = authorization;
     debug('curl %s %s, with body: %s, headers: %j, dataType: %s',
       httpMethod, url, httpRequestBody, requestOptions.headers, dataType);
@@ -479,6 +487,7 @@ export class AlipaySdk {
         code: errorData.code,
         links: errorData.links,
         responseHttpStatus: httpResponse.status,
+        responseHttpHeaders: httpResponse.headers,
         traceId,
       });
     }
@@ -490,20 +499,39 @@ export class AlipaySdk {
         traceId,
       } satisfies AlipayCommonResultStream;
     }
-    let responseDataText = httpResponse.data as string;
+    let httpResponseBody = httpResponse.data as string;
+
+    // 对支付宝响应进行验签 https://opendocs.alipay.com/open-v3/054d0z?pathHash=dcad8d5c
+    if (validateResponseSignature) {
+      const headers = httpResponse.headers;
+      const responseSignString = `${headers['alipay-timestamp']}\n${headers['alipay-nonce']}\n${httpResponseBody}\n`;
+      const expectedSignature = headers['alipay-signature'] as string;
+      debug('responseSignString: \n--------\n%s\n--------\nexpectedSignature: %o', responseSignString, expectedSignature);
+      if (!verifySignatureV3(responseSignString, expectedSignature, this.config.alipayPublicKey)) {
+        throw new AlipayRequestError(`支付宝响应验签失败，请确保支付宝公钥 config.alipayPublicKey 是最新有效版本，签名字符串为：${expectedSignature}，验证字符串为：${JSON.stringify(responseSignString)}`, {
+          code: 'response-signature-verify-error',
+          responseDataRaw: httpResponse.data,
+          responseHttpStatus: httpResponse.status,
+          responseHttpHeaders: httpResponse.headers,
+          traceId,
+        });
+      }
+    }
+
     if (options?.needEncrypt) {
-      responseDataText = aesDecryptText(responseDataText, this.config.encryptKey);
-      if (!responseDataText) {
+      httpResponseBody = aesDecryptText(httpResponseBody, this.config.encryptKey);
+      if (!httpResponseBody) {
         throw new AlipayRequestError('解密失败，请确认 config.encryptKey 设置正确', {
           code: 'decrypt-error',
           responseDataRaw: httpResponse.data,
           responseHttpStatus: httpResponse.status,
+          responseHttpHeaders: httpResponse.headers,
           traceId,
         });
       }
     }
     return {
-      data: JSON.parse(responseDataText),
+      data: JSON.parse(httpResponseBody),
       responseHttpStatus: httpResponse.status,
       traceId,
     } satisfies AlipayCommonResult<T>;
