@@ -450,7 +450,7 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | responseHttpStatus | HTTP 接口响应状态码 | `number` | 是 |
 | traceId | HTTP 接口响应 trace id | `string` | 是 |
 
-### alipaySdk.sdkExecute(method, bizParams) ⇒ `string`
+### alipaySdk.sdkExecute(method, bizParams, options?) ⇒ `string`
 
 生成请求字符串，用于客户端进行调用
 
@@ -461,6 +461,8 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | method | `string` | 方法名 |
 | bizParams | `IRequestParams` | 请求参数 |
 | bizParams.bizContent | `object` | 业务请求参数 |
+| options | `ISdkExecuteOptions` | 可选参数 |
+| options.bizContentAutoSnakeCase | `boolean` | 对 `bizContent` 做驼峰参数转为小写 + 下划线参数，如 outOrderNo => out_order_no，默认 `true`，如果不需要自动转换，请设置为 `false` |
 
 ### alipaySdk.pageExecute(method, httpMethod, bizParams) ⇒ `string`
 

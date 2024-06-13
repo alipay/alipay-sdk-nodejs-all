@@ -52,6 +52,11 @@ export function aesDecrypt(encryptedText: string, aesKey: string): object {
   return decryptedData;
 }
 
+interface SignOptions {
+  /** 是否对 bizContent 做 SnakeCase 转换，默认 true */
+  bizContentAutoSnakeCase?: boolean;
+}
+
 /**
  * OpenAPI 2.0 签名
  * @description https://opendocs.alipay.com/common/02kf5q
@@ -59,7 +64,7 @@ export function aesDecrypt(encryptedText: string, aesKey: string): object {
  * @param {object} params 请求参数
  * @param {object} config sdk 配置
  */
-export function sign(method: string, params: Record<string, any>, config: Required<AlipaySdkConfig>) {
+export function sign(method: string, params: Record<string, any>, config: Required<AlipaySdkConfig>, options?: SignOptions) {
   const signParams: Record<string, any> = {
     method,
     appId: config.appId,
@@ -84,9 +89,12 @@ export function sign(method: string, params: Record<string, any>, config: Requir
   if (params.bizContent && params.biz_content) {
     throw new TypeError('不能同时设置 bizContent 和 biz_content');
   }
-  const bizContent = params.bizContent ?? params.biz_content;
+  let bizContent = params.bizContent ?? params.biz_content;
 
   if (bizContent) {
+    if (options?.bizContentAutoSnakeCase !== false) {
+      bizContent = snakeCaseKeys(bizContent);
+    }
     // AES加密
     if (params.needEncrypt) {
       if (!config.encryptKey) {
@@ -94,11 +102,11 @@ export function sign(method: string, params: Record<string, any>, config: Requir
       }
       signParams.encryptType = 'AES';
       signParams.bizContent = aesEncrypt(
-        snakeCaseKeys(bizContent),
+        bizContent,
         config.encryptKey,
       );
     } else {
-      signParams.bizContent = JSON.stringify(snakeCaseKeys(bizContent));
+      signParams.bizContent = JSON.stringify(bizContent);
     }
   }
 

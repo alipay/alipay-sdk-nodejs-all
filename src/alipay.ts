@@ -125,6 +125,13 @@ export interface IPageExecuteParams extends IRequestParams {
   method?: IPageExecuteMethod;
 }
 
+export interface ISdkExecuteOptions {
+  /**
+   * 对 bizContent 做驼峰参数转为小写 + 下划线参数，如 outOrderNo => out_order_no，默认 true，如果不需要自动转换，请设置为 false
+   */
+  bizContentAutoSnakeCase?: boolean;
+}
+
 export interface IRequestOption {
   validateSign?: boolean;
   log?: {
@@ -620,8 +627,13 @@ export class AlipaySdk {
    * @param {object} bizParams.bizContent 业务请求参数
    * @return {string} 请求字符串
    */
-  public sdkExecute(method: string, bizParams: IRequestParams): string {
-    const data = sign(method, camelcaseKeys(bizParams, { deep: true }), this.config);
+  public sdkExecute(method: string, bizParams: IRequestParams, options?: ISdkExecuteOptions): string {
+    if (options?.bizContentAutoSnakeCase !== false) {
+      bizParams = camelcaseKeys(bizParams, { deep: true });
+    }
+    const data = sign(method, bizParams, this.config, {
+      bizContentAutoSnakeCase: options?.bizContentAutoSnakeCase,
+    });
     const sdkStr = Object.keys(data).map(key => {
       return `${key}=${encodeURIComponent(data[key])}`;
     }).join('&');
