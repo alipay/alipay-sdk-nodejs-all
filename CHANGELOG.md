@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.8.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.7.0...v4.8.0) (2024-06-14)
+
+
+### Features
+
+* 通过 bizContentAutoSnakeCase = false 关闭自动的变量命名转换 ([#138](https://github.com/alipay/alipay-sdk-nodejs-all/issues/138)) ([e4d44e5](https://github.com/alipay/alipay-sdk-nodejs-all/commit/e4d44e5a4c5cc4adaf4326fb408d86e68b084b56))
+
 ## [4.7.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.6.0...v4.7.0) (2024-06-07)
 
 
