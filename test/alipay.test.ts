@@ -1124,6 +1124,55 @@ describe('test/alipay.test.ts', () => {
 
       assert(result2.startsWith('method=alipay.trade.app.pay&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
     });
+
+    // https://github.com/alipay/alipay-sdk-nodejs-all/issues/137
+    it('should work with options.bizContentAutoSnakeCase = false', async () => {
+      const order = {
+        orderNo: '2021042400000000000098724400',
+      };
+
+      const address = {
+        address: '北京市朝阳区望京SOHO',
+        phone: '13100000000',
+        name: '张三',
+      };
+
+      const freezeParams = {
+        out_order_no: order.orderNo,
+        out_request_no: order.orderNo,
+        amount: 0.01,
+        order_title: '预授权冻结',
+        product_code: 'PRE_AUTH_ONLINE',
+        timeout_express: '3d',
+        deposit_product_mode: 'DEPOSIT_ONLY',
+        extra_param: {
+          category: 'RENT_PHONE',
+          serviceId: '2024042400000000000098724400',
+          outStoreCode: 'test_0001',
+          outStoreAlias: '赁免押服务',
+          creditExtInfo: {
+            lastPreAuthNo: '',
+            carrierDesc: '内存:128GB,颜色:白色钛金属',
+            rentPeriod: '12',
+            rentAmount: 0.01,
+            deliveryAddress: address.address,
+            deliveryMobile: address.phone,
+            deliveryName: address.name,
+          },
+        },
+      };
+      const result = sdk.sdkExecute('alipay.fund.auth.order.app.freeze', {
+        bizContent: freezeParams,
+        notifyUrl: 'https://alipay.com/api/index/freezeNotify',
+        format: 'JSON',
+      }, {
+        bizContentAutoSnakeCase: false,
+      });
+      // console.log(decodeURIComponent(result));
+      assert(result.startsWith('method=alipay.fund.auth.order.app.freeze&app_id=2021000122671080&charset=utf-8&version=1.0&sign_type=RSA2&timestamp='));
+      assert(result.includes('&notify_url=https%3A%2F%2Falipay.com%2Fapi%2Findex%2FfreezeNotify&format=JSON&biz_content=%7B%22out_order_no%22%3A%222021042400000000000098724400%22%2C%22out_request_no%22%3A%222021042400000000000098724400%22%2C%22amount%22%3A0.01%2C%22order_title%22%3A%22%E9%A2%84%E6%8E%88%E6%9D%83%E5%86%BB%E7%BB%93%22%2C%22product_code%22%3A%22PRE_AUTH_ONLINE%22%2C%22timeout_express%22%3A%223d%22%2C%22deposit_product_mode%22%3A%22DEPOSIT_ONLY%22%2C%22extra_param%22%3A%7B%22category%22%3A%22RENT_PHONE%22%2C%22serviceId%22%3A%222024042400000000000098724400%22%2C%22outStoreCode%22%3A%22test_0001%22%2C%22outStoreAlias%22%3A%22%E8%B5%81%E5%85%8D%E6%8A%BC%E6%9C%8D%E5%8A%A1%22%2C%22creditExtInfo%22%3A%7B%22lastPreAuthNo%22%3A%22%22%2C%22carrierDesc%22%3A%22%E5%86%85%E5%AD%98%3A128GB%2C%E9%A2%9C%E8%89%B2%3A%E7%99%BD%E8%89%B2%E9%92%9B%E9%87%91%E5%B1%9E%22%2C%22rentPeriod%22%3A%2212%22%2C%22rentAmount%22%3A0.01%2C%22deliveryAddress%22%3A%22%E5%8C%97%E4%BA%AC%E5%B8%82%E6%9C%9D%E9%98%B3%E5%8C%BA%E6%9C%9B%E4%BA%ACSOHO%22%2C%22deliveryMobile%22%3A%2213100000000%22%2C%22deliveryName%22%3A%22%E5%BC%A0%E4%B8%89%22%7D%7D%7D&sign='));
+      assert(decodeURIComponent(result).includes('&notify_url=https://alipay.com/api/index/freezeNotify&format=JSON&biz_content={"out_order_no":"2021042400000000000098724400","out_request_no":"2021042400000000000098724400","amount":0.01,"order_title":"预授权冻结","product_code":"PRE_AUTH_ONLINE","timeout_express":"3d","deposit_product_mode":"DEPOSIT_ONLY","extra_param":{"category":"RENT_PHONE","serviceId":"2024042400000000000098724400","outStoreCode":"test_0001","outStoreAlias":"赁免押服务","creditExtInfo":{"lastPreAuthNo":"","carrierDesc":"内存:128GB,颜色:白色钛金属","rentPeriod":"12","rentAmount":0.01,"deliveryAddress":"北京市朝阳区望京SOHO","deliveryMobile":"13100000000","deliveryName":"张三"}}}&sign='));
+    });
   });
 
   describe('getSignStr()', () => {
