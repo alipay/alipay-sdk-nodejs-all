@@ -354,6 +354,14 @@ const postData = {
 const success = sdk.checkNotifySignV2(postData);
 ```
 
+### 对加密内容进行解密
+
+例如需要对小程序拿到的[加密手机号码](https://opendocs.alipay.com/mini/api/getphonenumber)进行解密
+
+```ts
+const plainText = alipaySdk.aesDecrypt(getPhoneNumberResponse);
+```
+
 ## alipay-sdk v3 到 v4 的升级说明
 
 从 v3 到 v4 有以下不兼容变更，请参考示例代码进行更新
@@ -535,6 +543,16 @@ curl 方式调用支付宝 [API v3 协议](https://opendocs.alipay.com/open-v3/0
 | --- | --- | --- |
 | postData | `JSON` | 服务端的消息内容 |
 | raw | `Boolean` | 是否使用 raw 内容而非 decode 内容验签 |
+
+### alipaySdk.aesDecrypt(encryptedText)
+
+对加密内容进行 AES 解密
+
+**Returns**: `String` - 解密后的明文字符串
+
+| Param | Type | Description |
+| ---   | ---  | --- |
+| encryptedText | `String` | 加密内容字符串 |
 
 ## License
 
