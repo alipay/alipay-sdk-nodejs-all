@@ -536,7 +536,7 @@ export class AlipaySdk {
     }
 
     if (options?.needEncrypt) {
-      httpResponseBody = aesDecryptText(httpResponseBody, this.config.encryptKey);
+      httpResponseBody = this.aesDecrypt(httpResponseBody);
       if (!httpResponseBody) {
         throw new AlipayRequestError('解密失败，请确认 config.encryptKey 设置正确', {
           code: 'decrypt-error',
@@ -1014,5 +1014,14 @@ export class AlipaySdk {
     }
 
     return true;
+  }
+
+  /**
+   * 对加密内容进行 AES 解密
+   * @see https://opendocs.alipay.com/common/02mse3#AES%20%E8%A7%A3%E5%AF%86%E5%87%BD%E6%95%B0
+   * @param encryptedText 加密内容字符串
+   */
+  aesDecrypt(encryptedText: string) {
+    return aesDecryptText(encryptedText, this.config.encryptKey);
   }
 }
