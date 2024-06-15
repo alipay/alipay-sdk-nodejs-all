@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.8.0...v4.9.0) (2024-06-15)
+
+
+### Features
+
+* 增加 AES 解密方法 ([#141](https://github.com/alipay/alipay-sdk-nodejs-all/issues/141)) ([28270d9](https://github.com/alipay/alipay-sdk-nodejs-all/commit/28270d9602ac9b695a3196deae3f4e5852949eae))
+
 ## [4.8.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.7.0...v4.8.0) (2024-06-14)
 
 
