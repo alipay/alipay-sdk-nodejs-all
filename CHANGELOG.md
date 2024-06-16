@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.9.0...v4.10.0) (2024-06-16)
+
+
+### Features
+
+* 增加 rsaCheck 验签方法 ([#142](https://github.com/alipay/alipay-sdk-nodejs-all/issues/142)) ([470f8b5](https://github.com/alipay/alipay-sdk-nodejs-all/commit/470f8b50a16348d38ac98b439533f1fa29184232))
+
 ## [4.9.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.8.0...v4.9.0) (2024-06-15)
 
 
