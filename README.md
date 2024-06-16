@@ -362,6 +362,34 @@ const success = sdk.checkNotifySignV2(postData);
 const plainText = alipaySdk.aesDecrypt(getPhoneNumberResponse);
 ```
 
+### 对前端返回的报文进行验签
+
+参考 https://opendocs.alipay.com/common/02mse3#AES%20%E8%A7%A3%E5%AF%86%E5%87%BD%E6%95%B0 的算法
+
+前端返回的内容
+
+```json
+{
+ "response": "hvDOnibG0DPcOFPNubK3DEfLQGL4=",
+ "sign": "OIwk7zfZMp5GX78Ow==",
+ "sign_type": "RSA2",
+ "encrypt_type": "AES",
+ "charset": "UTF-8"
+}
+```
+
+通过 alipay-sdk 验签
+
+```ts
+// 注意，加密内容必须前后加上双引号
+const signContent = '"hvDOnibG0DPcOFPNubK3DEfLQGL4="';
+const sign = 'OIwk7zfZMp5GX78Ow==';
+const signType = 'RSA2';
+const signCheckPass = alipaySdk.rsaCheck(signContent, sign, signType);
+
+console.log(signCheckPass);
+```
+
 ## alipay-sdk v3 到 v4 的升级说明
 
 从 v3 到 v4 有以下不兼容变更，请参考示例代码进行更新

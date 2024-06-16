@@ -9,7 +9,7 @@ import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
 import { Stream as SSEStream } from 'sse-decoder';
 import { AlipayFormStream } from './AlipayFormStream.js';
-import type { AlipaySdkConfig } from './types.js';
+import type { AlipaySdkConfig, AlipaySdkSignType } from './types.js';
 import { AlipayFormData } from './form.js';
 import {
   sign, ALIPAY_ALGORITHM_MAPPING, decamelize, createRequestId, readableToBytes,
@@ -732,7 +732,7 @@ export class AlipaySdk {
   }
 
   // 消息验签
-  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: 'RSA' | 'RSA2', raw?: boolean) {
+  private notifyRSACheck(signArgs: { [key: string]: any }, signStr: string, signType: AlipaySdkSignType, raw?: boolean) {
     const signContent = Object.keys(signArgs).sort().filter(val => val)
       .map(key => {
         let value = signArgs[key];
@@ -748,10 +748,7 @@ export class AlipaySdk {
         return `${key}=${decodeURIComponent(value)}`;
       })
       .join('&');
-
-    const verifier = createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
-
-    return verifier.update(signContent, 'utf8').verify(this.config.alipayPublicKey, signStr, 'base64');
+    return this.rsaCheck(signContent, signStr, signType);
   }
 
   /**
@@ -1023,5 +1020,15 @@ export class AlipaySdk {
    */
   aesDecrypt(encryptedText: string) {
     return aesDecryptText(encryptedText, this.config.encryptKey);
+  }
+
+  /**
+   * 对指定内容进行验签
+   *
+   * 如对前端返回的报文进行验签 https://opendocs.alipay.com/common/02mse3#AES%20%E8%A7%A3%E5%AF%86%E5%87%BD%E6%95%B0
+   */
+  rsaCheck(signContent: string, sign: string, signType: AlipaySdkSignType = 'RSA2') {
+    const verifier = createVerify(ALIPAY_ALGORITHM_MAPPING[signType]);
+    return verifier.update(signContent, 'utf-8').verify(this.config.alipayPublicKey, sign, 'base64');
   }
 }

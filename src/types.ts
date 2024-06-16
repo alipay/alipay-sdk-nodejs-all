@@ -1,3 +1,5 @@
+export type AlipaySdkSignType = 'RSA2' | 'RSA';
+
 /**
  * @interface AlipaySdkConfig SDK 配置
  */
@@ -7,7 +9,7 @@ export interface AlipaySdkConfig {
   /** 应用私钥字符串。RSA签名验签工具：https://docs.open.alipay.com/291/106097）*/
   privateKey: string;
   /** 签名种类，默认是 RSA2 */
-  signType?: 'RSA2' | 'RSA';
+  signType?: AlipaySdkSignType;
   /** 支付宝公钥（需要对返回值做验签时候必填） */
   alipayPublicKey?: string;
   /** 网关 */
