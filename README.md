@@ -7,7 +7,7 @@ Alipay SDK for Node.js 用于给 Node 服务器提供调用支付宝开放平台
 
 - 需要 Node.js 8 以上版本
 - 安装依赖
-> npm install alipay-sdk --save
+> npm install alipay-sdk@3 --save
 
 <a name="cBULc"></a>
 ## 平台配置
