@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.10.0...v4.11.0) (2024-07-05)
+
+
+### Features
+
+* 增加 HTTP 代理调用支持 ([#145](https://github.com/alipay/alipay-sdk-nodejs-all/issues/145)) ([cfd7f76](https://github.com/alipay/alipay-sdk-nodejs-all/commit/cfd7f768c0bb168af86c6087024b6442f9918615))
+
 ## [4.10.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.9.0...v4.10.0) (2024-06-16)
 
 
