@@ -1,3 +1,5 @@
+import { ProxyAgent } from 'urllib';
+
 export type AlipaySdkSignType = 'RSA2' | 'RSA';
 
 /**
@@ -56,4 +58,6 @@ export interface AlipaySdkConfig {
   encryptKey?: string;
   /** 服务器地址 */
   wsServiceUrl?: string;
+  /** httpClient 请求代理 */
+  proxyAgent?: ProxyAgent;
 }

@@ -390,6 +390,32 @@ const signCheckPass = alipaySdk.rsaCheck(signContent, sign, signType);
 console.log(signCheckPass);
 ```
 
+### 通过 HTTP 代理服务器调用
+
+在需要固定 IP 白名单调用的场景下，可以通过配置 `config.proxyAgent` 来指定 HTTP 代理服务器调用。
+
+```ts
+import { AlipaySdk, ProxyAgent } from 'alipay-sdk';
+
+// 实例化客户端
+const alipaySdk = new AlipaySdk({
+  // 其他配置不展示
+  // ...
+  proxyAgent: new ProxyAgent('http(s)://your-http-proxy-address'),
+});
+
+// 后续的所有 http 调用都会走此 HTTP 代理服务器
+const result = await alipaySdk.curl('POST', '/v3/alipay/user/deloauth/detail/query', {
+  body: {
+    date: '20230102',
+    offset: 20,
+    limit: 1,
+  },
+});
+
+console.log(result);
+```
+
 ## alipay-sdk v3 到 v4 的升级说明
 
 从 v3 到 v4 有以下不兼容变更，请参考示例代码进行更新

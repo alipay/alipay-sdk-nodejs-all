@@ -12,6 +12,7 @@ import {
 } from './helper.js';
 import {
   AlipayFormData, AlipayFormStream, AlipayRequestError, AlipaySdk, AlipaySdkConfig,
+  ProxyAgent,
 } from '../src/index.js';
 import { aesDecryptText } from '../src/util.js';
 
@@ -117,6 +118,33 @@ describe('test/alipay.test.ts', () => {
           },
         });
       }, err => {
+        assert(err instanceof AlipayRequestError);
+        assert.match(err.message, /无效的访问令牌/);
+        assert.equal(err.links!.length, 1);
+        assert.equal(err.code, 'invalid-auth-token');
+        assert(err.traceId);
+        assert.equal(err.responseHttpStatus, 401);
+        return true;
+      });
+    });
+
+    it('使用 HTTP 代理调用', async () => {
+      if (!process.env.TEST_ALIPAY_HTTP_PROXY) {
+        return;
+      }
+      const proxyAgent = new ProxyAgent(process.env.TEST_ALIPAY_HTTP_PROXY);
+      const sdkWithProxy = new AlipaySdk({
+        ...sdkStableConfig,
+        proxyAgent,
+      });
+      await assert.rejects(async () => {
+        await sdkWithProxy.curl('POST', '/v3/alipay/user/info/share', {
+          body: {
+            auth_token: '20120823ac6ffaa4d2d84e7384bf983531473993',
+          },
+        });
+      }, err => {
+        console.error(err);
         assert(err instanceof AlipayRequestError);
         assert.match(err.message, /无效的访问令牌/);
         assert.equal(err.links!.length, 1);
