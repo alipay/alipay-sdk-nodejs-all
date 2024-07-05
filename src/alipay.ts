@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import urllib, { Agent, IncomingHttpHeaders } from 'urllib';
 import type {
   HttpClientResponse, HttpMethod, RequestOptions, RawResponseWithMeta,
+  ProxyAgent,
 } from 'urllib';
 import camelcaseKeys from 'camelcase-keys';
 import snakeCaseKeys from 'snakecase-keys';
@@ -174,6 +175,7 @@ export interface AlipayCURLOptions {
 export class AlipaySdk {
   public readonly version = 'alipay-sdk-nodejs-4.0.0';
   public config: Required<AlipaySdkConfig>;
+  #proxyAgent?: ProxyAgent;
 
   /**
    * @class
@@ -205,6 +207,7 @@ export class AlipaySdk {
       // 普通公钥模式，传入了支付宝公钥
       config.alipayPublicKey = this.formatKey(config.alipayPublicKey, 'PUBLIC KEY');
     }
+    this.#proxyAgent = config.proxyAgent;
     this.config = Object.assign({
       urllib,
       gateway: 'https://openapi.alipay.com/gateway.do',
@@ -337,6 +340,7 @@ export class AlipaySdk {
       method: httpMethod,
       dataType: dataType === 'stream' ? 'stream' : 'text',
       timeout: options?.requestTimeout ?? this.config.timeout,
+      dispatcher: this.#proxyAgent,
     };
     // 默认需要对响应做验签，确保响应是由支付宝返回的
     let validateResponseSignature = true;
@@ -598,6 +602,7 @@ export class AlipaySdk {
         ...formStream.headers(),
       },
       content: new Readable().wrap(formStream as any),
+      dispatcher: this.#proxyAgent,
     };
     // 计算签名
     const signData = sign(method, signParams, config);
@@ -839,6 +844,7 @@ export class AlipaySdk {
           // 'content-type': 'application/json',
           accept: 'application/json',
         },
+        dispatcher: this.#proxyAgent,
       });
     } catch (err: any) {
       debug('HttpClient Request error: %s', err);
