@@ -27,7 +27,7 @@
     "formstream": "^1.5.0",
     "snakecase-keys": "^8.0.0",
     "sse-decoder": "^1.0.0",
-    "urllib": "^3.25.0",
+    "urllib": "^4",
     "utility": "^2.1.0"
   },
   "devDependencies": {
