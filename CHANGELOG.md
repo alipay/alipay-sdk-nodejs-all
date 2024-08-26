@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.11.0...v4.12.0) (2024-08-26)
+
+
+### Features
+
+* use urllib v4 ([#148](https://github.com/alipay/alipay-sdk-nodejs-all/issues/148)) ([e2f1841](https://github.com/alipay/alipay-sdk-nodejs-all/commit/e2f184108364a3a7e70e552cbaa4cb2cf5deb1a3))
+
 ## [4.11.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.10.0...v4.11.0) (2024-07-05)
 
 
