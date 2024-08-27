@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { strict as assert } from 'node:assert';
-import urllib, { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'urllib';
+import urllib, { MockAgent, setGlobalDispatcher, getGlobalDispatcher, Agent } from 'urllib';
 import mm from 'mm';
 import {
   readFixturesFile, getFixturesFile,
@@ -843,6 +843,26 @@ describe('test/alipay.test.ts', () => {
           query: '你好',
           request_id: randomUUID(),
         },
+      });
+      for await (const item of stream) {
+        assert(Buffer.isBuffer(item));
+        console.log('item %o', item.toString());
+      }
+    });
+
+    it('curlStream with agent 请求成功', async () => {
+      const url = '/v3/stream/alipay/cloud/nextbuilder/agent/chat/generate';
+      const { stream } = await sdk.curlStream('POST', url, {
+        body: {
+          session_id: randomUUID(),
+          agent_id: '202405AP00045923',
+          outer_user_id: '2088002032947123',
+          query: '你好',
+          request_id: randomUUID(),
+        },
+        agent: new Agent({
+          allowH2: true,
+        }),
       });
       for await (const item of stream) {
         assert(Buffer.isBuffer(item));
