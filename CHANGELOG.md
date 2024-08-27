@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.13.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.12.0...v4.13.0) (2024-08-27)
+
+
+### Features
+
+* AlipayCURLOptions 支持 agent 参数 ([#149](https://github.com/alipay/alipay-sdk-nodejs-all/issues/149)) ([46ad56e](https://github.com/alipay/alipay-sdk-nodejs-all/commit/46ad56e245abfaacefae11866183d6269496e1c4))
+
 ## [4.12.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.11.0...v4.12.0) (2024-08-26)
 
 

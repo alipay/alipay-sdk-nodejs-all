@@ -1,6 +1,6 @@
 {
   "name": "alipay-sdk",
-  "version": "4.12.0",
+  "version": "4.13.0",
   "engines": {
     "node": ">=18.0.0"
   },
