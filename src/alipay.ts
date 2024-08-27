@@ -167,6 +167,8 @@ export interface AlipayCURLOptions {
   appAuthToken?: string;
   /** 请求超时时间，默认使用 config.timeout */
   requestTimeout?: number;
+  /** 支持覆盖默认的 agent  */
+  agent?: ProxyAgent;
 }
 
 /**
@@ -353,6 +355,12 @@ export class AlipaySdk {
     if (validateResponseSignature && !this.config.alipayPublicKey) {
       throw new TypeError('请确保支付宝公钥 config.alipayPublicKey 已经配置，需要使用它对响应进行验签');
     }
+
+    // 覆盖默认配置
+    if (options?.agent) {
+      requestOptions.dispatcher = options.agent;
+    }
+
     const requestId = options?.requestId ?? createRequestId();
     requestOptions.headers = {
       'user-agent': this.version,
