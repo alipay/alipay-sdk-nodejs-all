@@ -453,6 +453,10 @@ export class AlipaySdk {
       authString += `,app_cert_sn=${this.config.appCertSn}`;
     }
     authString += `,nonce=${randomUUID()},timestamp=${Date.now()}`;
+    if (this.config.additionalAuthInfo) {
+      authString += `,${this.config.additionalAuthInfo}`;
+    }
+
     // 签名字符串拼接格式：
     //
     // ```txt
