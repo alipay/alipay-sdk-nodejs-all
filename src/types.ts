@@ -60,4 +60,6 @@ export interface AlipaySdkConfig {
   wsServiceUrl?: string;
   /** httpClient 请求代理 */
   proxyAgent?: ProxyAgent;
+  /** Authorization 扩展信息 */
+  additionalAuthInfo?: string;
 }
