@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.14.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.13.0...v4.14.0) (2025-04-29)
+
+
+### Features
+
+* V3协议 Authorization 字段添加扩展支持 ([#157](https://github.com/alipay/alipay-sdk-nodejs-all/issues/157)) ([04e75cf](https://github.com/alipay/alipay-sdk-nodejs-all/commit/04e75cf6a002b217fce073ddb93b7a29016c8300))
+
 ## [4.13.0](https://github.com/alipay/alipay-sdk-nodejs-all/compare/v4.12.0...v4.13.0) (2024-08-27)
 
 
