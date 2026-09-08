@@ -224,7 +224,7 @@ export class AlipaySdk {
 
   // 格式化 key
   private formatKey(key: string, type: string): string {
-    const item = key.split('\n').map(val => val.trim());
+    const item = key.split('\n').map(val => val.trim()).filter(Boolean);
 
     // 删除包含 `RSA PRIVATE KEY / PUBLIC KEY` 等字样的第一行
     if (item[0].includes(type)) { item.shift(); }

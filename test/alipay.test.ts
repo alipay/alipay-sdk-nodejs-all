@@ -106,6 +106,27 @@ describe('test/alipay.test.ts', () => {
       assert.equal(alipaySdk.config.privateKey,
         `-----BEGIN PRIVATE KEY-----\n${pkcs8PrivateKey}\n-----END PRIVATE KEY-----`);
     });
+
+    it('formatKey should ignore blank lines caused by a trailing newline', () => {
+      // 传入的私钥末尾带多余空行时（例如 "...KEY-----\n\n"），split('\n') 会
+      // 产生一个空字符串元素作为最后一项，导致原本用于剔除末尾 END 标记行的
+      // pop() 判断落在空字符串上而不是 END 标记行上，从而拼出带重复 END
+      // 标记的畸形 PEM。Node 的 OpenSSL 实现能容忍这种畸形 PEM，但更严格的
+      // PEM 解析实现（例如 Deno 的 node:crypto）会直接报错。
+      const pkcs8PrivateKey = fs.readFileSync(getFixturesFile('app-private-key-pkcs8-no-wrapper.pem'), 'ascii');
+      const pkcs8PrivateKeyWithTrailingNewline = fs.readFileSync(
+        getFixturesFile('app-private-key-pkcs8-trailing-newline.pem'), 'ascii');
+      const alipaySdk = new AlipaySdk({
+        appId: '111',
+        privateKey: pkcs8PrivateKeyWithTrailingNewline,
+        alipayPublicKey,
+        gateway: GATE_WAY,
+        keyType: 'PKCS8',
+      });
+
+      assert.equal(alipaySdk.config.privateKey,
+        `-----BEGIN PRIVATE KEY-----\n${pkcs8PrivateKey}\n-----END PRIVATE KEY-----`);
+    });
   });
 
   describe('curl()', () => {
