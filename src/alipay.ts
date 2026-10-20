@@ -774,36 +774,44 @@ export class AlipaySdk {
    * @param responseKey xx_response 方法名 key
    */
   getSignStr(originStr: string, responseKey: string): string {
-    // 待签名的字符串
-    let validateStr = originStr.trim();
-    // 找到 xxx_response 开始的位置
-    const startIndex = originStr.indexOf(`${responseKey}"`);
-    // 找到最后一个 “"sign"” 字符串的位置（避免）
-    const lastIndex = originStr.lastIndexOf('"sign"');
+    const response = JSON.parse(originStr);
+    if (!response || typeof response !== 'object' || Array.isArray(response)) {
+      throw new Error('Invalid Alipay response envelope');
+    }
 
-    /**
-     * 删除 xxx_response 及之前的字符串
-     * 假设原始字符串为
-     *  {"xxx_response":{"code":"10000"},"sign":"jumSvxTKwn24G5sAIN"}
-     * 删除后变为
-     *  :{"code":"10000"},"sign":"jumSvxTKwn24G5sAIN"}
-     */
-    validateStr = validateStr.substring(startIndex + responseKey.length + 1);
+    // Keep the original JSON value, including the quotes around AES ciphertext.
+    // JSON.stringify would change whitespace, escapes and numeric representations.
+    const values = new Map<string, string>();
+    let depth = 0;
+    let key: string | undefined;
+    let valueStart = 0;
+    for (const match of originStr.matchAll(/"(?:[^"\\]|\\.)*"|[{}\[\]:,]/g)) {
+      const token = match[0];
+      if (depth === 1) {
+        if (key === undefined && token.startsWith('"')) {
+          key = JSON.parse(token) as string;
+        } else if (token === ':') {
+          valueStart = match.index! + 1;
+        } else if (token === ',' || token === '}') {
+          if (key !== undefined) {
+            // Never verify a different duplicate value than JSON.parse selected.
+            if (values.has(key)) throw new Error('Duplicate Alipay response field');
+            values.set(key, originStr.slice(valueStart, match.index).trim());
+            key = undefined;
+          }
+        }
+      }
+      if (token === '{' || token === '[') depth += 1;
+      else if (token === '}' || token === ']') depth -= 1;
+    }
 
-    /**
-     * 删除最后一个 "sign" 及之后的字符串
-     * 删除后变为
-     *  :{"code":"10000"},
-     * {} 之间就是待验签的字符串
-     */
-    validateStr = validateStr.substring(0, lastIndex);
-
-    // 删除第一个 { 之前的任何字符
-    validateStr = validateStr.replace(/^[^{]*{/g, '{');
-
-    // 删除最后一个 } 之后的任何字符
-    validateStr = validateStr.replace(/\}([^}]*)$/g, '}');
-    return validateStr;
+    // Match #formatExecHttpResponse, including its nullish error_response fallback.
+    const selectedKey = response[responseKey] != null ? responseKey : 'error_response';
+    const content = values.get(selectedKey);
+    if (!content || ![ '{', '"' ].includes(content[0])) {
+      throw new Error('Missing Alipay response signing content');
+    }
+    return content;
   }
 
   /**
@@ -964,7 +972,17 @@ export class AlipaySdk {
     }
 
     // 根据服务端返回的结果截取需要验签的目标字符串
-    const validateStr = this.getSignStr(responseDataRaw, responseKey);
+    let validateStr: string;
+    try {
+      validateStr = this.getSignStr(responseDataRaw, responseKey);
+    } catch (cause) {
+      throw new AlipayRequestError('Invalid response signing content', {
+        code: 'response-sign-content-invalid',
+        traceId,
+        responseDataRaw,
+        cause,
+      });
+    }
     // 参数存在，并且是正常的结果（不包含 sub_code）时才验签
     const verifier = createVerify(ALIPAY_ALGORITHM_MAPPING[this.config.signType]);
     verifier.update(validateStr, 'utf8');
